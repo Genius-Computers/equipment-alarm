@@ -20,6 +20,32 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database (Neon) Setup
+
+This app uses Neon Postgres via the `@neondatabase/serverless` client.
+
+1. Create a Neon project and obtain your database connection string.
+2. Copy `.example.env` to `.env.local` and fill in values:
+
+```bash
+cp .example.env .env.local
+```
+
+3. Set `DATABASE_URL` in `.env.local` to your Neon connection string.
+
+4. Run the dev server. The schema is auto-created on first request:
+
+```bash
+npm run dev
+```
+
+API endpoints:
+- `GET /api/equipment` → list equipment
+- `POST /api/equipment` → insert equipment
+
+Expected POST body fields (camelCase):
+- `machineName`, `partNumber`, `location`, `lastMaintenance`, `nextMaintenance`, `maintenanceInterval`, `sparePartsNeeded`, `sparePartsApproved?`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
