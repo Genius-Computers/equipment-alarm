@@ -5,8 +5,9 @@ export async function GET() {
   try {
     const rows = await listEquipment();
     return NextResponse.json({ data: rows });
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message ?? 'Unexpected error' }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -24,8 +25,9 @@ export async function POST(req: NextRequest) {
       spare_parts_approved: Boolean(body.sparePartsApproved),
     });
     return NextResponse.json({ data: newRow }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message ?? 'Unexpected error' }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 

@@ -6,7 +6,7 @@ type Language = "en" | "ar";
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, unknown>) => string;
   isRTL: boolean;
 }
 
@@ -166,7 +166,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>("en");
   
-  const t = (key: string, params?: Record<string, any>) => {
+  const t = (key: string, params?: Record<string, unknown>) => {
     let text = translations[language][key as keyof typeof translations[typeof language]] || key;
     
     // Handle pluralization for count
@@ -178,7 +178,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     // Replace parameters
     if (params) {
       Object.keys(params).forEach(param => {
-        text = text.replace(`{${param}}`, params[param]);
+        text = text.replace(`{${param}}`, params[param] as string);
       });
     }
     

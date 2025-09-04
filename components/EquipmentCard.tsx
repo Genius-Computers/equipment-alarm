@@ -24,7 +24,7 @@ interface EquipmentCardProps {
 }
 
 const EquipmentCard = ({ equipment, onScheduleMaintenance, onUpdateSpares }: EquipmentCardProps) => {
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
   
   const getStatusBadge = (status: string) => {
     switch (status) {
