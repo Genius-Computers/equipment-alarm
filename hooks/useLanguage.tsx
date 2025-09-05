@@ -33,6 +33,10 @@ const translations = {
     "equipment.requestApproval": "Request Approval",
     "equipment.scheduleMaintenance": "Schedule Maintenance",
     "equipment.part": "Part",
+    "equipment.edit": "Edit",
+    "equipment.inUse": "In Use",
+    "equipment.notInUse": "Not In Use",
+    "equipment.markMaintenanceCompleted": "Mark Maintenance Completed",
     
     // Add Equipment Form
     "form.addNewEquipment": "Add New Equipment",
@@ -52,6 +56,7 @@ const translations = {
     "form.addEquipment": "Add Equipment",
     "form.cancel": "Cancel",
     "form.required": "*",
+    "form.save": "Save",
     
     // Alerts
     "alert.allCurrent": "All Equipment Current",
@@ -107,7 +112,11 @@ const translations = {
     "equipment.requestApproval": "طلب موافقة",
     "equipment.scheduleMaintenance": "جدولة الصيانة",
     "equipment.part": "الجزء",
-    
+    "equipment.edit": "تعديل",
+    "equipment.inUse": "في الاستخدام",
+    "equipment.notInUse": "غير في الاستخدام",
+    "equipment.markMaintenanceCompleted": "تم إنهاء الصيانة",
+
     // Add Equipment Form
     "form.addNewEquipment": "إضافة معدة جديدة",
     "form.machineName": "اسم الماكينة",
@@ -126,7 +135,8 @@ const translations = {
     "form.addEquipment": "إضافة معدة",
     "form.cancel": "إلغاء",
     "form.required": "*",
-    
+    "form.save": "حفظ",
+
     // Alerts
     "alert.allCurrent": "جميع المعدات محدثة",
     "alert.allCurrentDesc": "جميع جداول صيانة المعدات محدثة.",

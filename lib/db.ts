@@ -23,7 +23,8 @@ export const ensureSchema = async () => {
       next_maintenance text not null,
       maintenance_interval text not null,
       spare_parts_needed boolean not null default false,
-      spare_parts_approved boolean not null default false
+      spare_parts_approved boolean not null default false,
+      in_use boolean not null default true
     )`;
 };
 
@@ -37,6 +38,7 @@ export type EquipmentRow = {
   maintenance_interval: string;
   spare_parts_needed: boolean;
   spare_parts_approved: boolean;
+  in_use: boolean;
 };
 
 export const listEquipment = async (): Promise<EquipmentRow[]> => {
@@ -55,6 +57,7 @@ export const insertEquipment = async (input: {
   maintenance_interval: string;
   spare_parts_needed: boolean;
   spare_parts_approved?: boolean;
+  in_use?: boolean;
 }) => {
   const sql = getDb();
   await ensureSchema();
@@ -62,13 +65,45 @@ export const insertEquipment = async (input: {
     insert into equipment (
       machine_name, part_number, location,
       last_maintenance, next_maintenance, maintenance_interval,
-      spare_parts_needed, spare_parts_approved
+      spare_parts_needed, spare_parts_approved, in_use
     ) values (
       ${input.machine_name}, ${input.part_number}, ${input.location},
       ${input.last_maintenance}, ${input.next_maintenance}, ${input.maintenance_interval},
-      ${input.spare_parts_needed}, ${input.spare_parts_approved ?? false}
+      ${input.spare_parts_needed}, ${input.spare_parts_approved ?? false}, ${input.in_use ?? true}
     ) returning *`;
   return row;
 };
 
 
+export const updateEquipment = async (
+  id: string,
+  input: {
+    machine_name: string;
+    part_number: string;
+    location: string;
+    last_maintenance: string;
+    next_maintenance: string;
+    maintenance_interval: string;
+    spare_parts_needed: boolean;
+    spare_parts_approved?: boolean;
+    in_use?: boolean;
+  }
+) => {
+  const sql = getDb();
+  await ensureSchema();
+  const inUseParam = input.in_use ?? null;
+  const [row] = await sql`
+    update equipment set
+      machine_name = ${input.machine_name},
+      part_number = ${input.part_number},
+      location = ${input.location},
+      last_maintenance = ${input.last_maintenance},
+      next_maintenance = ${input.next_maintenance},
+      maintenance_interval = ${input.maintenance_interval},
+      spare_parts_needed = ${input.spare_parts_needed},
+      spare_parts_approved = ${input.spare_parts_approved ?? false},
+      in_use = coalesce(${inUseParam}::boolean, in_use)
+    where id = ${id}
+    returning *`;
+  return row as unknown as EquipmentRow;
+};

@@ -1,6 +1,7 @@
 import { Building, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
+import { ModeToggle } from "./ui/mode-toggle";
 
 const Header = () => {
   const { language, setLanguage, t, isRTL } = useLanguage();
@@ -32,6 +33,7 @@ const Header = () => {
               <Globe className="h-4 w-4" />
               {t("language.switch")}
             </Button>
+            <ModeToggle />
             <div className={`text-right ${isRTL ? "text-left" : "text-right"}`}>
               <p className="text-sm font-medium text-foreground">{t("header.department")}</p>
               <p className="text-xs text-muted-foreground">{t("header.facility")}</p>

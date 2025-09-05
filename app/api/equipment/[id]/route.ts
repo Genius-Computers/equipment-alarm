@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insertEquipment, listEquipment } from '@/lib/db';
+import { updateEquipment } from '@/lib/db';
 
-export async function GET() {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const rows = await listEquipment();
-    return NextResponse.json({ data: rows });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
+    const { id } = await context.params;
     const body = await req.json();
-    const newRow = await insertEquipment({
+
+    const row = await updateEquipment(id, {
       machine_name: body.machineName,
       part_number: body.partNumber,
       location: body.location,
@@ -25,7 +17,7 @@ export async function POST(req: NextRequest) {
       spare_parts_approved: Boolean(body.sparePartsApproved),
       in_use: Boolean(body.inUse),
     });
-    return NextResponse.json({ data: newRow }, { status: 201 });
+    return NextResponse.json({ data: row });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });

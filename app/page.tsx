@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/useLanguage";
 
 type Equipment = {
@@ -20,6 +21,7 @@ type Equipment = {
   maintenanceInterval: string;
   sparePartsNeeded: boolean;
   sparePartsApproved?: boolean;
+  inUse?: boolean;
   status: 'good' | 'due' | 'overdue';
 };
 
@@ -33,6 +35,7 @@ type DbEquipment = {
   maintenance_interval: string;
   spare_parts_needed: boolean;
   spare_parts_approved: boolean;
+  in_use?: boolean;
 };
 
 const updateEquipmentStatus = (equipmentList: Equipment[]): Equipment[] => {
@@ -73,6 +76,7 @@ const Index = () => {
     maintenanceInterval: row.maintenance_interval,
     sparePartsNeeded: row.spare_parts_needed,
     sparePartsApproved: row.spare_parts_approved,
+    inUse: row.in_use ?? true,
     status: 'good',
   });
 
@@ -130,11 +134,48 @@ const Index = () => {
     }
   };
 
-  const handleScheduleMaintenance = (id: string) => {
+  const handleCompleteMaintenance = async (id: string) => {
     const item = equipment.find((eq) => eq.id === id);
-    toast(t("toast.maintenanceScheduled"), {
-      description: t("toast.maintenanceScheduledDesc", { name: item?.machineName }),
-    });
+    if (!item) return;
+
+    const now = new Date();
+    const intervalDays = {
+      '1 week': 7,
+      '2 weeks': 14,
+      '1 month': 30,
+      '3 months': 90,
+      '6 months': 180,
+      '1 year': 365
+    }[item.maintenanceInterval] || 30;
+
+    const next = new Date(now);
+    next.setDate(now.getDate() + intervalDays);
+
+    try {
+      const res = await fetch(`/api/equipment/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          machineName: item.machineName,
+          partNumber: item.partNumber,
+          location: item.location,
+          lastMaintenance: now.toLocaleDateString(),
+          nextMaintenance: next.toLocaleDateString(),
+          maintenanceInterval: item.maintenanceInterval,
+          sparePartsNeeded: item.sparePartsNeeded,
+          sparePartsApproved: item.sparePartsApproved,
+          inUse: item.inUse,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update maintenance');
+      const { data } = await res.json();
+      const mapped = mapFromDb(data);
+      setEquipment((prev) => prev.map((e) => (e.id === id ? mapped : e)));
+      toast(t("toast.success"), { description: t("toast.equipmentUpdated") });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to update maintenance';
+      toast(t("toast.error"), { description: message });
+    }
   };
 
   const handleUpdateSpares = (id: string) => {
@@ -154,7 +195,39 @@ const Index = () => {
           <div className="lg:col-span-1 space-y-6">
             <AddEquipmentForm onAddEquipment={handleAddEquipment} />
 
-            <MaintenanceAlert equipment={updateEquipmentStatus(equipment)} />
+            {loading ? (
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4 bg-secondary/10">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-64 mt-2" />
+                </div>
+                <div className="border rounded-lg p-4 bg-warning/10">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-56 mt-2" />
+                </div>
+                <div className="rounded-lg border">
+                  <div className="p-4">
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                        <div>
+                          <Skeleton className="h-4 w-40" />
+                          <Skeleton className="h-3 w-24 mt-1" />
+                        </div>
+                        <div className="text-right">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-5 w-20 mt-1 rounded-full" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <MaintenanceAlert equipment={updateEquipmentStatus(equipment)} />
+            )}
           </div>
 
           {/* Main Content */}
@@ -187,8 +260,52 @@ const Index = () => {
             </div>
 
             {loading && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">{t("loading") || 'Loading...'}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="rounded-lg border p-0">
+                    <div className="p-4 border-b">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-6 w-24 rounded-full" />
+                      </div>
+                      <Skeleton className="h-4 w-32 mt-2" />
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Skeleton className="h-4 w-4 rounded" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <Skeleton className="h-3 w-24 mb-2" />
+                          <Skeleton className="h-4 w-28" />
+                        </div>
+                        <div>
+                          <Skeleton className="h-3 w-28 mb-2" />
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-24 mt-1" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-4 w-4 rounded" />
+                          <Skeleton className="h-4 w-36" />
+                        </div>
+                      </div>
+                      <div className="bg-muted p-3 rounded-lg">
+                        <Skeleton className="h-4 w-40 mb-2" />
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-3 w-44" />
+                          <Skeleton className="h-8 w-28" />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Skeleton className="h-8 w-28" />
+                        <Skeleton className="h-8 w-24" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {!loading && (
@@ -197,8 +314,35 @@ const Index = () => {
                   <EquipmentCard
                     key={item.id}
                     equipment={item}
-                    onScheduleMaintenance={handleScheduleMaintenance}
+                    onCompleteMaintenance={handleCompleteMaintenance}
                     onUpdateSpares={handleUpdateSpares}
+                    onEditEquipment={async (updated) => {
+                      try {
+                        const res = await fetch(`/api/equipment/${updated.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            machineName: updated.machineName,
+                            partNumber: updated.partNumber,
+                            location: updated.location,
+                            lastMaintenance: updated.lastMaintenance,
+                            nextMaintenance: updated.nextMaintenance,
+                            maintenanceInterval: updated.maintenanceInterval,
+                            sparePartsNeeded: updated.sparePartsNeeded,
+                            sparePartsApproved: updated.sparePartsApproved,
+                            inUse: updated.inUse,
+                          }),
+                        });
+                        if (!res.ok) throw new Error('Failed to update equipment');
+                        const { data } = await res.json();
+                        const mapped = mapFromDb(data);
+                        setEquipment((prev) => prev.map((e) => (e.id === mapped.id ? mapped : e)));
+                        toast(t("toast.success"), { description: t("toast.equipmentUpdated") });
+                      } catch (e: unknown) {
+                        const message = e instanceof Error ? e.message : 'Failed to update equipment';
+                        toast(t("toast.error"), { description: message });
+                      }
+                    }}
                   />
                 ))}
               </div>

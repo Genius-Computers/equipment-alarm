@@ -1,8 +1,13 @@
-import { Calendar, MapPin, Wrench, AlertTriangle, CheckCircle } from "lucide-react";
+import { MapPin, Wrench, AlertTriangle, CheckCircle, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
 
 interface Equipment {
   id: string;
@@ -14,17 +19,29 @@ interface Equipment {
   maintenanceInterval: string;
   sparePartsNeeded: boolean;
   sparePartsApproved?: boolean;
+  inUse?: boolean;
   status: 'good' | 'due' | 'overdue';
 }
 
 interface EquipmentCardProps {
   equipment: Equipment;
-  onScheduleMaintenance: (id: string) => void;
+  onCompleteMaintenance: (id: string) => void;
   onUpdateSpares: (id: string) => void;
+  onEditEquipment?: (updated: Equipment) => void;
 }
 
-const EquipmentCard = ({ equipment, onScheduleMaintenance, onUpdateSpares }: EquipmentCardProps) => {
+const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: EquipmentCardProps) => {
   const { t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    machineName: equipment.machineName,
+    partNumber: equipment.partNumber,
+    location: equipment.location,
+    maintenanceInterval: equipment.maintenanceInterval,
+    lastMaintenance: equipment.lastMaintenance,
+    sparePartsNeeded: equipment.sparePartsNeeded,
+    inUse: equipment.inUse ?? true,
+  });
   
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -90,8 +107,8 @@ const EquipmentCard = ({ equipment, onScheduleMaintenance, onUpdateSpares }: Equ
 
         {equipment.sparePartsNeeded && (
           <div className="bg-muted p-3 rounded-lg">
-            <p className="text-sm font-medium mb-1">{t("equipment.sparePartsRequired")}</p>
-            <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">{t("equipment.sparePartsRequired")}</p>
+            {/* <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 {t("equipment.approved")}: {equipment.sparePartsApproved ? t("equipment.approved") : t("equipment.pendingApproval")}
               </p>
@@ -100,15 +117,100 @@ const EquipmentCard = ({ equipment, onScheduleMaintenance, onUpdateSpares }: Equ
                   {t("equipment.requestApproval")}
                 </Button>
               )}
-            </div>
+            </div> */}
           </div>
         )}
 
         <div className="flex gap-2 pt-2">
-          <Button size="sm" onClick={() => onScheduleMaintenance(equipment.id)}>
-            <Calendar className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-            {t("equipment.scheduleMaintenance")}
-          </Button>
+          {equipment.status !== 'good' && (
+            <Button size="sm" onClick={() => onCompleteMaintenance(equipment.id)}>
+              <CheckCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+              {t("equipment.markMaintenanceCompleted")}
+            </Button>
+          )}
+          {onEditEquipment && (
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                  {t("equipment.edit")}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="p-4">
+                <SheetHeader>
+                  <SheetTitle>{t("equipment.edit")}</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Input
+                        value={formData.machineName}
+                        onChange={(e) => setFormData({ ...formData, machineName: e.target.value })}
+                        placeholder="Machine name"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        value={formData.partNumber}
+                        onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
+                        placeholder="Part number"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Input
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="Location"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Select value={formData.maintenanceInterval} onValueChange={(value) => setFormData({ ...formData, maintenanceInterval: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Interval" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1 week">{t("form.everyWeek")}</SelectItem>
+                          <SelectItem value="2 weeks">{t("form.every2Weeks")}</SelectItem>
+                          <SelectItem value="1 month">{t("form.everyMonth")}</SelectItem>
+                          <SelectItem value="3 months">{t("form.every3Months")}</SelectItem>
+                          <SelectItem value="6 months">{t("form.every6Months")}</SelectItem>
+                          <SelectItem value="1 year">{t("form.everyYear")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Input
+                        type="date"
+                        value={formData.lastMaintenance}
+                        onChange={(e) => setFormData({ ...formData, lastMaintenance: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="inUse"
+                      checked={formData.inUse}
+                      onCheckedChange={(checked) => setFormData({ ...formData, inUse: checked })}
+                    />
+                    <label htmlFor="inUse" className="text-sm">{formData.inUse ? t("equipment.inUse") : t("equipment.notInUse")}</label>
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button size="sm" onClick={() => {
+                      const updated: Equipment = {
+                        ...equipment,
+                        ...formData,
+                      };
+                      onEditEquipment(updated);
+                      setOpen(false);
+                    }}>{t("form.save")}</Button>
+                    <Button size="sm" variant="outline" onClick={() => setOpen(false)}>{t("form.cancel")}</Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
       </CardContent>
     </Card>
