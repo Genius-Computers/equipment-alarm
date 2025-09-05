@@ -1,4 +1,4 @@
-import { MapPin, Wrench, AlertTriangle, CheckCircle, Pencil } from "lucide-react";
+import { MapPin, Wrench, AlertTriangle, CheckCircle, Pencil, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ interface Equipment {
   sparePartsNeeded: boolean;
   sparePartsApproved?: boolean;
   inUse?: boolean;
-  status: 'good' | 'due' | 'overdue';
+  status: "good" | "due" | "overdue";
 }
 
 interface EquipmentCardProps {
@@ -42,15 +42,30 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
     sparePartsNeeded: equipment.sparePartsNeeded,
     inUse: equipment.inUse ?? true,
   });
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'good':
-        return <Badge className="bg-secondary text-secondary-foreground"><CheckCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />{t("equipment.upToDate")}</Badge>;
-      case 'due':
-        return <Badge className="bg-warning text-warning-foreground"><AlertTriangle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />{t("equipment.dueSoon")}</Badge>;
-      case 'overdue':
-        return <Badge className="bg-destructive text-destructive-foreground"><AlertTriangle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />{t("equipment.overdue")}</Badge>;
+      case "good":
+        return (
+          <Badge className="bg-secondary text-secondary-foreground">
+            <CheckCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
+            {t("equipment.upToDate")}
+          </Badge>
+        );
+      case "due":
+        return (
+          <Badge className="bg-warning text-warning-foreground">
+            <AlertTriangle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
+            {t("equipment.dueSoon")}
+          </Badge>
+        );
+      case "overdue":
+        return (
+          <Badge className="bg-destructive text-destructive-foreground">
+            <AlertTriangle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
+            {t("equipment.overdue")}
+          </Badge>
+        );
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -71,16 +86,26 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">{equipment.machineName}</CardTitle>
-          {getStatusBadge(equipment.status)}
+          <div className="flex items-center gap-0.5">
+            {getStatusBadge(equipment.status)}
+            {!equipment.inUse && (
+              <Badge variant='destructive'>
+                <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
+                {t('equipment.notInUse')}
+              </Badge>
+            )}
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">{t("equipment.part")}: {equipment.partNumber}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("equipment.part")}: {equipment.partNumber}
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center text-sm text-muted-foreground">
           <MapPin className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
           {equipment.location}
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
@@ -93,7 +118,9 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
               <p className="text-warning text-xs">{t("equipment.inDays", { days: daysUntil })}</p>
             )}
             {daysUntil <= 0 && (
-              <p className="text-destructive text-xs font-medium">{t("equipment.overdueBy", { days: Math.abs(daysUntil) })}</p>
+              <p className="text-destructive text-xs font-medium">
+                {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
+              </p>
             )}
           </div>
         </div>
@@ -101,7 +128,9 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center">
             <Wrench className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 text-muted-foreground" />
-            <span>{t("equipment.every")} {equipment.maintenanceInterval}</span>
+            <span>
+              {t("equipment.every")} {equipment.maintenanceInterval}
+            </span>
           </div>
         </div>
 
@@ -122,7 +151,7 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
         )}
 
         <div className="flex gap-2 pt-2">
-          {equipment.status !== 'good' && (
+          {equipment.status !== "good" && (
             <Button size="sm" onClick={() => onCompleteMaintenance(equipment.id)}>
               <CheckCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
               {t("equipment.markMaintenanceCompleted")}
@@ -166,7 +195,9 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Select value={formData.maintenanceInterval} onValueChange={(value) => setFormData({ ...formData, maintenanceInterval: value })}>
+                      <Select
+                        value={formData.maintenanceInterval}
+                        onValueChange={(value) => setFormData({ ...formData, maintenanceInterval: value })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Interval" />
                         </SelectTrigger>
@@ -194,18 +225,26 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
                       checked={formData.inUse}
                       onCheckedChange={(checked) => setFormData({ ...formData, inUse: checked })}
                     />
-                    <label htmlFor="inUse" className="text-sm">{formData.inUse ? t("equipment.inUse") : t("equipment.notInUse")}</label>
+                    <label htmlFor="inUse" className="text-sm">
+                      {formData.inUse ? t("equipment.inUse") : t("equipment.notInUse")}
+                    </label>
                   </div>
                   <div className="flex gap-2 pt-4">
-                    <Button size="sm" onClick={() => {
-                      const updated: Equipment = {
-                        ...equipment,
-                        ...formData,
-                      };
-                      onEditEquipment(updated);
-                      setOpen(false);
-                    }}>{t("form.save")}</Button>
-                    <Button size="sm" variant="outline" onClick={() => setOpen(false)}>{t("form.cancel")}</Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const updated: Equipment = {
+                          ...equipment,
+                          ...formData,
+                        };
+                        onEditEquipment(updated);
+                        setOpen(false);
+                      }}>
+                      {t("form.save")}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
+                      {t("form.cancel")}
+                    </Button>
                   </div>
                 </div>
               </SheetContent>

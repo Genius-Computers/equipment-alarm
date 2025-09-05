@@ -37,6 +37,7 @@ const translations = {
     "equipment.inUse": "In Use",
     "equipment.notInUse": "Not In Use",
     "equipment.markMaintenanceCompleted": "Mark Maintenance Completed",
+    "equipment.equipmentUpdated": "Equipment Updated",
     
     // Add Equipment Form
     "form.addNewEquipment": "Add New Equipment",
@@ -116,6 +117,7 @@ const translations = {
     "equipment.inUse": "في الاستخدام",
     "equipment.notInUse": "غير في الاستخدام",
     "equipment.markMaintenanceCompleted": "تم إنهاء الصيانة",
+    "equipment.equipmentUpdated": "تم تحديث المعدة",
 
     // Add Equipment Form
     "form.addNewEquipment": "إضافة معدة جديدة",
