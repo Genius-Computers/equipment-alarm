@@ -1,7 +1,6 @@
 import { Building, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
-import { ModeToggle } from "./ui/mode-toggle";
 
 const Header = () => {
   const { language, setLanguage, t, isRTL } = useLanguage();
