@@ -1,6 +1,7 @@
 import { Building, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
+import Image from "next/image";
 
 const Header = () => {
   const { language, setLanguage, t, isRTL } = useLanguage();
@@ -14,9 +15,7 @@ const Header = () => {
       <div className="container mx-auto px-6 py-4">
         <div className="flex md:flex-row flex-col md:gap-0 gap-2 md:items-center justify-between">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-              <Building className="h-6 w-6" />
-            </div>
+              <Image src={'/logo.png'} width={70} height={70} alt="logo" />
             <div>
               <h1 className="text-xl font-bold text-foreground">{t("header.title")}</h1>
               <p className="text-sm text-muted-foreground">{t("header.subtitle")}</p>
