@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
+import Link from "next/link";
 import EquipmentCard from "@/components/EquipmentCard";
 import AddEquipmentForm from "@/components/AddEquipmentForm";
 import MaintenanceAlert from "@/components/MaintenanceAlert";
@@ -167,6 +168,9 @@ const Index = () => {
                     <SelectItem value="overdue">{t("filter.overdue")}</SelectItem>
                   </SelectContent>
                 </Select>
+                <Link href="/service-requests" className="text-sm underline text-muted-foreground">
+                  {t("serviceRequest.manageRequests")}
+                </Link>
               </div>
             </div>
 

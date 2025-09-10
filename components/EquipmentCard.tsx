@@ -1,4 +1,4 @@
-import { MapPin, Wrench, AlertTriangle, CheckCircle, Pencil, XCircle } from "lucide-react";
+import { MapPin, Wrench, Pencil, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,11 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import MaintenanceScheduleDialog from "./MaintenanceScheduleDialog";
-import { Equipment } from "@/lib/types";
+import ServiceRequestDialog from "./ServiceRequestDialog";
+//
+import { Equipment, ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
 
 interface EquipmentCardProps {
   equipment: Equipment;
@@ -28,33 +29,9 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
     inUse: equipment.inUse ?? true,
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "good":
-        return (
-          <Badge className="bg-secondary text-secondary-foreground">
-            <CheckCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
-            {t("equipment.upToDate")}
-          </Badge>
-        );
-      case "due":
-        return (
-          <Badge className="bg-warning text-warning-foreground">
-            <AlertTriangle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
-            {t("equipment.dueSoon")}
-          </Badge>
-        );
-      case "overdue":
-        return (
-          <Badge className="bg-destructive text-destructive-foreground">
-            <AlertTriangle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
-            {t("equipment.overdue")}
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
+  // status badge function currently unused; keep for future status-based UI
+
+  const [hasOpenRequest, setHasOpenRequest] = useState<boolean>(false);
 
   const getDaysUntilMaintenance = () => {
     const last = equipment.lastMaintenance ? new Date(equipment.lastMaintenance) : new Date();
@@ -76,6 +53,20 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
 
   const daysUntil = getDaysUntilMaintenance();
 
+  // Load if equipment has open (pending) service request
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/service-request', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { data } = (await res.json()) as { data: Array<{ equipmentId: string; approvalStatus: string; workStatus: string }> };
+        const open = Array.isArray(data) && data.some((r) => r.equipmentId === equipment.id && (r.approvalStatus === ServiceRequestApprovalStatus.PENDING || r.workStatus === ServiceRequestWorkStatus.PENDING));
+        setHasOpenRequest(open);
+      } catch {}
+    };
+    load();
+  }, [equipment.id]);
+
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="pb-3">
@@ -87,6 +78,11 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
               <Badge variant='destructive'>
                 <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
                 {t('equipment.notInUse')}
+              </Badge>
+            )}
+            {hasOpenRequest && (
+              <Badge className="bg-primary/10 text-primary border-primary/20">
+                {t('serviceRequest.openRequest')}
               </Badge>
             )}
           </div>
@@ -232,7 +228,7 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <MaintenanceScheduleDialog 
+          <ServiceRequestDialog
             equipmentId={equipment.id}
             equipmentName={equipment.machineName}
           />

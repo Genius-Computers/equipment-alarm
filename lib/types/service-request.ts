@@ -1,37 +1,62 @@
 import { DbBaseAudit } from "./database";
 
 export interface SparePartNeeded {
-    name: string;
-    number?: string;
+    part: string;
     description?: string;
     quantity: number;
-    estimatedUnitPriceSar?: number;
-    preferredSupplier?: string;
-    urgency?: "low" | "medium" | "high" | "urgent";
+    cost: number;
+    source: string;
+}
+
+export enum ServiceRequestType {
+    PREVENTIVE_MAINTENANCE = "preventive_maintenance",
+    CORRECTIVE_MAINTENANCE = "corrective_maintenence",
+    INSTALL = "install",
+    ASSESS = "assess",
+    OTHER = "other",
+}
+
+export enum ServiceRequestPriority {
+    LOW = "low",
+    MEDIUM = "medium",
+    HIGH = "high",
+}
+
+export enum ServiceRequestApprovalStatus {
+    PENDING = "pending",
+    APPROVED = "approved",
+    REJECTED = "rejected",
+}
+
+export enum ServiceRequestWorkStatus {
+    PENDING = "pending",
+    COMPLETED = "completed",
+    CANCELLED = "cancelled",
 }
 
 export interface ServiceRequest {
     id: string;
     equipmentId: string;
-    title: string;
-    description?: string;
-    scheduledAt?: string; // ISO datetime
-    estimatedDurationHours?: number;
-    priority?: "low" | "medium" | "high" | "urgent";
-    technicianId?: string;
-    notes?: string;
+    requestType: ServiceRequestType;
+    scheduledAt: string;
+    priority: ServiceRequestPriority;
+    approvalStatus: ServiceRequestApprovalStatus;
+    workStatus: ServiceRequestWorkStatus;
+    problemDescription?: string;
+    technicalAssessment?: string;
+    recommendation?: string;
     sparePartsNeeded?: SparePartNeeded[];
 }
 
 export interface DbServiceRequest extends DbBaseAudit {
     equipment_id: string;
-    title: string;
-    description: string | null;
-    scheduled_at: string | null;
-    estimated_duration_hours: number | null;
-    priority: "low" | "medium" | "high" | "urgent" | null;
-    technician_id: string | null;
-    notes: string | null;
-    spare_parts_needed: string | null; // JSON string of SparePartNeeded[] if stored
+    request_type: ServiceRequestType;
+    scheduled_at: string;
+    priority: ServiceRequestPriority;
+    approval_status: ServiceRequestApprovalStatus;
+    work_status: ServiceRequestWorkStatus;
+    problem_description?: string;
+    technical_assessment?: string;
+    recommendation?: string;
+    spare_parts_needed?: SparePartNeeded[];
 }
-

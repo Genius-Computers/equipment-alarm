@@ -1,11 +1,17 @@
 'use client'
-import Header from "@/components/Header"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function Loading() {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <header className="bg-card border-b border-border shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-8 w-32" />
+          </div>
+        </div>
+      </header>
       <main className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1 space-y-6">
