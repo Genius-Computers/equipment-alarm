@@ -5,7 +5,15 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
     const token = request.cookies.get(`stack-refresh-${process.env.NEXT_PUBLIC_STACK_PROJECT_ID}`);
 
-    if (!token && request.nextUrl.pathname !== '/handler/sign-in' && request.nextUrl.pathname !== '/handler/sign-up') {
+    // Disable public sign-up: always redirect sign-up to sign-in
+    if (request.nextUrl.pathname === '/handler/sign-up') {
+        return NextResponse.redirect(new URL('/handler/sign-in', request.url));
+    }
+
+    // Allow unauthenticated access to Stack handler routes (e.g., forgot-password, verification)
+    const isHandlerRoute = request.nextUrl.pathname.startsWith('/handler/');
+
+    if (!token && !isHandlerRoute) {
         return NextResponse.redirect(new URL('/handler/sign-in', request.url));
     }
     // if has token and is at login screen then route to home
