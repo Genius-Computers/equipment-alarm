@@ -8,22 +8,10 @@ import { Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
-
-interface Equipment {
-  id: string;
-  machineName: string;
-  partNumber: string;
-  location: string;
-  lastMaintenance: string;
-  nextMaintenance: string;
-  maintenanceInterval: string;
-  sparePartsNeeded: boolean;
-  sparePartsApproved?: boolean;
-  status: 'good' | 'due' | 'overdue';
-}
+import { Equipment } from "@/lib/types";
 
 interface AddEquipmentFormProps {
-  onAddEquipment: (equipment: Equipment) => void;
+  onAddEquipment: (equipment: Omit<Equipment, 'id'>) => void;
 }
 
 const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
@@ -34,8 +22,7 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
     partNumber: '',
     location: '',
     maintenanceInterval: '',
-    lastMaintenance: '',
-    sparePartsNeeded: false
+    lastMaintenance: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -49,37 +36,20 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
     }
 
     const lastDate = new Date(formData.lastMaintenance || new Date());
-    const nextDate = new Date(lastDate);
-    
-    // Calculate next maintenance date based on interval
-    const intervalDays = {
-      '1 week': 7,
-      '2 weeks': 14,
-      '1 month': 30,
-      '3 months': 90,
-      '6 months': 180,
-      '1 year': 365
-    }[formData.maintenanceInterval] || 30;
-    
-    nextDate.setDate(lastDate.getDate() + intervalDays);
-
-    const newEquipment: Equipment = {
-      id: Date.now().toString(),
-      ...formData,
-      nextMaintenance: nextDate.toLocaleDateString(),
+    onAddEquipment({
+      machineName: formData.machineName,
+      partNumber: formData.partNumber,
+      location: formData.location,
+      maintenanceInterval: formData.maintenanceInterval,
       lastMaintenance: lastDate.toLocaleDateString(),
-      sparePartsApproved: false,
-      status: 'good'
-    };
-
-    onAddEquipment(newEquipment);
+      inUse: true,
+    });
     setFormData({
       machineName: '',
       partNumber: '',
       location: '',
       maintenanceInterval: '',
-      lastMaintenance: '',
-      sparePartsNeeded: false
+      lastMaintenance: ''
     });
     setOpen(false);
     
@@ -163,14 +133,7 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="sparePartsNeeded"
-              checked={formData.sparePartsNeeded}
-              onCheckedChange={(checked) => setFormData({ ...formData, sparePartsNeeded: checked })}
-            />
-            <Label htmlFor="sparePartsNeeded">{t("form.sparePartsRequired")}</Label>
-          </div>
+          {/* Spare parts fields removed as status is derived and not stored */}
 
           <div className="flex gap-2 pt-4">
             <Button type="submit">{t("form.addEquipment")}</Button>

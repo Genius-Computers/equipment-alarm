@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateEquipment } from '@/lib/db';
+import { snakeToCamelCase } from '@/lib/utils';
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -11,13 +12,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       part_number: body.partNumber,
       location: body.location,
       last_maintenance: body.lastMaintenance,
-      next_maintenance: body.nextMaintenance,
       maintenance_interval: body.maintenanceInterval,
-      spare_parts_needed: Boolean(body.sparePartsNeeded),
-      spare_parts_approved: Boolean(body.sparePartsApproved),
       in_use: Boolean(body.inUse),
     });
-    return NextResponse.json({ data: row });
+    return NextResponse.json({ data: snakeToCamelCase(row) });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });

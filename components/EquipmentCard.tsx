@@ -8,29 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
-
-interface Equipment {
-  id: string;
-  machineName: string;
-  partNumber: string;
-  location: string;
-  lastMaintenance: string;
-  nextMaintenance: string;
-  maintenanceInterval: string;
-  sparePartsNeeded: boolean;
-  sparePartsApproved?: boolean;
-  inUse?: boolean;
-  status: "good" | "due" | "overdue";
-}
+import MaintenanceScheduleDialog from "./MaintenanceScheduleDialog";
+import { Equipment } from "@/lib/types";
 
 interface EquipmentCardProps {
   equipment: Equipment;
-  onCompleteMaintenance: (id: string) => void;
-  onUpdateSpares: (id: string) => void;
   onEditEquipment?: (updated: Equipment) => void;
 }
 
-const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: EquipmentCardProps) => {
+const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,7 +25,6 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
     location: equipment.location,
     maintenanceInterval: equipment.maintenanceInterval,
     lastMaintenance: equipment.lastMaintenance,
-    sparePartsNeeded: equipment.sparePartsNeeded,
     inUse: equipment.inUse ?? true,
   });
 
@@ -72,10 +57,20 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
   };
 
   const getDaysUntilMaintenance = () => {
-    const nextDate = new Date(equipment.nextMaintenance);
+    const last = equipment.lastMaintenance ? new Date(equipment.lastMaintenance) : new Date();
+    const next = new Date(last);
+    const intervalDaysMap: Record<string, number> = {
+      '1 week': 7,
+      '2 weeks': 14,
+      '1 month': 30,
+      '3 months': 90,
+      '6 months': 180,
+      '1 year': 365
+    };
+    const addDays = intervalDaysMap[equipment.maintenanceInterval] ?? 30;
+    next.setDate(last.getDate() + addDays);
     const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays;
   };
 
@@ -86,8 +81,8 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">{equipment.machineName}</CardTitle>
-          <div className="flex items-center gap-0.5">
-            {getStatusBadge(equipment.status)}
+          <div className="flex items-center gap-2">
+            {/* {getStatusBadge(equipment.status)} */}
             {!equipment.inUse && (
               <Badge variant='destructive'>
                 <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
@@ -113,7 +108,7 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
           </div>
           <div>
             <p className="text-muted-foreground">{t("equipment.nextMaintenance")}</p>
-            <p className="font-medium">{equipment.nextMaintenance}</p>
+            {/* <p className="font-medium">{equipment.nextMaintenance}</p> */}
             {daysUntil <= 7 && daysUntil > 0 && (
               <p className="text-warning text-xs">{t("equipment.inDays", { days: daysUntil })}</p>
             )}
@@ -134,29 +129,13 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
           </div>
         </div>
 
-        {equipment.sparePartsNeeded && (
-          <div className="bg-muted p-3 rounded-lg">
-            <p className="text-sm font-medium">{t("equipment.sparePartsRequired")}</p>
-            {/* <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                {t("equipment.approved")}: {equipment.sparePartsApproved ? t("equipment.approved") : t("equipment.pendingApproval")}
-              </p>
-              {!equipment.sparePartsApproved && (
-                <Button size="sm" variant="outline" onClick={() => onUpdateSpares(equipment.id)}>
-                  {t("equipment.requestApproval")}
-                </Button>
-              )}
-            </div> */}
-          </div>
-        )}
-
         <div className="flex gap-2 pt-2">
-          {equipment.status !== "good" && (
+          {/* {equipment.status !== "good" && (
             <Button size="sm" onClick={() => onCompleteMaintenance(equipment.id)}>
               <CheckCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
               {t("equipment.markMaintenanceCompleted")}
             </Button>
-          )}
+          )} */}
           {onEditEquipment && (
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -250,6 +229,13 @@ const EquipmentCard = ({ equipment, onCompleteMaintenance, onEditEquipment }: Eq
               </SheetContent>
             </Sheet>
           )}
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <MaintenanceScheduleDialog 
+            equipmentId={equipment.id}
+            equipmentName={equipment.machineName}
+          />
         </div>
       </CardContent>
     </Card>

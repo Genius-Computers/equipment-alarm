@@ -1,4 +1,4 @@
-import { Building, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
 import Image from "next/image";

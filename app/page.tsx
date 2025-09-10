@@ -10,52 +10,28 @@ import { Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/useLanguage";
+import { Equipment } from "@/lib/types";
 
-type Equipment = {
-  id: string;
-  machineName: string;
-  partNumber: string;
-  location: string;
-  lastMaintenance: string;
-  nextMaintenance: string;
-  maintenanceInterval: string;
-  sparePartsNeeded: boolean;
-  sparePartsApproved?: boolean;
-  inUse?: boolean;
-  status: 'good' | 'due' | 'overdue';
+type DerivedEquipment = Equipment & { status: 'good' | 'due' | 'overdue'; nextMaintenance: string };
+
+const intervalDaysMap: Record<string, number> = {
+  '1 week': 7,
+  '2 weeks': 14,
+  '1 month': 30,
+  '3 months': 90,
+  '6 months': 180,
+  '1 year': 365
 };
 
-type DbEquipment = {
-  id: string;
-  machine_name: string;
-  part_number: string;
-  location: string;
-  last_maintenance: string;
-  next_maintenance: string;
-  maintenance_interval: string;
-  spare_parts_needed: boolean;
-  spare_parts_approved: boolean;
-  in_use?: boolean;
-};
-
-const updateEquipmentStatus = (equipmentList: Equipment[]): Equipment[] => {
-  return equipmentList.map((item) => {
-    const nextDate = new Date(item.nextMaintenance);
-    const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    let status: "good" | "due" | "overdue";
-    if (diffDays < 0) {
-      status = "overdue";
-    } else if (diffDays <= 7) {
-      status = "due";
-    } else {
-      status = "good";
-    }
-
-    return { ...item, status };
-  });
+const deriveStatus = (item: Equipment) => {
+  const last = item.lastMaintenance ? new Date(item.lastMaintenance) : new Date();
+  const next = new Date(last);
+  const addDays = intervalDaysMap[item.maintenanceInterval] ?? 30;
+  next.setDate(last.getDate() + addDays);
+  const today = new Date();
+  const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const status: 'good' | 'due' | 'overdue' = diffDays < 0 ? 'overdue' : diffDays <= 7 ? 'due' : 'good';
+  return { status, nextMaintenance: next.toLocaleDateString() };
 };
 
 const Index = () => {
@@ -66,20 +42,6 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const mapFromDb = (row: DbEquipment): Equipment => ({
-    id: row.id,
-    machineName: row.machine_name,
-    partNumber: row.part_number,
-    location: row.location,
-    lastMaintenance: row.last_maintenance,
-    nextMaintenance: row.next_maintenance,
-    maintenanceInterval: row.maintenance_interval,
-    sparePartsNeeded: row.spare_parts_needed,
-    sparePartsApproved: row.spare_parts_approved,
-    inUse: row.in_use ?? true,
-    status: 'good',
-  });
-
   useEffect(() => {
     const load = async () => {
       try {
@@ -89,8 +51,7 @@ const Index = () => {
         if (!res.ok) throw new Error('Failed to load equipment');
         const json = await res.json();
         const rows = Array.isArray(json.data) ? json.data : [];
-        const mapped = rows.map(mapFromDb);
-        setEquipment(mapped);
+        setEquipment(rows);
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : 'Error loading equipment';
         setError(message);
@@ -102,7 +63,7 @@ const Index = () => {
   }, []);
 
   const filteredEquipment = useMemo(() => {
-    const updatedEquipment = updateEquipmentStatus(equipment);
+    const updatedEquipment: DerivedEquipment[] = equipment.map((item) => ({ ...item, ...deriveStatus(item) }));
 
     return updatedEquipment.filter((item) => {
       const matchesSearch =
@@ -116,7 +77,7 @@ const Index = () => {
     });
   }, [equipment, searchTerm, statusFilter]);
 
-  const handleAddEquipment = async (newEquipment: Equipment) => {
+  const handleAddEquipment = async (newEquipment: Omit<Equipment, 'id'>) => {
     try {
       const res = await fetch('/api/equipment', {
         method: 'POST',
@@ -125,8 +86,7 @@ const Index = () => {
       });
       if (!res.ok) throw new Error('Failed to add equipment');
       const { data } = await res.json();
-      const inserted = mapFromDb(data);
-      setEquipment((prev) => [...prev, inserted]);
+      setEquipment((prev) => [...prev, data as Equipment]);
       toast(t("toast.success"), { description: t("toast.equipmentAdded") });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to add equipment';
@@ -134,56 +94,7 @@ const Index = () => {
     }
   };
 
-  const handleCompleteMaintenance = async (id: string) => {
-    const item = equipment.find((eq) => eq.id === id);
-    if (!item) return;
-
-    const now = new Date();
-    const intervalDays = {
-      '1 week': 7,
-      '2 weeks': 14,
-      '1 month': 30,
-      '3 months': 90,
-      '6 months': 180,
-      '1 year': 365
-    }[item.maintenanceInterval] || 30;
-
-    const next = new Date(now);
-    next.setDate(now.getDate() + intervalDays);
-
-    try {
-      const res = await fetch(`/api/equipment/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          machineName: item.machineName,
-          partNumber: item.partNumber,
-          location: item.location,
-          lastMaintenance: now.toLocaleDateString(),
-          nextMaintenance: next.toLocaleDateString(),
-          maintenanceInterval: item.maintenanceInterval,
-          sparePartsNeeded: item.sparePartsNeeded,
-          sparePartsApproved: item.sparePartsApproved,
-          inUse: item.inUse,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to update maintenance');
-      const { data } = await res.json();
-      const mapped = mapFromDb(data);
-      setEquipment((prev) => prev.map((e) => (e.id === id ? mapped : e)));
-      toast(t("toast.success"), { description: t("toast.equipmentUpdated") });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to update maintenance';
-      toast(t("toast.error"), { description: message });
-    }
-  };
-
-  const handleUpdateSpares = (id: string) => {
-    setEquipment((prev) => prev.map((item) => (item.id === id ? { ...item, sparePartsApproved: true } : item)));
-    toast(t("toast.sparePartsApproved"), {
-      description: t("toast.sparePartsApprovedDesc"),
-    });
-  };
+  // Note: maintenance completion is performed via inline edit in cards
 
   return (
     <div className="min-h-screen bg-background">
@@ -226,7 +137,7 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <MaintenanceAlert equipment={updateEquipmentStatus(equipment)} />
+              <MaintenanceAlert equipment={equipment.map((e) => ({ id: e.id, machineName: e.machineName, location: e.location, nextMaintenance: deriveStatus(e).nextMaintenance, status: deriveStatus(e).status }))} />
             )}
           </div>
 
@@ -314,8 +225,6 @@ const Index = () => {
                   <EquipmentCard
                     key={item.id}
                     equipment={item}
-                    onCompleteMaintenance={handleCompleteMaintenance}
-                    onUpdateSpares={handleUpdateSpares}
                     onEditEquipment={async (updated) => {
                       try {
                         const res = await fetch(`/api/equipment/${updated.id}`, {
@@ -326,17 +235,13 @@ const Index = () => {
                             partNumber: updated.partNumber,
                             location: updated.location,
                             lastMaintenance: updated.lastMaintenance,
-                            nextMaintenance: updated.nextMaintenance,
                             maintenanceInterval: updated.maintenanceInterval,
-                            sparePartsNeeded: updated.sparePartsNeeded,
-                            sparePartsApproved: updated.sparePartsApproved,
                             inUse: updated.inUse,
                           }),
                         });
                         if (!res.ok) throw new Error('Failed to update equipment');
                         const { data } = await res.json();
-                        const mapped = mapFromDb(data);
-                        setEquipment((prev) => prev.map((e) => (e.id === mapped.id ? mapped : e)));
+                        setEquipment((prev) => prev.map((e) => (e.id === (data as Equipment).id ? (data as Equipment) : e)));
                         toast(t("toast.success"), { description: t("toast.equipmentUpdated") });
                       } catch (e: unknown) {
                         const message = e instanceof Error ? e.message : 'Failed to update equipment';

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/hooks/useLanguage";
 
-interface Equipment {
+interface EquipmentAlertItem {
   id: string;
   machineName: string;
   location: string;
@@ -13,7 +13,7 @@ interface Equipment {
 }
 
 interface MaintenanceAlertProps {
-  equipment: Equipment[];
+  equipment: EquipmentAlertItem[];
 }
 
 const MaintenanceAlert = ({ equipment }: MaintenanceAlertProps) => {

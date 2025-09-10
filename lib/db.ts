@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { DbEquipment } from './types';
 
 // Simple Neon client factory. Uses DATABASE_URL from env.
 export const getDb = () => {
@@ -16,94 +17,62 @@ export const ensureSchema = async () => {
   await sql`
     create table if not exists equipment (
       id uuid primary key default gen_random_uuid(),
+      created_at timestamp not null default now(),
+      updated_at timestamp,
+      deleted_at timestamp,
+      created_by text not null,
+      updated_by text,
+      deleted_by text,
+
       machine_name text not null,
-      part_number text not null,
-      location text not null,
-      last_maintenance text not null,
-      next_maintenance text not null,
-      maintenance_interval text not null,
-      spare_parts_needed boolean not null default false,
-      spare_parts_approved boolean not null default false,
+      part_number text,
+      location text,
+      last_maintenance text,
+      maintenance_interval text,
       in_use boolean not null default true
     )`;
 };
 
-export type EquipmentRow = {
-  id: string;
-  machine_name: string;
-  part_number: string;
-  location: string;
-  last_maintenance: string;
-  next_maintenance: string;
-  maintenance_interval: string;
-  spare_parts_needed: boolean;
-  spare_parts_approved: boolean;
-  in_use: boolean;
-};
-
-export const listEquipment = async (): Promise<EquipmentRow[]> => {
+export const listEquipment = async (): Promise<DbEquipment[]> => {
   const sql = getDb();
   await ensureSchema();
   const rows = await sql`select * from equipment order by machine_name asc`;
-  return rows as unknown as EquipmentRow[];
+  return rows as unknown as DbEquipment[];
 };
 
-export const insertEquipment = async (input: {
-  machine_name: string;
-  part_number: string;
-  location: string;
-  last_maintenance: string;
-  next_maintenance: string;
-  maintenance_interval: string;
-  spare_parts_needed: boolean;
-  spare_parts_approved?: boolean;
-  in_use?: boolean;
-}) => {
+export const insertEquipment = async (input: Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
   const sql = getDb();
   await ensureSchema();
   const [row] = await sql`
     insert into equipment (
+      created_at, created_by,
       machine_name, part_number, location,
-      last_maintenance, next_maintenance, maintenance_interval,
-      spare_parts_needed, spare_parts_approved, in_use
+      last_maintenance, maintenance_interval, in_use
     ) values (
+      now(), 'anas',
       ${input.machine_name}, ${input.part_number}, ${input.location},
-      ${input.last_maintenance}, ${input.next_maintenance}, ${input.maintenance_interval},
-      ${input.spare_parts_needed}, ${input.spare_parts_approved ?? false}, ${input.in_use ?? true}
+      ${input.last_maintenance}, ${input.maintenance_interval}, ${input.in_use ?? true}
     ) returning *`;
   return row;
 };
 
-
 export const updateEquipment = async (
   id: string,
-  input: {
-    machine_name: string;
-    part_number: string;
-    location: string;
-    last_maintenance: string;
-    next_maintenance: string;
-    maintenance_interval: string;
-    spare_parts_needed: boolean;
-    spare_parts_approved?: boolean;
-    in_use?: boolean;
-  }
-) => {
+  input: Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
   const sql = getDb();
   await ensureSchema();
-  const inUseParam = input.in_use ?? null;
   const [row] = await sql`
     update equipment set
+      updated_by = 'anas',
+      updated_at = now(),
+
       machine_name = ${input.machine_name},
       part_number = ${input.part_number},
       location = ${input.location},
       last_maintenance = ${input.last_maintenance},
-      next_maintenance = ${input.next_maintenance},
       maintenance_interval = ${input.maintenance_interval},
-      spare_parts_needed = ${input.spare_parts_needed},
-      spare_parts_approved = ${input.spare_parts_approved ?? false},
-      in_use = coalesce(${inUseParam}::boolean, in_use)
+      in_use = ${input.in_use ?? true}
     where id = ${id}
     returning *`;
-  return row as unknown as EquipmentRow;
+  return row as unknown as DbEquipment;
 };

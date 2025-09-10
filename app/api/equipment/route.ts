@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { insertEquipment, listEquipment } from '@/lib/db';
+import { camelToSnakeCase, snakeToCamelCase } from '@/lib/utils';
 
 export async function GET() {
   try {
     const rows = await listEquipment();
-    return NextResponse.json({ data: rows });
+    return NextResponse.json({ data: rows.map(snakeToCamelCase) });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
@@ -14,18 +15,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const newRow = await insertEquipment({
-      machine_name: body.machineName,
-      part_number: body.partNumber,
-      location: body.location,
-      last_maintenance: body.lastMaintenance,
-      next_maintenance: body.nextMaintenance,
-      maintenance_interval: body.maintenanceInterval,
-      spare_parts_needed: Boolean(body.sparePartsNeeded),
-      spare_parts_approved: Boolean(body.sparePartsApproved),
-      in_use: Boolean(body.inUse),
-    });
-    return NextResponse.json({ data: newRow }, { status: 201 });
+    const newRow = await insertEquipment(camelToSnakeCase(body) as Parameters<typeof insertEquipment>[0]);
+    return NextResponse.json({ data: snakeToCamelCase(newRow) }, { status: 201 });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
