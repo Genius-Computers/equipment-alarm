@@ -1,4 +1,4 @@
-import { MapPin, Wrench, Pencil, XCircle } from "lucide-react";
+import { MapPin, Wrench, Pencil, XCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,18 +6,20 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import ServiceRequestDialog from "./ServiceRequestDialog";
-//
-import { Equipment, ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
+
+import { Equipment, JEquipment } from "@/lib/types";
+import { MAINTENANCE_INTERVAL_DAYS_MAP } from "@/lib/utils";
 
 interface EquipmentCardProps {
-  equipment: Equipment;
+  equipment: JEquipment;
   onEditEquipment?: (updated: Equipment) => void;
+  disabled?: boolean;
 }
 
-const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
+const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: EquipmentCardProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,22 +31,10 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
     inUse: equipment.inUse ?? true,
   });
 
-  // status badge function currently unused; keep for future status-based UI
-
-  const [hasOpenRequest, setHasOpenRequest] = useState<boolean>(false);
-
   const getDaysUntilMaintenance = () => {
     const last = equipment.lastMaintenance ? new Date(equipment.lastMaintenance) : new Date();
     const next = new Date(last);
-    const intervalDaysMap: Record<string, number> = {
-      '1 week': 7,
-      '2 weeks': 14,
-      '1 month': 30,
-      '3 months': 90,
-      '6 months': 180,
-      '1 year': 365
-    };
-    const addDays = intervalDaysMap[equipment.maintenanceInterval] ?? 30;
+    const addDays = MAINTENANCE_INTERVAL_DAYS_MAP[equipment.maintenanceInterval] ?? 30;
     next.setDate(last.getDate() + addDays);
     const today = new Date();
     const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -53,35 +43,16 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
 
   const daysUntil = getDaysUntilMaintenance();
 
-  // Prefer joined latest pending request if present on the object
-  useEffect(() => {
-    const joined = (equipment as unknown as { latestPendingServiceRequest?: { approvalStatus?: string; workStatus?: string } })
-      .latestPendingServiceRequest;
-    if (joined) {
-      const open = (joined.approvalStatus === ServiceRequestApprovalStatus.PENDING) || (joined.workStatus === ServiceRequestWorkStatus.PENDING);
-      setHasOpenRequest(open);
-      return;
-    }
-    // Fallback: keep existing behavior without extra joins
-    setHasOpenRequest(false);
-  }, [equipment]);
-
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">{equipment.name}</CardTitle>
           <div className="flex items-center gap-2">
-            {/* {getStatusBadge(equipment.status)} */}
             {!equipment.inUse && (
-              <Badge variant='destructive'>
+              <Badge variant="destructive">
                 <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
-                {t('equipment.notInUse')}
-              </Badge>
-            )}
-            {hasOpenRequest && (
-              <Badge className="bg-primary/10 text-primary border-primary/20">
-                {t('serviceRequest.openRequest')}
+                {t("equipment.notInUse")}
               </Badge>
             )}
           </div>
@@ -115,6 +86,48 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
           </div>
         </div>
 
+        {equipment.latestPendingServiceRequest && (
+          <div className="rounded-md border p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between w-full gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Wrench className="h-4 w-4 text-muted-foreground" />
+                  <span className="capitalize font-medium">
+                    {equipment.latestPendingServiceRequest.requestType.replaceAll("_", " ")}
+                  </span>
+                </div>
+                <Badge variant="secondary" className="capitalize">
+                  {equipment.latestPendingServiceRequest.priority}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className="bg-primary/10 text-primary border-primary/20 capitalize">
+                {t("serviceRequest.approvalStatus")}: {equipment.latestPendingServiceRequest.approvalStatus}
+              </Badge>
+              <Badge className="bg-muted text-foreground/80 border border-border capitalize">
+                {t("serviceRequest.workStatus")}: {equipment.latestPendingServiceRequest.workStatus}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div>
+                {t("serviceRequest.scheduledAt")}:{" "}
+                {new Date(equipment.latestPendingServiceRequest.scheduledAt).toLocaleString()}
+              </div>
+              <ServiceRequestDialog
+                equipmentId={equipment.id}
+                equipmentName={equipment.name}
+                existingId={equipment.latestPendingServiceRequest.id}
+                trigger={
+                  <Button size="sm" variant="outline">
+                    <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                  </Button>
+                }
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center">
             <Wrench className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 text-muted-foreground" />
@@ -134,9 +147,13 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
           {onEditEquipment && (
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-                  {t("equipment.edit")}
+                <Button size="sm" variant="outline" disabled={disabled}>
+                  {disabled ? (
+                    <Loader2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1 animate-spin" />
+                  ) : (
+                    <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                  )}
+                  {!disabled && t("equipment.edit")}
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="p-4">
@@ -206,6 +223,7 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
                   <div className="flex gap-2 pt-4">
                     <Button
                       size="sm"
+                      disabled={disabled}
                       onClick={() => {
                         const updated: Equipment = {
                           ...equipment,
@@ -214,10 +232,11 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
                         onEditEquipment(updated);
                         setOpen(false);
                       }}>
-                      {t("form.save")}
+                      {disabled ? <Loader2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1 animate-spin" /> : t("form.save")}
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
-                      {t("form.cancel")}
+                    <Button size="sm" variant="outline" onClick={() => setOpen(false)} disabled={disabled}>
+                      {disabled ? <Loader2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1 animate-spin" /> : null}
+                      {!disabled && t("form.cancel")}
                     </Button>
                   </div>
                 </div>
@@ -227,10 +246,7 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <ServiceRequestDialog
-            equipmentId={equipment.id}
-            equipmentName={equipment.name}
-          />
+          <ServiceRequestDialog equipmentId={equipment.id} equipmentName={equipment.name} />
         </div>
       </CardContent>
     </Card>

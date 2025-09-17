@@ -7,6 +7,10 @@ import { stackServerApp } from '@/stack';
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentServerUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get('page') ?? '1');
     const pageSize = Number(searchParams.get('pageSize') ?? '50');

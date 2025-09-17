@@ -1,6 +1,12 @@
 import { DbBaseAudit } from "./database";
 import { ServiceRequest } from "./service-request";
 
+export enum EquipmentStatus {
+    GOOD = "good",
+    DUE = "due",
+    OVERDUE = "overdue",
+}
+
 export interface Equipment {
     id: string;
     name: string;
@@ -9,6 +15,11 @@ export interface Equipment {
     lastMaintenance: string;
     maintenanceInterval: string;
     inUse: boolean;
+
+    // Derived properties
+    status?: EquipmentStatus; 
+    nextMaintenance?: string;
+    daysUntil?: number
 }
 
 export interface JEquipment extends Equipment {

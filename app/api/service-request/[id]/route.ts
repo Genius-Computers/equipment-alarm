@@ -6,9 +6,13 @@ import { ensureRole, getCurrentServerUser } from '@/lib/auth';
 import { APPROVER_ROLES } from '@/lib/types/user';
 import { stackServerApp } from '@/stack';
 
-export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
+    const user = await getCurrentServerUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const row = await getServiceRequestById(id);
     if (!row) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -51,6 +55,10 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getCurrentServerUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { id } = await context.params;
     const body = await req.json();
 
@@ -114,10 +122,6 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       spare_parts_needed: body.sparePartsNeeded ?? current.spare_parts_needed,
     } as const;
 
-    const user = await getCurrentServerUser(req);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
     const row = await updateServiceRequest(id, payload as Parameters<typeof updateServiceRequest>[1], user.id);
     // enrich technician
     let technician: unknown = null;

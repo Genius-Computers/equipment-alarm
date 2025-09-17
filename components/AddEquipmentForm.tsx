@@ -3,32 +3,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
 import { Equipment } from "@/lib/types";
 
 interface AddEquipmentFormProps {
-  onAddEquipment: (equipment: Omit<Equipment, 'id'>) => void;
+  onAddEquipment: (equipment: Omit<Equipment, "id">) => void;
+  submitting?: boolean;
 }
 
-const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
+const AddEquipmentForm = ({ onAddEquipment, submitting = false }: AddEquipmentFormProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    partNumber: '',
-    location: '',
-    maintenanceInterval: '',
-    lastMaintenance: ''
+    name: "",
+    partNumber: "",
+    location: "",
+    maintenanceInterval: "",
+    lastMaintenance: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.partNumber || !formData.location || !formData.maintenanceInterval) {
-      toast(t("toast.error"),{
+      toast(t("toast.error"), {
         description: t("toast.fillRequired"),
       });
       return;
@@ -40,18 +41,18 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
       partNumber: formData.partNumber,
       location: formData.location,
       maintenanceInterval: formData.maintenanceInterval,
-      lastMaintenance: lastDate.toLocaleDateString(),
+      lastMaintenance: lastDate.toISOString(),
       inUse: true,
     });
     setFormData({
-      name: '',
-      partNumber: '',
-      location: '',
-      maintenanceInterval: '',
-      lastMaintenance: ''
+      name: "",
+      partNumber: "",
+      location: "",
+      maintenanceInterval: "",
+      lastMaintenance: "",
     });
     setOpen(false);
-    
+
     toast(t("toast.success"), {
       description: t("toast.equipmentAdded"),
     });
@@ -60,9 +61,17 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button className="w-full">
-          <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
-          {t("form.addNewEquipment")}
+        <Button className="w-full" disabled={submitting}>
+          {submitting ? (
+            <span className="inline-flex items-center">
+              <Loader2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1 animate-spin" />
+            </span>
+          ) : (
+            <span className="inline-flex items-center">
+              <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+              {t("form.addNewEquipment")}
+            </span>
+          )}
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="p-4">
@@ -72,7 +81,9 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">{t("form.machineName")} {t("form.required")}</Label>
+              <Label htmlFor="name">
+                {t("form.machineName")} {t("form.required")}
+              </Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -82,7 +93,9 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
               />
             </div>
             <div>
-              <Label htmlFor="partNumber">{t("form.partNumber")} {t("form.required")}</Label>
+              <Label htmlFor="partNumber">
+                {t("form.partNumber")} {t("form.required")}
+              </Label>
               <Input
                 id="partNumber"
                 value={formData.partNumber}
@@ -94,7 +107,9 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
           </div>
 
           <div>
-            <Label htmlFor="location">{t("form.location")} {t("form.required")}</Label>
+            <Label htmlFor="location">
+              {t("form.location")} {t("form.required")}
+            </Label>
             <Input
               id="location"
               value={formData.location}
@@ -106,7 +121,9 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="maintenanceInterval">{t("form.maintenanceInterval")} {t("form.required")}</Label>
+              <Label htmlFor="maintenanceInterval">
+                {t("form.maintenanceInterval")} {t("form.required")}
+              </Label>
               <Select onValueChange={(value) => setFormData({ ...formData, maintenanceInterval: value })} required>
                 <SelectTrigger>
                   <SelectValue placeholder={t("form.selectInterval")} />
@@ -135,9 +152,13 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
           {/* Spare parts fields removed as status is derived and not stored */}
 
           <div className="flex gap-2 pt-4">
-            <Button type="submit">{t("form.addEquipment")}</Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              {t("form.cancel")}
+            <Button type="submit" disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1 animate-spin" /> : null}
+              {!submitting && t("form.addEquipment")}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1 animate-spin" /> : null}
+              {!submitting && t("form.cancel")}
             </Button>
           </div>
         </form>

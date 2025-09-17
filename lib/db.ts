@@ -12,6 +12,7 @@ export const getDb = () => {
 
 // Ensure the equipment table exists (id as UUID, dates as text for now to match UI strings)
 export const ensureSchema = async () => {
+  return;
   const sql = getDb();
   await sql`create extension if not exists pgcrypto`;
   await sql`
@@ -64,7 +65,7 @@ export const listEquipment = async (): Promise<DbEquipment[]> => {
 
 export const listEquipmentPaginated = async (
   page: number = 1,
-  pageSize: number = 50
+  pageSize: number = 4
 ): Promise<{ rows: (DbEquipment & { latest_pending_service_request: DbServiceRequest | null })[]; total: number }> => {
   const sql = getDb();
   await ensureSchema();
@@ -83,8 +84,7 @@ export const listEquipmentPaginated = async (
       select *
       from service_request s
       where s.equipment_id = e.id
-        and s.approval_status = 'pending'
-        and s.work_status = 'pending'
+        and (s.approval_status = 'pending' or s.work_status = 'pending')
       order by s.scheduled_at desc
       limit 1
     ) s on true
