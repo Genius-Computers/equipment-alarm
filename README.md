@@ -44,7 +44,7 @@ API endpoints:
 - `POST /api/equipment` → insert equipment
 
 Expected POST body fields (camelCase):
-- `machineName`, `partNumber`, `location`, `lastMaintenance`, `nextMaintenance`, `maintenanceInterval`, `sparePartsNeeded`, `sparePartsApproved?`
+- `name`, `partNumber`, `location`, `lastMaintenance`, `nextMaintenance`, `maintenanceInterval`, `sparePartsNeeded`, `sparePartsApproved?`
 
 ## Learn More
 

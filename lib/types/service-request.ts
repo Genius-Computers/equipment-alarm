@@ -1,4 +1,6 @@
+import { User } from "@stackframe/stack";
 import { DbBaseAudit } from "./database";
+import { Equipment } from "./equipment";
 
 export interface SparePartNeeded {
     part: string;
@@ -37,6 +39,7 @@ export enum ServiceRequestWorkStatus {
 export interface ServiceRequest {
     id: string;
     equipmentId: string;
+    assignedTechnicianId?: string;
     requestType: ServiceRequestType;
     scheduledAt: string;
     priority: ServiceRequestPriority;
@@ -48,8 +51,14 @@ export interface ServiceRequest {
     sparePartsNeeded?: SparePartNeeded[];
 }
 
+export interface JServiceRequest extends ServiceRequest {
+    equipment: Equipment
+    technician: User;
+}
+
 export interface DbServiceRequest extends DbBaseAudit {
     equipment_id: string;
+    assigned_technician_id?: string;
     request_type: ServiceRequestType;
     scheduled_at: string;
     priority: ServiceRequestPriority;

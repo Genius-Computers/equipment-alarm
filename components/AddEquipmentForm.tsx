@@ -17,7 +17,7 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-    machineName: '',
+    name: '',
     partNumber: '',
     location: '',
     maintenanceInterval: '',
@@ -27,7 +27,7 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.machineName || !formData.partNumber || !formData.location || !formData.maintenanceInterval) {
+    if (!formData.name || !formData.partNumber || !formData.location || !formData.maintenanceInterval) {
       toast(t("toast.error"),{
         description: t("toast.fillRequired"),
       });
@@ -36,7 +36,7 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
 
     const lastDate = new Date(formData.lastMaintenance || new Date());
     onAddEquipment({
-      machineName: formData.machineName,
+      name: formData.name,
       partNumber: formData.partNumber,
       location: formData.location,
       maintenanceInterval: formData.maintenanceInterval,
@@ -44,7 +44,7 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
       inUse: true,
     });
     setFormData({
-      machineName: '',
+      name: '',
       partNumber: '',
       location: '',
       maintenanceInterval: '',
@@ -72,11 +72,11 @@ const AddEquipmentForm = ({ onAddEquipment }: AddEquipmentFormProps) => {
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="machineName">{t("form.machineName")} {t("form.required")}</Label>
+              <Label htmlFor="name">{t("form.machineName")} {t("form.required")}</Label>
               <Input
-                id="machineName"
-                value={formData.machineName}
-                onChange={(e) => setFormData({ ...formData, machineName: e.target.value })}
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., HVAC Unit A1"
                 required
               />

@@ -1,8 +1,9 @@
 import { DbBaseAudit } from "./database";
+import { ServiceRequest } from "./service-request";
 
 export interface Equipment {
     id: string;
-    machineName: string;
+    name: string;
     partNumber: string;
     location: string;
     lastMaintenance: string;
@@ -10,8 +11,12 @@ export interface Equipment {
     inUse: boolean;
 }
 
+export interface JEquipment extends Equipment {
+    latestPendingServiceRequest: ServiceRequest
+}
+
 export interface DbEquipment extends DbBaseAudit {
-    machine_name: string;
+    name: string;
     part_number: string;
     location: string;
     last_maintenance: string;

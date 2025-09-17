@@ -6,7 +6,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 
 interface EquipmentAlertItem {
   id: string;
-  machineName: string;
+  name: string;
   location: string;
   nextMaintenance: string;
   status: 'good' | 'due' | 'overdue';
@@ -64,7 +64,7 @@ const MaintenanceAlert = ({ equipment }: MaintenanceAlertProps) => {
             {[...overdue, ...dueSoon].map((item) => (
               <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div>
-                  <p className="font-medium">{item.machineName}</p>
+                  <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-muted-foreground">{item.location}</p>
                 </div>
                 <div className="text-right">

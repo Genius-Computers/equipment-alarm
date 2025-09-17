@@ -21,7 +21,7 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-    machineName: equipment.machineName,
+    name: equipment.name,
     partNumber: equipment.partNumber,
     location: equipment.location,
     maintenanceInterval: equipment.maintenanceInterval,
@@ -53,25 +53,24 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
 
   const daysUntil = getDaysUntilMaintenance();
 
-  // Load if equipment has open (pending) service request
+  // Prefer joined latest pending request if present on the object
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch('/api/service-request', { cache: 'no-store' });
-        if (!res.ok) return;
-        const { data } = (await res.json()) as { data: Array<{ equipmentId: string; approvalStatus: string; workStatus: string }> };
-        const open = Array.isArray(data) && data.some((r) => r.equipmentId === equipment.id && (r.approvalStatus === ServiceRequestApprovalStatus.PENDING || r.workStatus === ServiceRequestWorkStatus.PENDING));
-        setHasOpenRequest(open);
-      } catch {}
-    };
-    load();
-  }, [equipment.id]);
+    const joined = (equipment as unknown as { latestPendingServiceRequest?: { approvalStatus?: string; workStatus?: string } })
+      .latestPendingServiceRequest;
+    if (joined) {
+      const open = (joined.approvalStatus === ServiceRequestApprovalStatus.PENDING) || (joined.workStatus === ServiceRequestWorkStatus.PENDING);
+      setHasOpenRequest(open);
+      return;
+    }
+    // Fallback: keep existing behavior without extra joins
+    setHasOpenRequest(false);
+  }, [equipment]);
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">{equipment.machineName}</CardTitle>
+          <CardTitle className="text-lg font-semibold">{equipment.name}</CardTitle>
           <div className="flex items-center gap-2">
             {/* {getStatusBadge(equipment.status)} */}
             {!equipment.inUse && (
@@ -148,8 +147,8 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Input
-                        value={formData.machineName}
-                        onChange={(e) => setFormData({ ...formData, machineName: e.target.value })}
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Machine name"
                       />
                     </div>
@@ -230,7 +229,7 @@ const EquipmentCard = ({ equipment, onEditEquipment }: EquipmentCardProps) => {
         <div className="flex gap-2 pt-2">
           <ServiceRequestDialog
             equipmentId={equipment.id}
-            equipmentName={equipment.machineName}
+            equipmentName={equipment.name}
           />
         </div>
       </CardContent>

@@ -24,7 +24,7 @@ export const ensureSchema = async () => {
       updated_by text,
       deleted_by text,
 
-      machine_name text not null,
+      name text not null,
       part_number text,
       location text,
       last_maintenance text,
@@ -42,6 +42,7 @@ export const ensureSchema = async () => {
       deleted_by text,
 
       equipment_id uuid not null,
+      assigned_technician_id uuid not null,
       request_type text not null,
       scheduled_at timestamp not null,
       priority text not null,
@@ -57,21 +58,57 @@ export const ensureSchema = async () => {
 export const listEquipment = async (): Promise<DbEquipment[]> => {
   const sql = getDb();
   await ensureSchema();
-  const rows = await sql`select * from equipment order by machine_name asc`;
+  const rows = await sql`select * from equipment order by name asc`;
   return rows as unknown as DbEquipment[];
 };
 
-export const insertEquipment = async (input: Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
+export const listEquipmentPaginated = async (
+  page: number = 1,
+  pageSize: number = 50
+): Promise<{ rows: (DbEquipment & { latest_pending_service_request: DbServiceRequest | null })[]; total: number }> => {
+  const sql = getDb();
+  await ensureSchema();
+  const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
+  const limit = Math.max(1, Number(pageSize));
+
+  const countRows = await sql`select count(*)::int as count from equipment`;
+  const total = (countRows?.[0]?.count as number) ?? 0;
+
+  const rows = await sql`
+    select
+      e.*,
+      to_jsonb(s) as latest_pending_service_request
+    from equipment e
+    left join lateral (
+      select *
+      from service_request s
+      where s.equipment_id = e.id
+        and s.approval_status = 'pending'
+        and s.work_status = 'pending'
+      order by s.scheduled_at desc
+      limit 1
+    ) s on true
+    order by e.name asc
+    limit ${limit} offset ${offset}
+  `;
+
+  return { rows: rows as unknown as (DbEquipment & { latest_pending_service_request: DbServiceRequest | null })[], total };
+};
+
+export const insertEquipment = async (
+  input: Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>,
+  actorId: string,
+) => {
   const sql = getDb();
   await ensureSchema();
   const [row] = await sql`
     insert into equipment (
       created_at, created_by,
-      machine_name, part_number, location,
+      name, part_number, location,
       last_maintenance, maintenance_interval, in_use
     ) values (
-      now(), 'anas',
-      ${input.machine_name}, ${input.part_number}, ${input.location},
+      now(), ${actorId},
+      ${input.name}, ${input.part_number}, ${input.location},
       ${input.last_maintenance}, ${input.maintenance_interval}, ${input.in_use ?? true}
     ) returning *`;
   return row;
@@ -79,15 +116,17 @@ export const insertEquipment = async (input: Omit<DbEquipment, 'id' | 'created_b
 
 export const updateEquipment = async (
   id: string,
-  input: Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
+  input: Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>,
+  actorId: string,
+) => {
   const sql = getDb();
   await ensureSchema();
   const [row] = await sql`
     update equipment set
-      updated_by = 'anas',
+      updated_by = ${actorId},
       updated_at = now(),
 
-      machine_name = ${input.machine_name},
+      name = ${input.name},
       part_number = ${input.part_number},
       location = ${input.location},
       last_maintenance = ${input.last_maintenance},
@@ -105,6 +144,29 @@ export const listServiceRequest = async (): Promise<DbServiceRequest[]> => {
   return rows as unknown as DbServiceRequest[];
 };
 
+export const listServiceRequestPaginated = async (
+  page: number = 1,
+  pageSize: number = 50
+): Promise<{ rows: (DbServiceRequest & { equipment: DbEquipment | null })[]; total: number }> => {
+  const sql = getDb();
+  await ensureSchema();
+  const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
+  const limit = Math.max(1, Number(pageSize));
+
+  const countRows = await sql`select count(*)::int as count from service_request`;
+  const total = (countRows?.[0]?.count as number) ?? 0;
+
+  const rows = await sql`
+    select sr.*, to_jsonb(e) as equipment
+    from service_request sr
+    left join equipment e on e.id = sr.equipment_id
+    order by sr.scheduled_at asc
+    limit ${limit} offset ${offset}
+  `;
+
+  return { rows: rows as unknown as (DbServiceRequest & { equipment: DbEquipment | null })[], total };
+};
+
 export const getServiceRequestById = async (id: string): Promise<DbServiceRequest | null> => {
   const sql = getDb();
   await ensureSchema();
@@ -112,19 +174,22 @@ export const getServiceRequestById = async (id: string): Promise<DbServiceReques
   return (rows && rows.length > 0 ? (rows[0] as unknown as DbServiceRequest) : null);
 };
 
-export const insertServiceRequest = async (input: Omit<DbServiceRequest, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
+export const insertServiceRequest = async (
+  input: Omit<DbServiceRequest, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>,
+  actorId: string,
+) => {
   const sql = getDb();
   await ensureSchema();
   const [row] = await sql`
     insert into service_request (
       created_at, created_by,
-      equipment_id, request_type, scheduled_at,
+      equipment_id, assigned_technician_id, request_type, scheduled_at,
       priority, approval_status, work_status,
       problem_description, technical_assessment, recommendation,
       spare_parts_needed
     ) values (
-      now(), 'anas',
-      ${input.equipment_id}, ${input.request_type}, ${input.scheduled_at},
+      now(), ${actorId},
+      ${input.equipment_id}, ${input.assigned_technician_id}, ${input.request_type}, ${input.scheduled_at},
       ${input.priority}, ${input.approval_status}, ${input.work_status},
       ${input.problem_description}, ${input.technical_assessment}, ${input.recommendation},
       ${input.spare_parts_needed != null ? JSON.stringify(input.spare_parts_needed) : null}::jsonb
@@ -134,15 +199,18 @@ export const insertServiceRequest = async (input: Omit<DbServiceRequest, 'id' | 
 
 export const updateServiceRequest = async (
   id: string,
-  input: Omit<DbServiceRequest, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
+  input: Omit<DbServiceRequest, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>,
+  actorId: string,
+) => {
   const sql = getDb();
   await ensureSchema();
   const [row] = await sql`
     update service_request set
-      updated_by = 'anas',
+      updated_by = ${actorId},
       updated_at = now(),
 
       equipment_id = ${input.equipment_id},
+      assigned_technician_id = ${input.assigned_technician_id},
       request_type = ${input.request_type},
       scheduled_at = ${input.scheduled_at},
       priority = ${input.priority},

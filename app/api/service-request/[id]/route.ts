@@ -1,9 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServiceRequestById, updateServiceRequest } from '@/lib/db';
+import { getServiceRequestById, listEquipment, updateServiceRequest } from '@/lib/db';
 import { snakeToCamelCase } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
 import { ensureRole, getCurrentServerUser } from '@/lib/auth';
 import { APPROVER_ROLES } from '@/lib/types/user';
+import { stackServerApp } from '@/stack';
+
+export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+    const row = await getServiceRequestById(id);
+    if (!row) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    // Enrich equipment
+    let equipment: unknown = null;
+    try {
+      const all = await listEquipment();
+      equipment = all.find((e) => (e as any).id === row.equipment_id) ?? null;
+    } catch {
+      // ignore enrichment failure
+    }
+    // Enrich technician
+    let technician: unknown = null;
+    if (row.assigned_technician_id) {
+      try {
+        const u = await stackServerApp.getUser(row.assigned_technician_id);
+        if (u) {
+          technician = {
+            id: u.id,
+            displayName: u.displayName ?? null,
+            email: u.primaryEmail ?? null,
+            role:
+              ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
+               (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
+               'user'),
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+    const data = { ...snakeToCamelCase(row), equipment, technician };
+    return NextResponse.json({ data });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -19,6 +63,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const providedKeys = Object.keys(body ?? {});
     const nonStatusKeys = [
       'equipmentId',
+      'assignedTechnicianId',
       'requestType',
       'scheduledAt',
       'problemDescription',
@@ -57,6 +102,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     const payload = {
       equipment_id: body.equipmentId ?? current.equipment_id,
+      assigned_technician_id: body.assignedTechnicianId ?? current.assigned_technician_id,
       request_type: body.requestType ?? current.request_type,
       scheduled_at: body.scheduledAt ?? current.scheduled_at,
       priority: body.priority ?? current.priority,
@@ -68,8 +114,33 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       spare_parts_needed: body.sparePartsNeeded ?? current.spare_parts_needed,
     } as const;
 
-    const row = await updateServiceRequest(id, payload as Parameters<typeof updateServiceRequest>[1]);
-    return NextResponse.json({ data: snakeToCamelCase(row) });
+    const user = await getCurrentServerUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const row = await updateServiceRequest(id, payload as Parameters<typeof updateServiceRequest>[1], user.id);
+    // enrich technician
+    let technician: unknown = null;
+    if (row.assigned_technician_id) {
+      try {
+        const u = await stackServerApp.getUser(row.assigned_technician_id);
+        if (u) {
+          technician = {
+            id: u.id,
+            displayName: u.displayName ?? null,
+            email: u.primaryEmail ?? null,
+            role:
+              ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
+               (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
+               'user'),
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+    const data = { ...snakeToCamelCase(row), technician };
+    return NextResponse.json({ data });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });

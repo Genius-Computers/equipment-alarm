@@ -39,17 +39,35 @@ const ServiceRequestDialog = ({ equipmentId, equipmentName, trigger, existingId,
     requestType: ServiceRequestType.PREVENTIVE_MAINTENANCE,
     scheduledAt: "",
     priority: ServiceRequestPriority.MEDIUM,
+    assignedTechnicianId: "",
     problemDescription: "",
     technicalAssessment: "",
     recommendation: "",
   });
+
+  type Technician = { id: string; displayName?: string | null; email?: string | null };
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+
+  useEffect(() => {
+    const loadTechnicians = async () => {
+      try {
+        const res = await fetch(`/api/users?onlyTechnicians=true`);
+        if (!res.ok) return;
+        const j = (await res.json()) as { data?: Array<{ id: string; displayName?: string; email?: string }> };
+        if (Array.isArray(j.data)) setTechnicians(j.data);
+      } catch {
+        // ignore silently
+      }
+    };
+    if (open) loadTechnicians();
+  }, [open]);
 
   type SparePart = { part: string; description?: string; quantity: number; cost: number; source: string };
   const [parts, setParts] = useState<SparePart[]>([]);
   const [draft, setDraft] = useState<SparePart>({ part: "", description: "", quantity: 1, cost: 0, source: "" });
 
   const isValid = useMemo(() => {
-    return !!form.requestType && !!form.priority && !!form.scheduledAt;
+    return !!form.requestType && !!form.priority && !!form.scheduledAt && !!form.assignedTechnicianId;
   }, [form]);
 
   const totalCost = useMemo(() => parts.reduce((sum, p) => sum + (Number(p.cost) || 0) * (Number(p.quantity) || 0), 0), [parts]);
@@ -61,13 +79,14 @@ const ServiceRequestDialog = ({ equipmentId, equipmentName, trigger, existingId,
         setLoading(true);
         const res = await fetch(`/api/service-request`);
         if (!res.ok) throw new Error("Failed to fetch service requests");
-        const { data } = (await res.json()) as { data: Array<{ id: string; requestType: ServiceRequestType; scheduledAt: string; priority: ServiceRequestPriority; problemDescription?: string; technicalAssessment?: string; recommendation?: string; sparePartsNeeded?: SparePart[] }> };
+        const { data } = (await res.json()) as { data: Array<{ id: string; requestType: ServiceRequestType; scheduledAt: string; priority: ServiceRequestPriority; assignedTechnicianId?: string; problemDescription?: string; technicalAssessment?: string; recommendation?: string; sparePartsNeeded?: SparePart[] }> };
         const found = Array.isArray(data) ? data.find((r) => r.id === existingId) : undefined;
         if (found) {
           setForm({
             requestType: found.requestType,
             scheduledAt: (found.scheduledAt || "").slice(0, 16),
             priority: found.priority,
+            assignedTechnicianId: found.assignedTechnicianId || "",
             problemDescription: found.problemDescription || "",
             technicalAssessment: found.technicalAssessment || "",
             recommendation: found.recommendation || "",
@@ -94,6 +113,7 @@ const ServiceRequestDialog = ({ equipmentId, equipmentName, trigger, existingId,
             requestType: form.requestType,
             scheduledAt: form.scheduledAt,
             priority: form.priority,
+            assignedTechnicianId: form.assignedTechnicianId,
             problemDescription: form.problemDescription,
             technicalAssessment: form.technicalAssessment,
             recommendation: form.recommendation,
@@ -117,6 +137,7 @@ const ServiceRequestDialog = ({ equipmentId, equipmentName, trigger, existingId,
             priority: form.priority,
             approvalStatus: ServiceRequestApprovalStatus.PENDING,
             workStatus: ServiceRequestWorkStatus.PENDING,
+            assignedTechnicianId: form.assignedTechnicianId,
             problemDescription: form.problemDescription,
             technicalAssessment: form.technicalAssessment,
             recommendation: form.recommendation,
@@ -127,8 +148,15 @@ const ServiceRequestDialog = ({ equipmentId, equipmentName, trigger, existingId,
           const j = await res.json().catch(() => ({}));
           throw new Error(j?.error || 'Failed to create request');
         }
+        const j = await res.json();
+        const createdId = j?.data?.id as string | undefined;
         toast(t("toast.success"), { description: t("toast.serviceRequestCreated") });
         onCreated?.();
+        // Open printable report in a new tab
+        if (createdId) {
+          const url = `/service-requests/${createdId}/print`;
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
       }
       setOpen(false);
     } catch (e: unknown) {
@@ -210,6 +238,21 @@ const ServiceRequestDialog = ({ equipmentId, equipmentName, trigger, existingId,
                 value={form.scheduledAt}
                 onChange={(e) => setForm((s) => ({ ...s, scheduledAt: e.target.value }))}
               />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>{t("serviceRequest.assignedTechnician") || "Assigned Technician"}</Label>
+              <Select value={form.assignedTechnicianId} onValueChange={(v) => setForm((s) => ({ ...s, assignedTechnicianId: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("serviceRequest.selectTechnician") || "Select technician"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {technicians.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.id}>
+                      {tech.displayName || tech.email || tech.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           )}

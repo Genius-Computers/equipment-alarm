@@ -38,6 +38,9 @@ const deriveStatus = (item: Equipment) => {
 const Index = () => {
   const { t } = useLanguage();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -48,10 +51,11 @@ const Index = () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch('/api/equipment', { cache: 'no-store' });
+        const res = await fetch(`/api/equipment?page=${page}&pageSize=${pageSize}`, { cache: 'no-store' });
         if (!res.ok) throw new Error('Failed to load equipment');
         const json = await res.json();
         const rows = Array.isArray(json.data) ? json.data : [];
+        setTotal(Number(json?.meta?.total || 0));
         setEquipment(rows);
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : 'Error loading equipment';
@@ -61,14 +65,14 @@ const Index = () => {
       }
     };
     load();
-  }, []);
+  }, [page, pageSize]);
 
   const filteredEquipment = useMemo(() => {
     const updatedEquipment: DerivedEquipment[] = equipment.map((item) => ({ ...item, ...deriveStatus(item) }));
 
     return updatedEquipment.filter((item) => {
       const matchesSearch =
-        item.machineName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -138,7 +142,7 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <MaintenanceAlert equipment={equipment.map((e) => ({ id: e.id, machineName: e.machineName, location: e.location, nextMaintenance: deriveStatus(e).nextMaintenance, status: deriveStatus(e).status }))} />
+              <MaintenanceAlert equipment={equipment.map((e) => ({ id: e.id, name: e.name, location: e.location, nextMaintenance: deriveStatus(e).nextMaintenance, status: deriveStatus(e).status }))} />
             )}
           </div>
 
@@ -235,7 +239,7 @@ const Index = () => {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
-                            machineName: updated.machineName,
+                            name: updated.name,
                             partNumber: updated.partNumber,
                             location: updated.location,
                             lastMaintenance: updated.lastMaintenance,
@@ -254,6 +258,37 @@ const Index = () => {
                     }}
                   />
                 ))}
+              </div>
+            )}
+
+            {!loading && (
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm text-muted-foreground">
+                  {(() => {
+                    const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+                    const end = Math.min(page * pageSize, total);
+                    return `${start}-${end} / ${total}`;
+                  })()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="text-sm underline disabled:text-muted-foreground"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    className="text-sm underline disabled:text-muted-foreground"
+                    onClick={() => {
+                      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                      setPage((p) => Math.min(totalPages, p + 1));
+                    }}
+                    disabled={page >= Math.max(1, Math.ceil(total / pageSize))}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
 

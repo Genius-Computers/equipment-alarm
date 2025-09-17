@@ -9,15 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/useLanguage";
 import ServiceRequestDialog from "@/components/ServiceRequestDialog";
-import { Wrench, Filter, Search, Check, X, Loader2, Pencil } from "lucide-react";
+import { Wrench, Filter, Search, Check, X, Loader2, Pencil, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import {
   Equipment,
-  ServiceRequest,
   ServiceRequestApprovalStatus,
   ServiceRequestPriority,
   ServiceRequestWorkStatus,
 } from "@/lib/types";
+import type { JServiceRequest } from "@/lib/types/service-request";
 import { useUser } from "@stackframe/stack";
 
 const Page = () => {
@@ -25,10 +26,13 @@ const Page = () => {
   const user = useUser();
   const role = (user?.clientReadOnlyMetadata?.role) as string | undefined;
   const canApprove = role === 'admin' || role === 'supervisor';
-  const [rows, setRows] = useState<ServiceRequest[]>([]);
+  const [rows, setRows] = useState<JServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
+  const [total, setTotal] = useState(0);
+  // joined equipment included; no separate equipment fetch
   type ApprovalFilter = "all" | ServiceRequestApprovalStatus;
   type PriorityFilter = "all" | ServiceRequestPriority;
   const [status, setStatus] = useState<ApprovalFilter>("all");
@@ -38,10 +42,11 @@ const Page = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/service-request", { cache: "no-store" });
+        const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to load service requests");
         const json = await res.json();
         setRows(json.data || []);
+        setTotal(Number(json?.meta?.total || 0));
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Error loading service requests";
         toast(t("toast.error"), { description: message });
@@ -50,28 +55,11 @@ const Page = () => {
       }
     };
     load();
-  }, [t]);
+  }, [t, page, pageSize]);
 
-  useEffect(() => {
-    const loadEquipments = async () => {
-      try {
-        const res = await fetch("/api/equipment", { cache: "no-store" });
-        if (!res.ok) throw new Error("Failed to load equipment");
-        const json = await res.json();
-        setEquipments(json.data || []);
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : "Error loading equipment";
-        toast(t("toast.error"), { description: message });
-      }
-    };
-    loadEquipments();
-  }, [t]);
+  // no equipments effect
 
-  const equipmentNameById = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const e of equipments) map[e.id] = e.machineName;
-    return map;
-  }, [equipments]);
+  // not needed with joined equipment
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -99,7 +87,7 @@ const Page = () => {
         throw new Error(j?.error || "Failed to update");
       }
       const { data } = await res.json();
-      setRows((prev) => prev.map((r) => (r.id === data.id ? (data as unknown as ServiceRequest) : r)));
+      setRows((prev) => prev.map((r) => (r.id === data.id ? (data as unknown as JServiceRequest) : r)));
       toast(t("toast.success"), { description: t("toast.updated") });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to update";
@@ -193,9 +181,7 @@ const Page = () => {
                       <Badge className="bg-muted text-foreground/80 border border-border capitalize">
                         {t("serviceRequest.workStatus")}: {r.workStatus}
                       </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {equipmentNameById[r.equipmentId] || r.equipmentId}
-                      </span>
+                      <span className="text-sm text-muted-foreground">{r.equipment?.name || r.equipmentId}</span>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -317,8 +303,15 @@ const Page = () => {
                         )}
                       </div>
                     </div>
-                    {canEditDetails && (
-                      <div className="flex gap-2">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => window.open(`/service-requests/${r.id}/print`, "_blank", "noopener,noreferrer")}>
+                        <Printer className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                        Print
+                      </Button>
+                      {canEditDetails && (
                         <ServiceRequestDialog
                           equipmentId={r.equipmentId}
                           existingId={r.id}
@@ -330,18 +323,47 @@ const Page = () => {
                           }
                           onUpdated={async () => {
                             try {
-                              const res = await fetch("/api/service-request", { cache: "no-store" });
+                              const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
                               const j = await res.json();
                               setRows(j.data || []);
                             } catch {}
                           }}
                         />
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               );
             })}
+          </div>
+        )}
+        {!loading && (
+          <div className="flex items-center justify-between gap-3">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage((p) => Math.max(1, p - 1));
+                    }}
+                    className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                      setPage((p) => Math.min(totalPages, p + 1));
+                    }}
+                    className={page >= Math.max(1, Math.ceil(total / pageSize)) ? "pointer-events-none opacity-50" : undefined}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </main>

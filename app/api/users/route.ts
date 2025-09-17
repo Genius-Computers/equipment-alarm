@@ -56,7 +56,33 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const requester = await getCurrentServerUser(req);
+    if (!requester) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const onlyTechnicians = searchParams.get('onlyTechnicians') === 'true';
+
     const role = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
+
+    // Allow any authenticated user to list technicians (role === 'user')
+    if (onlyTechnicians) {
+      const users = await stackServerApp.listUsers({ limit: 100 });
+      const data = users
+        .map((u) => ({
+          id: u.id,
+          email: u.primaryEmail,
+          displayName: u.displayName,
+          role:
+            ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
+              (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
+              'user'),
+        }))
+        .filter((u) => u.role === 'user');
+      return NextResponse.json({ data });
+    }
+
+    // Otherwise, only admins can list all users
     if (!canCreateUsers(role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
