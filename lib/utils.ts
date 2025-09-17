@@ -1,4 +1,3 @@
-import { ServerUser, User as StackUser } from "@stackframe/stack"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { User } from "./types/user"
