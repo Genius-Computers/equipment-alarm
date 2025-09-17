@@ -36,9 +36,9 @@ export default function ServiceRequestCard({
 	onEdited,
 }: ServiceRequestCardProps) {
 	const { t } = useLanguage();
-	const canEditDetails =
-		request.approvalStatus === ServiceRequestApprovalStatus.PENDING &&
-		request.workStatus === ServiceRequestWorkStatus.PENDING;
+	const canEditDetails = true
+		// request.approvalStatus === ServiceRequestApprovalStatus.PENDING &&
+		// request.workStatus === ServiceRequestWorkStatus.PENDING;
 
 	const technicianLabel = request.technician?.displayName || request.technician?.email || request.assignedTechnicianId;
 

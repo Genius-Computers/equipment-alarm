@@ -10,7 +10,7 @@ import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import ServiceRequestDialog from "./ServiceRequestDialog";
 
-import { Equipment, JEquipment } from "@/lib/types";
+import { Equipment, JEquipment, JServiceRequest } from "@/lib/types";
 import { MAINTENANCE_INTERVAL_DAYS_MAP } from "@/lib/utils";
 
 interface EquipmentCardProps {
@@ -117,7 +117,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
               <ServiceRequestDialog
                 equipmentId={equipment.id}
                 equipmentName={equipment.name}
-                existingId={equipment.latestPendingServiceRequest.id}
+                existing={equipment.latestPendingServiceRequest as JServiceRequest}
                 trigger={
                   <Button size="sm" variant="outline">
                     <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
