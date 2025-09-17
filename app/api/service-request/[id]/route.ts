@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServiceRequestById, listEquipment, updateServiceRequest } from '@/lib/db';
-import { snakeToCamelCase } from '@/lib/utils';
+import { getServiceRequestById, updateServiceRequest } from '@/lib/db';
+import { snakeToCamelCase, formatStackUserLight } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
 import { ensureRole, getCurrentServerUser } from '@/lib/auth';
 import { APPROVER_ROLES } from '@/lib/types/user';
@@ -8,44 +8,27 @@ import { stackServerApp } from '@/stack';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params;
     const user = await getCurrentServerUser(req);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await context.params;
     const row = await getServiceRequestById(id);
     if (!row) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-    // Enrich equipment
-    let equipment: unknown = null;
-    try {
-      const all = await listEquipment();
-      equipment = all.find((e) => (e as any).id === row.equipment_id) ?? null;
-    } catch {
-      // ignore enrichment failure
     }
     // Enrich technician
     let technician: unknown = null;
     if (row.assigned_technician_id) {
       try {
         const u = await stackServerApp.getUser(row.assigned_technician_id);
-        if (u) {
-          technician = {
-            id: u.id,
-            displayName: u.displayName ?? null,
-            email: u.primaryEmail ?? null,
-            role:
-              ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
-               (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
-               'user'),
-          };
-        }
+        technician = formatStackUserLight(u);
       } catch {
         // ignore
       }
     }
-    const data = { ...snakeToCamelCase(row), equipment, technician };
+    const data = { ...snakeToCamelCase(row), technician };
     return NextResponse.json({ data });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
@@ -95,7 +78,6 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     // RBAC: only approver roles can change approval status
     if (includesApproval) {
-      const user = await getCurrentServerUser(req);
       try {
         ensureRole(user, APPROVER_ROLES);
       } catch {
@@ -128,17 +110,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     if (row.assigned_technician_id) {
       try {
         const u = await stackServerApp.getUser(row.assigned_technician_id);
-        if (u) {
-          technician = {
-            id: u.id,
-            displayName: u.displayName ?? null,
-            email: u.primaryEmail ?? null,
-            role:
-              ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
-               (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
-               'user'),
-          };
-        }
+        technician = formatStackUserLight(u);
       } catch {
         // ignore
       }

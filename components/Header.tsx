@@ -19,13 +19,13 @@ const Header = () => {
     <header className="bg-card border-b border-border shadow-sm">
       <div className="container mx-auto px-6 py-4">
         <div className="flex md:flex-row flex-col md:gap-0 gap-2 md:items-center justify-between">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+          <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
               <Image src={'/logo.png'} width={70} height={70} alt="logo" />
             <div>
               <h1 className="text-xl font-bold text-foreground">{t("header.title")}</h1>
               <p className="text-sm text-muted-foreground">{t("header.subtitle")}</p>
             </div>
-          </div>
+          </Link>
           <div className="flex flex-wrap items-center md:justify-normal justify-between gap-2 md:gap-4">
             {/* Language toggle: icon-only on mobile, text on md+ */}
             <Button

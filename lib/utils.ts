@@ -1,5 +1,7 @@
+import { ServerUser, User as StackUser } from "@stackframe/stack"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { User } from "./types/user"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -58,6 +60,26 @@ export function camelToSnakeCase<T extends object>(obj: T): Record<string, unkno
   }
 
   return convertValue(obj) as Record<string, unknown>
+}
+
+// SQL helpers
+export function toJsonbParam(value: unknown): string | null {
+  return value != null ? JSON.stringify(value) : null
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function formatStackUserLight(u: any): User | null {
+  if (!u) return null
+  const role = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
+               (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
+               'user')
+  return {
+    id: u.id,
+    displayName: u.displayName,
+    email: u.primaryEmail,
+    role,
+    signedUpAt: u.signedUpAt?.toISOString?.(),
+  } as User
 }
 
 // Maintenance derivation helpers

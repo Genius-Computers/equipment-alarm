@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { DbEquipment, DbServiceRequest } from './types';
+import { toJsonbParam } from './utils';
 
 // Simple Neon client factory. Uses DATABASE_URL from env.
 export const getDb = () => {
@@ -54,13 +55,6 @@ export const ensureSchema = async () => {
       recommendation text,
       spare_parts_needed jsonb
     )`;
-};
-
-export const listEquipment = async (): Promise<DbEquipment[]> => {
-  const sql = getDb();
-  await ensureSchema();
-  const rows = await sql`select * from equipment order by name asc`;
-  return rows as unknown as DbEquipment[];
 };
 
 export const listEquipmentPaginated = async (
@@ -137,13 +131,6 @@ export const updateEquipment = async (
   return row as unknown as DbEquipment;
 };
 
-export const listServiceRequest = async (): Promise<DbServiceRequest[]> => {
-  const sql = getDb();
-  await ensureSchema();
-  const rows = await sql`select * from service_request order by scheduled_at asc`;
-  return rows as unknown as DbServiceRequest[];
-};
-
 export const listServiceRequestPaginated = async (
   page: number = 1,
   pageSize: number = 50
@@ -167,11 +154,16 @@ export const listServiceRequestPaginated = async (
   return { rows: rows as unknown as (DbServiceRequest & { equipment: DbEquipment | null })[], total };
 };
 
-export const getServiceRequestById = async (id: string): Promise<DbServiceRequest | null> => {
+export const getServiceRequestById = async (id: string): Promise<(DbServiceRequest & { equipment: DbEquipment | null }) | null> => {
   const sql = getDb();
   await ensureSchema();
-  const rows = await sql`select * from service_request where id = ${id} limit 1`;
-  return (rows && rows.length > 0 ? (rows[0] as unknown as DbServiceRequest) : null);
+  const rows = await sql`
+    select sr.*, to_jsonb(e) as equipment
+    from service_request sr
+    left join equipment e on e.id = sr.equipment_id
+    where sr.id = ${id}
+    limit 1`;
+  return (rows && rows.length > 0 ? (rows[0] as unknown as (DbServiceRequest & { equipment: DbEquipment | null })) : null);
 };
 
 export const insertServiceRequest = async (
@@ -192,7 +184,7 @@ export const insertServiceRequest = async (
       ${input.equipment_id}, ${input.assigned_technician_id}, ${input.request_type}, ${input.scheduled_at},
       ${input.priority}, ${input.approval_status}, ${input.work_status},
       ${input.problem_description}, ${input.technical_assessment}, ${input.recommendation},
-      ${input.spare_parts_needed != null ? JSON.stringify(input.spare_parts_needed) : null}::jsonb
+      ${toJsonbParam(input.spare_parts_needed)}::jsonb
     ) returning *`;
   return row;
 };
@@ -205,22 +197,27 @@ export const updateServiceRequest = async (
   const sql = getDb();
   await ensureSchema();
   const [row] = await sql`
-    update service_request set
-      updated_by = ${actorId},
-      updated_at = now(),
+    with updated as (
+      update service_request set
+        updated_by = ${actorId},
+        updated_at = now(),
 
-      equipment_id = ${input.equipment_id},
-      assigned_technician_id = ${input.assigned_technician_id},
-      request_type = ${input.request_type},
-      scheduled_at = ${input.scheduled_at},
-      priority = ${input.priority},
-      approval_status = ${input.approval_status},
-      work_status = ${input.work_status},
-      problem_description = ${input.problem_description},
-      technical_assessment = ${input.technical_assessment},
-      recommendation = ${input.recommendation},
-      spare_parts_needed = ${input.spare_parts_needed != null ? JSON.stringify(input.spare_parts_needed) : null}::jsonb
-    where id = ${id}
-    returning *`;
-  return row as unknown as DbServiceRequest;
+        equipment_id = ${input.equipment_id},
+        assigned_technician_id = ${input.assigned_technician_id},
+        request_type = ${input.request_type},
+        scheduled_at = ${input.scheduled_at},
+        priority = ${input.priority},
+        approval_status = ${input.approval_status},
+        work_status = ${input.work_status},
+        problem_description = ${input.problem_description},
+        technical_assessment = ${input.technical_assessment},
+        recommendation = ${input.recommendation},
+        spare_parts_needed = ${toJsonbParam(input.spare_parts_needed)}::jsonb
+      where id = ${id}
+      returning *
+    )
+    select u.*, to_jsonb(e) as equipment
+    from updated u
+    left join equipment e on e.id = u.equipment_id`;
+  return row as unknown as (DbServiceRequest & { equipment: DbEquipment | null });
 };

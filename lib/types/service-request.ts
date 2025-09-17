@@ -1,6 +1,6 @@
-import { User } from "@stackframe/stack";
 import { DbBaseAudit } from "./database";
 import { Equipment } from "./equipment";
+import { User } from "./user";
 
 export interface SparePartNeeded {
     part: string;
@@ -53,7 +53,7 @@ export interface ServiceRequest {
 
 export interface JServiceRequest extends ServiceRequest {
     equipment: Equipment
-    technician: User;
+    technician?: User;
 }
 
 export interface DbServiceRequest extends DbBaseAudit {

@@ -5,7 +5,7 @@ import EquipmentList from "@/components/EquipmentList";
 import EquipmentSidebar from "@/components/EquipmentSidebar";
 import { useEquipment } from "@/hooks/useEquipment";
 import { useLanguage } from "@/hooks/useLanguage";
-import EquipmentPagination from "@/components/EquipmentPagination";
+import CustomPagination from "@/components/CustomPagination";
 
 const Index = () => {
   const { t } = useLanguage();
@@ -49,7 +49,7 @@ const Index = () => {
             />
 
             <EquipmentList loading={loading} items={filteredEquipment} onEdit={updateEquipment} updating={isUpdating} />
-            <EquipmentPagination
+            <CustomPagination
               page={page}
               pageSize={pageSize}
               total={total}

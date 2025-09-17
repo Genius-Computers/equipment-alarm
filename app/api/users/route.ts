@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
 import { canCreateUsers } from '@/lib/types/user';
 import { getCurrentServerUser } from '@/lib/auth';
+import { formatStackUserLight } from '@/lib/utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,16 +70,8 @@ export async function GET(req: NextRequest) {
     if (onlyTechnicians) {
       const users = await stackServerApp.listUsers({ limit: 100 });
       const data = users
-        .map((u) => ({
-          id: u.id,
-          email: u.primaryEmail,
-          displayName: u.displayName,
-          role:
-            ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
-              (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
-              'user'),
-        }))
-        .filter((u) => u.role === 'user');
+        .map((u) => (formatStackUserLight(u)))
+        .filter((u) => u && u.role === 'user');
       return NextResponse.json({ data });
     }
 
@@ -87,15 +80,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const users = await stackServerApp.listUsers({ limit: 100 });
-    const data = users.map((u) => ({
-      id: u.id,
-      email: u.primaryEmail,
-      displayName: u.displayName,
-      role: (u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ??
-            (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ??
-            'user',
-      signedUpAt: u.signedUpAt?.toISOString?.() ?? null,
-    }));
+    const data = users.map((u) => (formatStackUserLight(u)));
     return NextResponse.json({ data });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';

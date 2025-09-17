@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { insertServiceRequest, listServiceRequestPaginated } from '@/lib/db';
-import { camelToSnakeCase, snakeToCamelCase } from '@/lib/utils';
+import { camelToSnakeCase, formatStackUserLight, snakeToCamelCase } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
 import { getCurrentServerUser } from '@/lib/auth';
 import { stackServerApp } from '@/stack';
@@ -13,26 +13,19 @@ export async function GET(req: NextRequest) {
     }
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get('page') ?? '1');
-    const pageSize = Number(searchParams.get('pageSize') ?? '50');
+    const pageSize = Number(searchParams.get('pageSize') ?? '10');
     const { rows, total } = await listServiceRequestPaginated(page, pageSize);
 
     // Fetch technicians for assigned_technician_id values
     const techIds = Array.from(new Set((rows.map((r) => r.assigned_technician_id).filter(Boolean) as string[])));
     const techMap = new Map<string, unknown>();
+    const allUsers = await stackServerApp.listUsers({ limit: 100 });
     await Promise.all(
       techIds.map(async (id) => {
         try {
-          const u = await stackServerApp.getUser(id);
-          if (u) {
-            techMap.set(id, {
-              id: u.id,
-              displayName: u.displayName ?? null,
-              email: u.primaryEmail ?? null,
-              role:
-                ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
-                 (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
-                 'user'),
-            });
+          const technician = allUsers.find((u) => u.id === id);
+          if (technician) {
+            techMap.set(id, formatStackUserLight(technician));
           }
         } catch {
           // ignore individual fetch failures
@@ -69,7 +62,6 @@ export async function POST(req: NextRequest) {
       approvalStatus: body.approvalStatus ?? ServiceRequestApprovalStatus.PENDING,
       workStatus: body.workStatus ?? ServiceRequestWorkStatus.PENDING
     };
-    console.log(input);
     const newRow = await insertServiceRequest(
       camelToSnakeCase(input) as Parameters<typeof insertServiceRequest>[0],
       user.id,
