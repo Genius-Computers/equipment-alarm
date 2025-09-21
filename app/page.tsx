@@ -36,7 +36,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            <EquipmentSidebar loading={loading} equipment={equipment} onAdd={addEquipment} submitting={isInserting} />
+            <EquipmentSidebar loading={loading || isInserting} equipment={equipment} onAdd={addEquipment} submitting={isInserting} />
           </div>
 
           {/* Main Content */}
@@ -48,7 +48,7 @@ const Index = () => {
               onStatusChange={setStatusFilter}
             />
 
-            <EquipmentList loading={loading} items={filteredEquipment} onEdit={updateEquipment} updating={isUpdating} />
+            <EquipmentList loading={loading || isInserting} items={filteredEquipment} onEdit={updateEquipment} updating={isUpdating} />
             <CustomPagination
               page={page}
               pageSize={pageSize}

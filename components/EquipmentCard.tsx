@@ -19,6 +19,16 @@ interface EquipmentCardProps {
   disabled?: boolean;
 }
 
+export const getDaysUntilMaintenance = (equipment: JEquipment) => {
+  const last = equipment.lastMaintenance ? new Date(equipment.lastMaintenance) : new Date();
+  const next = new Date(last);
+  const addDays = MAINTENANCE_INTERVAL_DAYS_MAP[equipment.maintenanceInterval] ?? 30;
+  next.setDate(last.getDate() + addDays);
+  const today = new Date();
+  const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
 const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: EquipmentCardProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -31,17 +41,9 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
     inUse: equipment.inUse ?? true,
   });
 
-  const getDaysUntilMaintenance = () => {
-    const last = equipment.lastMaintenance ? new Date(equipment.lastMaintenance) : new Date();
-    const next = new Date(last);
-    const addDays = MAINTENANCE_INTERVAL_DAYS_MAP[equipment.maintenanceInterval] ?? 30;
-    next.setDate(last.getDate() + addDays);
-    const today = new Date();
-    const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
 
-  const daysUntil = getDaysUntilMaintenance();
+
+  const daysUntil = getDaysUntilMaintenance(equipment);
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
@@ -70,7 +72,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
-            <p className="font-medium">{equipment.lastMaintenance}</p>
+            <p className="font-medium">{new Date(equipment.lastMaintenance).toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{t("equipment.nextMaintenance")}</p>

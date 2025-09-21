@@ -3,11 +3,11 @@
 import AddEquipmentForm from "@/components/AddEquipmentForm";
 import MaintenanceAlert from "@/components/MaintenanceAlert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Equipment } from "@/lib/types";
+import { Equipment, JEquipment } from "@/lib/types";
 
 interface EquipmentSidebarProps {
   loading: boolean;
-  equipment: Equipment[];
+  equipment: JEquipment[];
   onAdd: (newEquipment: Omit<Equipment, "id">) => Promise<void> | void;
   submitting?: boolean;
 }

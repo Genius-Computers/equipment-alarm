@@ -44,10 +44,10 @@ const ServiceRequestDialog = ({
   onCreated,
 }: ServiceRequestDialogProps) => {
   const { t } = useLanguage();
-  const { createRequest, updateDetails } = useServiceRequests();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<0 | 1 | 2>(0);
+  const { createRequest, updateDetails } = useServiceRequests({ autoRefresh: false });
 
   const [form, setForm] = useState({
     requestType: ServiceRequestType.PREVENTIVE_MAINTENANCE,

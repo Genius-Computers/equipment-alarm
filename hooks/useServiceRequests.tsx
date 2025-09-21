@@ -10,8 +10,9 @@ export type ServiceRequestCreateInput = Omit<ServiceRequest, "id" | "approvalSta
 	workStatus?: ServiceRequestWorkStatus;
 };
 
-export function useServiceRequests() {
-	const { t } = useLanguage();
+export function useServiceRequests(options?: { autoRefresh?: boolean }) {
+    const { autoRefresh = true } = options ?? {};
+    const { t } = useLanguage();
 
 	const [requests, setRequests] = useState<Array<JServiceRequest>>([]);
 	const [page, setPage] = useState(1);
@@ -45,9 +46,10 @@ export function useServiceRequests() {
 		}
 	}, [page, pageSize]);
 
-	useEffect(() => {
-		void refresh();
-	}, [refresh]);
+    useEffect(() => {
+        if (!autoRefresh) return;
+        void refresh();
+    }, [autoRefresh, refresh]);
 
 	const createRequest = useCallback(
 		async (input: ServiceRequestCreateInput) => {
