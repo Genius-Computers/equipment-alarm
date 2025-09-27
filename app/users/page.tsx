@@ -163,10 +163,33 @@ const UsersPage = () => {
                 </Button>
               </div>
             </div>
-            <div className="text-xs text-muted-foreground">
-              After creating a user without a password, share the password setup link with them:
-              <span className="ml-1 underline">/handler/forgot-password</span>
-            </div>
+          <div className="text-xs text-muted-foreground">
+            {t("users.passwordSetupNote")}
+            {" "}
+            <a
+              href="/handler/forgot-password"
+              className="ml-1 underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              /handler/forgot-password
+            </a>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2 h-6 px-2"
+              onClick={() => {
+                const path = "/handler/forgot-password";
+                const link = typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
+                navigator.clipboard.writeText(link).then(
+                  () => toast(t("toast.success"), { description: t("users.copied") }),
+                  () => toast(t("toast.error"), { description: t("users.copyError") })
+                );
+              }}
+            >
+              {t("users.copyLink")}
+            </Button>
+          </div>
           </CardContent>
         </Card>
 

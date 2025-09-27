@@ -7,34 +7,33 @@ import { formatStackUserLight } from '@/lib/utils';
 export async function POST(req: NextRequest) {
   try {
     const requester = await getCurrentServerUser(req);
-    const role = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
-
-    // Bootstrap: allow first user creation if no users exist yet
-    let allow = false;
-    try {
-      const users = await stackServerApp.listUsers({ limit: 1 });
-      allow = (users?.length ?? 0) === 0;
-    } catch {
-      // ignore and fall back to normal checks
-    }
-
-    if (!allow && !canCreateUsers(role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const requesterRole = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
+    const isAdmin = canCreateUsers(requesterRole);
 
     const body = await req.json();
-    const { email, password, displayName, role: newUserRole } = body ?? {};
-    if (!email || !newUserRole) {
+    const { email, password, displayName, role: requestedRole } = body ?? {};
+    if (!email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    // For public sign-ups, enforce password strength if password provided
+    if (!isAdmin && password) {
+      const strong = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+      if (!strong.test(password)) {
+        return NextResponse.json({ error: 'Password must be 8+ chars with letter, number, special char' }, { status: 400 });
+      }
+    }
+
+    // Public self-signup: no role assigned; Admins can assign role on creation
+    const assignedRole = isAdmin ? requestedRole : undefined;
 
     const user = await stackServerApp.createUser({
       primaryEmail: email,
       // If password is omitted, user will set it via Forgot Password flow
       password: password || undefined,
       displayName,
-      serverMetadata: { role: newUserRole },
-      clientReadOnlyMetadata: { role: newUserRole },
+      serverMetadata: assignedRole ? { role: assignedRole } : undefined,
+      clientReadOnlyMetadata: assignedRole ? { role: assignedRole } : undefined,
       primaryEmailAuthEnabled: true,
       primaryEmailVerified: false,
     });
@@ -43,7 +42,7 @@ export async function POST(req: NextRequest) {
       data: {
         id: user.id,
         email: user.primaryEmail,
-        role: newUserRole,
+        role: assignedRole ?? null,
         // Admins can share this page with the new user to set a password
         nextStepUrl: `/handler/forgot-password`,
       }

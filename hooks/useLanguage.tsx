@@ -97,6 +97,26 @@ const translations = {
     
     // Auth
     "auth.signOut": "Sign out",
+    "auth.brand.title": "University of Ha'il",
+    "auth.brand.subtitle": "Equipment Maintenance System",
+    "auth.signup.title": "Create your account",
+    "auth.signup.name": "Full name",
+    "auth.signup.name.placeholder": "e.g. Jane Doe",
+    "auth.signup.email": "Email",
+    "auth.signup.email.placeholder": "you@example.com",
+    "auth.signup.password": "Password",
+    "auth.signup.password.placeholder": "••••••••",
+    "auth.signup.password.helper": "At least 8 characters with a letter, number, and special character.",
+    "auth.signup.confirm": "Confirm password",
+    "auth.signup.confirm.placeholder": "••••••••",
+    "auth.signup.submit": "Create account",
+    "auth.signup.haveAccount": "Already have an account?",
+    "auth.signup.signIn": "Sign in",
+    "auth.error.nameEmailRequired": "Please enter name and email",
+    "auth.error.passwordConfirmRequired": "Please enter and confirm your password",
+    "auth.error.passwordsNoMatch": "Passwords do not match",
+    "auth.error.passwordWeak": "Password must be 8+ chars, include a letter, number, and special character",
+    "auth.success.accountCreated": "Account created. Please sign in.",
     "auth.pendingApprovalTitle": "Account Pending Approval",
     "auth.pendingApprovalDesc": "Your account has been created and is awaiting approval. Please contact your supervisor or administrator to activate access.",
     "priority.low": "Low",
@@ -141,7 +161,8 @@ const translations = {
     "serviceRequest.create": "Create Request",
     "serviceRequest.openRequest": "Open request",
     "serviceRequest.selectTechnician": "Select Technician",
-    "serviceRequest.assignedTechnician": "Assigned Technician",
+    "serviceRequest.assignedTechnician": "Technician",
+    "serviceRequest.assignedToMe": "Assigned to me",
 
     // Spare parts in Service Request
     "serviceRequest.spareParts.title": "Spare Parts",
@@ -162,6 +183,10 @@ const translations = {
     "users.email": "Email",
     "users.displayName": "Display Name",
     "users.create": "Create",
+    "users.passwordSetupNote": "After creating a user without a password, share the password setup link:",
+    "users.copyLink": "Copy link",
+    "users.copied": "Link copied",
+    "users.copyError": "Failed to copy link",
   },
   ar: {
     // Header
@@ -249,6 +274,26 @@ const translations = {
     
     // Auth
     "auth.signOut": "تسجيل الخروج",
+    "auth.brand.title": "جامعة حائل",
+    "auth.brand.subtitle": "نظام صيانة المعدات",
+    "auth.signup.title": "أنشئ حسابك",
+    "auth.signup.name": "الاسم الكامل",
+    "auth.signup.name.placeholder": "مثال: جين دو",
+    "auth.signup.email": "البريد الإلكتروني",
+    "auth.signup.email.placeholder": "you@example.com",
+    "auth.signup.password": "كلمة المرور",
+    "auth.signup.password.placeholder": "••••••••",
+    "auth.signup.password.helper": "ثمانية أحرف على الأقل وتتضمن حرفاً ورقماً ورمزاً خاصاً.",
+    "auth.signup.confirm": "تأكيد كلمة المرور",
+    "auth.signup.confirm.placeholder": "••••••••",
+    "auth.signup.submit": "إنشاء الحساب",
+    "auth.signup.haveAccount": "لديك حساب بالفعل؟",
+    "auth.signup.signIn": "تسجيل الدخول",
+    "auth.error.nameEmailRequired": "يرجى إدخال الاسم والبريد الإلكتروني",
+    "auth.error.passwordConfirmRequired": "يرجى إدخال كلمة المرور وتأكيدها",
+    "auth.error.passwordsNoMatch": "كلمتا المرور غير متطابقتين",
+    "auth.error.passwordWeak": "يجب أن تكون كلمة المرور 8+ أحرف وتتضمن حرفاً ورقماً ورمزاً خاصاً",
+    "auth.success.accountCreated": "تم إنشاء الحساب. يرجى تسجيل الدخول.",
     "auth.pendingApprovalTitle": "الحساب بانتظار الموافقة",
     "auth.pendingApprovalDesc": "تم إنشاء حسابك وهو بانتظار الموافقة. يرجى التواصل مع المشرف أو المسؤول لتفعيل الوصول.",
     "priority.low": "منخفضة",
@@ -293,7 +338,8 @@ const translations = {
     "serviceRequest.create": "إنشاء الطلب",
     "serviceRequest.openRequest": "طلب مفتوح",
     "serviceRequest.selectTechnician": "اختر الفني",
-    "serviceRequest.assignedTechnician": "الفني المعين",
+    "serviceRequest.assignedTechnician": "الفني",
+    "serviceRequest.assignedToMe": "معين لي",
 
     // Spare parts in Service Request
     "serviceRequest.spareParts.title": "قطع الغيار",
@@ -314,6 +360,10 @@ const translations = {
     "users.email": "البريد الإلكتروني",
     "users.displayName": "الاسم المعروض",
     "users.create": "إنشاء",
+    "users.passwordSetupNote": "بعد إنشاء مستخدم بدون كلمة مرور، شارك رابط إعداد كلمة المرور:",
+    "users.copyLink": "نسخ الرابط",
+    "users.copied": "تم نسخ الرابط",
+    "users.copyError": "تعذر نسخ الرابط",
   }
 };
 
