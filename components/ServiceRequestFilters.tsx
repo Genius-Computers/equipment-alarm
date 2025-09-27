@@ -3,6 +3,7 @@
 import { Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ServiceRequestPriority } from "@/lib/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -11,6 +12,9 @@ interface ServiceRequestFiltersProps {
 	onSearchChange: (value: string) => void;
 	priority: "all" | ServiceRequestPriority;
 	onPriorityChange: (value: "all" | ServiceRequestPriority) => void;
+	showAssignedToggle?: boolean;
+	assignedToMe?: boolean;
+	onAssignedToMeChange?: (value: boolean) => void;
 }
 
 export default function ServiceRequestFilters({
@@ -18,6 +22,9 @@ export default function ServiceRequestFilters({
 	onSearchChange,
 	priority,
 	onPriorityChange,
+	showAssignedToggle,
+	assignedToMe,
+	onAssignedToMeChange,
 }: ServiceRequestFiltersProps) {
 	const { t } = useLanguage();
 	return (
@@ -44,6 +51,14 @@ export default function ServiceRequestFilters({
 						<SelectItem value={ServiceRequestPriority.HIGH}>{t("serviceRequest.priorities.high")}</SelectItem>
 					</SelectContent>
 				</Select>
+				{showAssignedToggle ? (
+					<div className="flex items-center gap-2 ml-2">
+						<Switch checked={!!assignedToMe} onCheckedChange={(v) => onAssignedToMeChange?.(v)} id="assigned-to-me" />
+						<label htmlFor="assigned-to-me" className="text-sm">
+							{t("filter.assignedToMe")}
+						</label>
+					</div>
+				) : null}
 			</div>
 		</div>
 	);

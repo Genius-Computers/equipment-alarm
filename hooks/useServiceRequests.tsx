@@ -29,33 +29,37 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	const [approvalFilter, setApprovalFilter] = useState<"all" | JServiceRequest["approvalStatus"]>("all");
 
     // Tab scope state and cache per scope
-    const [scope, setScope] = useState<"pending" | "completed">("pending");
-    const [cache, setCache] = useState<Record<string, { page: number; pageSize: number; total: number; rows: Array<JServiceRequest> }>>({});
+	const [scope, setScope] = useState<"pending" | "completed">("pending");
+	const [assignedToMe, setAssignedToMe] = useState(false);
+	const [cache, setCache] = useState<Record<string, { page: number; pageSize: number; total: number; rows: Array<JServiceRequest> }>>({});
 
-    const refresh = useCallback(async () => {
+	const refresh = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
-            const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}`, { cache: "no-store" });
+			const assignedParam = assignedToMe ? "&assignedTo=me" : "";
+			const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}${assignedParam}` , { cache: "no-store" });
 			if (!res.ok) throw new Error("Failed to load service requests");
 			const json = await res.json();
 			const rows: Array<JServiceRequest> = Array.isArray(json.data) ? json.data : [];
 			setTotal(Number(json?.meta?.total || 0));
 			setRequests(rows);
-            // update cache for scope
-            setCache((prev) => ({ ...prev, [scope]: { page, pageSize, total: Number(json?.meta?.total || 0), rows } }));
+			// update cache for scope + assignment filter
+			const key = `${scope}:${assignedToMe ? "me" : "all"}`;
+			setCache((prev) => ({ ...prev, [key]: { page, pageSize, total: Number(json?.meta?.total || 0), rows } }));
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : "Error loading service requests";
 			setError(message);
 		} finally {
 			setLoading(false);
 		}
-    }, [page, pageSize, scope]);
+	}, [page, pageSize, scope, assignedToMe]);
 
-    useEffect(() => {
+	useEffect(() => {
         if (!autoRefresh) return;
-        // If switching to a scope we already have cached for this page/pageSize, hydrate quickly
-        const scoped = cache[scope];
+			// If switching to a scope/assignment we already have cached for this page/pageSize, hydrate quickly
+			const key = `${scope}:${assignedToMe ? "me" : "all"}`;
+			const scoped = cache[key];
         if (scoped && scoped.page === page && scoped.pageSize === pageSize && Array.isArray(scoped.rows)) {
             setRequests(scoped.rows);
             setTotal(scoped.total);
@@ -63,7 +67,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
             return;
         }
         void refresh();
-    }, [autoRefresh, refresh, scope, page, pageSize]);
+	}, [autoRefresh, refresh, scope, page, pageSize, assignedToMe]);
 
 	const createRequest = useCallback(
 		async (input: ServiceRequestCreateInput) => {
@@ -198,7 +202,8 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		page,
 		pageSize,
 		total,
-        scope,
+		scope,
+		assignedToMe,
 		searchTerm,
 		priorityFilter,
 		approvalFilter,
@@ -207,7 +212,8 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		setApprovalFilter,
 		setPage,
 		setPageSize,
-        setScope,
+		setScope,
+		setAssignedToMe,
 		refresh,
 		createRequest,
 		updateDetails,

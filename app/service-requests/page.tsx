@@ -25,6 +25,8 @@ const Page = () => {
 		setSearchTerm,
 		priorityFilter,
 		setPriorityFilter,
+		assignedToMe,
+		setAssignedToMe,
 		scope,
 		setScope,
 		updatingById,
@@ -42,6 +44,9 @@ const Page = () => {
 					onSearchChange={setSearchTerm}
 					priority={priorityFilter}
 					onPriorityChange={setPriorityFilter}
+					showAssignedToggle={role === "user"}
+					assignedToMe={assignedToMe}
+					onAssignedToMeChange={setAssignedToMe}
 				/>
 
 				<div className="flex items-center gap-2">
