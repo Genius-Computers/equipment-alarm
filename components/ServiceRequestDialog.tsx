@@ -84,9 +84,31 @@ const ServiceRequestDialog = ({
   const [parts, setParts] = useState<SparePart[]>([]);
   const [draft, setDraft] = useState<SparePart>({ part: "", description: "", quantity: 1, cost: 0, source: "" });
 
+  // Prevent scheduling in the past
+  const isScheduledAtValid = useMemo(() => {
+    if (!form.scheduledAt) return false;
+    const selected = new Date(form.scheduledAt);
+    const now = new Date();
+    return selected.getTime() >= now.getTime();
+  }, [form.scheduledAt]);
+
+  const minScheduledAt = (() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
+      d.getMinutes()
+    )}`;
+  })();
+
   const isValid = useMemo(() => {
-    return !!form.requestType && !!form.priority && !!form.scheduledAt && !!form.assignedTechnicianId;
-  }, [form]);
+    return (
+      !!form.requestType &&
+      !!form.priority &&
+      !!form.scheduledAt &&
+      isScheduledAtValid &&
+      !!form.assignedTechnicianId
+    );
+  }, [form, isScheduledAtValid]);
 
   const totalCost = useMemo(
     () => parts.reduce((sum, p) => sum + (Number(p.cost) || 0) * (Number(p.quantity) || 0), 0),
@@ -279,18 +301,20 @@ const ServiceRequestDialog = ({
                   <Label>{t("serviceRequest.scheduledAt")}</Label>
                   <Input
                     type="datetime-local"
+                    min={minScheduledAt}
+                    aria-invalid={!isScheduledAtValid}
                     value={form.scheduledAt}
                     onChange={(e) => setForm((s) => ({ ...s, scheduledAt: e.target.value }))}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>{t("serviceRequest.assignedTechnician") || "Assigned Technician"}</Label>
+                  <Label>{t("serviceRequest.assignedTechnician")}</Label>
                   <Select
                     value={form.assignedTechnicianId}
                     onValueChange={(v) => setForm((s) => ({ ...s, assignedTechnicianId: v }))}
                     disabled={techLoading}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t("serviceRequest.selectTechnician") || "Select technician"} />
+                      <SelectValue placeholder={t("serviceRequest.selectTechnician")} />
                     </SelectTrigger>
                     <SelectContent>
                       {technicians.map((tech) => (
@@ -351,28 +375,44 @@ const ServiceRequestDialog = ({
 
                 {/* Compact row for basic fields */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 flex flex-col gap-1">
+                    <Label htmlFor="spare-part" className="text-xs text-muted-foreground">
+                      {t("serviceRequest.spareParts.part")}
+                    </Label>
                     <Input
+                      id="spare-part"
                       placeholder={t("serviceRequest.spareParts.part")}
                       value={draft.part}
                       onChange={(e) => setDraft((d) => ({ ...d, part: e.target.value }))}
                     />
                   </div>
-                  <Input
-                    type="number"
-                    min={1}
-                    placeholder={t("serviceRequest.spareParts.quantity")}
-                    value={draft.quantity}
-                    onChange={(e) => setDraft((d) => ({ ...d, quantity: Number(e.target.value || 0) }))}
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder={t("serviceRequest.spareParts.cost")}
-                    value={draft.cost}
-                    onChange={(e) => setDraft((d) => ({ ...d, cost: Number(e.target.value || 0) }))}
-                  />
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="spare-quantity" className="text-xs text-muted-foreground">
+                      {t("serviceRequest.spareParts.quantity")}
+                    </Label>
+                    <Input
+                      id="spare-quantity"
+                      type="number"
+                      min={1}
+                      placeholder={t("serviceRequest.spareParts.quantity")}
+                      value={draft.quantity}
+                      onChange={(e) => setDraft((d) => ({ ...d, quantity: Number(e.target.value || 0) }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="spare-cost" className="text-xs text-muted-foreground">
+                      {t("serviceRequest.spareParts.cost")}
+                    </Label>
+                    <Input
+                      id="spare-cost"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder={t("serviceRequest.spareParts.cost")}
+                      value={draft.cost}
+                      onChange={(e) => setDraft((d) => ({ ...d, cost: Number(e.target.value || 0) }))}
+                    />
+                  </div>
                 </div>
 
                 {/* Wide text areas for readability */}

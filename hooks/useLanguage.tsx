@@ -140,6 +140,8 @@ const translations = {
     "serviceRequest.statuses.cancelled": "Cancelled",
     "serviceRequest.create": "Create Request",
     "serviceRequest.openRequest": "Open request",
+    "serviceRequest.selectTechnician": "Select Technician",
+    "serviceRequest.assignedTechnician": "Assigned Technician",
 
     // Spare parts in Service Request
     "serviceRequest.spareParts.title": "Spare Parts",
@@ -290,6 +292,8 @@ const translations = {
     "serviceRequest.statuses.cancelled": "ملغي",
     "serviceRequest.create": "إنشاء الطلب",
     "serviceRequest.openRequest": "طلب مفتوح",
+    "serviceRequest.selectTechnician": "اختر الفني",
+    "serviceRequest.assignedTechnician": "الفني المعين",
 
     // Spare parts in Service Request
     "serviceRequest.spareParts.title": "قطع الغيار",

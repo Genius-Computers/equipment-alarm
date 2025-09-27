@@ -25,8 +25,8 @@ const Page = () => {
 		setSearchTerm,
 		priorityFilter,
 		setPriorityFilter,
-		approvalFilter,
-		setApprovalFilter,
+		scope,
+		setScope,
 		updatingById,
 		changeApprovalStatus,
 		changeWorkStatus,
@@ -42,9 +42,22 @@ const Page = () => {
 					onSearchChange={setSearchTerm}
 					priority={priorityFilter}
 					onPriorityChange={setPriorityFilter}
-					approval={approvalFilter}
-					onApprovalChange={setApprovalFilter}
 				/>
+
+				<div className="flex items-center gap-2">
+					<button
+						className={`px-3 py-1 rounded border text-sm ${scope === "pending" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+						onClick={() => setScope("pending")}
+					>
+						Pending
+					</button>
+					<button
+						className={`px-3 py-1 rounded border text-sm ${scope === "completed" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+						onClick={() => setScope("completed")}
+					>
+						Completed
+					</button>
+				</div>
 
 				{loading ? (
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">

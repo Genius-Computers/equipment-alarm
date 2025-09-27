@@ -3,7 +3,7 @@
 import { Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ServiceRequestApprovalStatus, ServiceRequestPriority } from "@/lib/types";
+import { ServiceRequestPriority } from "@/lib/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
 interface ServiceRequestFiltersProps {
@@ -11,8 +11,6 @@ interface ServiceRequestFiltersProps {
 	onSearchChange: (value: string) => void;
 	priority: "all" | ServiceRequestPriority;
 	onPriorityChange: (value: "all" | ServiceRequestPriority) => void;
-	approval: "all" | ServiceRequestApprovalStatus;
-	onApprovalChange: (value: "all" | ServiceRequestApprovalStatus) => void;
 }
 
 export default function ServiceRequestFilters({
@@ -20,8 +18,6 @@ export default function ServiceRequestFilters({
 	onSearchChange,
 	priority,
 	onPriorityChange,
-	approval,
-	onApprovalChange,
 }: ServiceRequestFiltersProps) {
 	const { t } = useLanguage();
 	return (
@@ -46,17 +42,6 @@ export default function ServiceRequestFilters({
 						<SelectItem value={ServiceRequestPriority.LOW}>{t("serviceRequest.priorities.low")}</SelectItem>
 						<SelectItem value={ServiceRequestPriority.MEDIUM}>{t("serviceRequest.priorities.medium")}</SelectItem>
 						<SelectItem value={ServiceRequestPriority.HIGH}>{t("serviceRequest.priorities.high")}</SelectItem>
-					</SelectContent>
-				</Select>
-				<Select value={approval} onValueChange={(v) => onApprovalChange(v as "all" | ServiceRequestApprovalStatus)}>
-					<SelectTrigger className="w-[160px]">
-						<SelectValue placeholder={t("serviceRequest.status")} />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">{t("filter.all")}</SelectItem>
-						<SelectItem value={ServiceRequestApprovalStatus.PENDING}>{t("serviceRequest.statuses.pending")}</SelectItem>
-						<SelectItem value={ServiceRequestApprovalStatus.APPROVED}>{t("serviceRequest.statuses.approved")}</SelectItem>
-						<SelectItem value={ServiceRequestApprovalStatus.REJECTED}>{t("serviceRequest.statuses.rejected")}</SelectItem>
 					</SelectContent>
 				</Select>
 			</div>

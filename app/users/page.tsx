@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,6 +71,7 @@ const UsersPage = () => {
 
   const changeRole = async (id: string, role: string) => {
     try {
+      setLoading(true);
       const res = await fetch(`/api/users/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +86,26 @@ const UsersPage = () => {
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to update role';
       toast(t("toast.error"), { description: message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || 'Failed to delete');
+      }
+      toast(t("toast.success"), { description: t("toast.updated") });
+      setRows((prev) => prev.filter((u) => u.id !== id));
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to delete';
+      toast(t("toast.error"), { description: message });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,6 +194,8 @@ const UsersPage = () => {
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Separator orientation="vertical" className="h-6" />
+                  <Button variant="outline" size="sm" onClick={() => deleteUser(u.id)}>Delete</Button>
                 </div>
               ))}
             </CardContent>
@@ -214,6 +238,8 @@ const UsersPage = () => {
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Separator orientation="vertical" className="h-6" />
+                  <Button variant="destructive" size="sm" onClick={() => deleteUser(u.id)}>Delete</Button>
                 </CardContent>
               </Card>
             ))

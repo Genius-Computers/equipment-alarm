@@ -72,7 +72,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
-            <p className="font-medium">{new Date(equipment.lastMaintenance).toLocaleString()}</p>
+            <p className="font-medium">{new Date(equipment.lastMaintenance).toLocaleDateString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{t("equipment.nextMaintenance")}</p>
@@ -140,12 +140,6 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
         </div>
 
         <div className="flex gap-2 pt-2">
-          {/* {equipment.status !== "good" && (
-            <Button size="sm" onClick={() => onCompleteMaintenance(equipment.id)}>
-              <CheckCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-              {t("equipment.markMaintenanceCompleted")}
-            </Button>
-          )} */}
           {onEditEquipment && (
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>

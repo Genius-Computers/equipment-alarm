@@ -128,7 +128,7 @@ export default function ServiceRequestCard({
 					</div>
 					<div className="space-y-1">
 						<div className="text-xs text-muted-foreground">{t("serviceRequest.workStatus")}</div>
-						{request.workStatus === ServiceRequestWorkStatus.PENDING ? (
+						{request.workStatus === ServiceRequestWorkStatus.PENDING && request.approvalStatus === ServiceRequestApprovalStatus.APPROVED ? (
 							<div className="flex gap-2">
 								<Button size="sm" className="gap-1" disabled={isUpdatingWork} onClick={() => onComplete?.(request.id)}>
 									{isUpdatingWork ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {t("serviceRequest.statuses.completed")}

@@ -18,38 +18,52 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(10);
 	const [total, setTotal] = useState(0);
-	const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const [isInserting, setIsInserting] = useState(false);
 	const [updatingById, setUpdatingById] = useState<Record<string, { approval?: boolean; work?: boolean; details?: boolean }>>({});
 
-	const [searchTerm, setSearchTerm] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
 	const [priorityFilter, setPriorityFilter] = useState<"all" | JServiceRequest["priority"]>("all");
 	const [approvalFilter, setApprovalFilter] = useState<"all" | JServiceRequest["approvalStatus"]>("all");
 
-	const refresh = useCallback(async () => {
+    // Tab scope state and cache per scope
+    const [scope, setScope] = useState<"pending" | "completed">("pending");
+    const [cache, setCache] = useState<Record<string, { page: number; pageSize: number; total: number; rows: Array<JServiceRequest> }>>({});
+
+    const refresh = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
-			const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
+            const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}`, { cache: "no-store" });
 			if (!res.ok) throw new Error("Failed to load service requests");
 			const json = await res.json();
 			const rows: Array<JServiceRequest> = Array.isArray(json.data) ? json.data : [];
 			setTotal(Number(json?.meta?.total || 0));
 			setRequests(rows);
+            // update cache for scope
+            setCache((prev) => ({ ...prev, [scope]: { page, pageSize, total: Number(json?.meta?.total || 0), rows } }));
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : "Error loading service requests";
 			setError(message);
 		} finally {
 			setLoading(false);
 		}
-	}, [page, pageSize]);
+    }, [page, pageSize, scope]);
 
     useEffect(() => {
         if (!autoRefresh) return;
+        // If switching to a scope we already have cached for this page/pageSize, hydrate quickly
+        const scoped = cache[scope];
+        if (scoped && scoped.page === page && scoped.pageSize === pageSize && Array.isArray(scoped.rows)) {
+            setRequests(scoped.rows);
+            setTotal(scoped.total);
+            setLoading(false);
+            return;
+        }
         void refresh();
-    }, [autoRefresh, refresh]);
+    }, [autoRefresh, refresh, scope, page, pageSize]);
 
 	const createRequest = useCallback(
 		async (input: ServiceRequestCreateInput) => {
@@ -184,6 +198,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		page,
 		pageSize,
 		total,
+        scope,
 		searchTerm,
 		priorityFilter,
 		approvalFilter,
@@ -192,6 +207,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		setApprovalFilter,
 		setPage,
 		setPageSize,
+        setScope,
 		refresh,
 		createRequest,
 		updateDetails,
