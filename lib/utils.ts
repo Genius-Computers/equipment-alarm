@@ -70,8 +70,7 @@ export function toJsonbParam(value: unknown): string | null {
 export function formatStackUserLight(u: any): User | null {
   if (!u) return null
   const role = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
-               (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined) ||
-               'user')
+               (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined))
   return {
     id: u.id,
     displayName: u.displayName,

@@ -24,7 +24,7 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(true);
 
   const [creating, setCreating] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", displayName: "", role: "user" });
+  const [newUser, setNewUser] = useState({ email: "", displayName: "", role: "" });
 
   useEffect(() => {
     const load = async () => {
@@ -126,7 +126,7 @@ const UsersPage = () => {
                 onChange={(e) => setNewUser((s) => ({ ...s, displayName: e.target.value }))}
               />
               <div className="flex gap-2">
-                <Select value={newUser.role} onValueChange={(v) => setNewUser((s) => ({ ...s, role: v }))}>
+                <Select value={newUser.role || undefined} onValueChange={(v) => setNewUser((s) => ({ ...s, role: v }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder={t("users.role")} />
                   </SelectTrigger>
@@ -136,7 +136,7 @@ const UsersPage = () => {
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={createUser} disabled={creating || !newUser.email}>
+                <Button onClick={createUser} disabled={creating || !newUser.email || !newUser.role}>
                   {t("users.create")}
                 </Button>
               </div>
@@ -147,6 +147,36 @@ const UsersPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Pending approvals: users without any role assigned */}
+        {!loading && rows.filter((u) => !u.role).length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending approvals</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {rows.filter((u) => !u.role).map((u) => (
+                <div key={u.id} className="flex items-center gap-3 border rounded-md p-3">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{u.displayName || u.email || u.id}</div>
+                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                  </div>
+                  <Badge variant="secondary" className="capitalize">Pending</Badge>
+                  <Select value={undefined} onValueChange={(v) => changeRole(u.id, v)}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder={t("users.role")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="supervisor">Supervisor</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loading ? (
@@ -162,19 +192,19 @@ const UsersPage = () => {
               </Card>
             ))
           ) : (
-            rows.map((u) => (
+            rows.filter((u) => !!u.role).map((u) => (
               <Card key={u.id} className="hover:shadow-lg transition-shadow duration-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <span>{u.displayName || u.email || u.id}</span>
-                    <Badge variant="secondary" className="capitalize">{u.role || 'user'}</Badge>
+                    <Badge variant="secondary" className="capitalize">{u.role}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center gap-3">
                   <div className="text-sm text-muted-foreground flex-1">
                     {u.email}
                   </div>
-                  <Select value={u.role || 'user'} onValueChange={(v) => changeRole(u.id, v)}>
+                  <Select value={u.role!} onValueChange={(v) => changeRole(u.id, v)}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder={t("users.role")} />
                     </SelectTrigger>

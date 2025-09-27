@@ -97,6 +97,8 @@ const translations = {
     
     // Auth
     "auth.signOut": "Sign out",
+    "auth.pendingApprovalTitle": "Account Pending Approval",
+    "auth.pendingApprovalDesc": "Your account has been created and is awaiting approval. Please contact your supervisor or administrator to activate access.",
     "priority.low": "Low",
     "priority.medium": "Medium",
     "priority.high": "High",
@@ -245,6 +247,8 @@ const translations = {
     
     // Auth
     "auth.signOut": "تسجيل الخروج",
+    "auth.pendingApprovalTitle": "الحساب بانتظار الموافقة",
+    "auth.pendingApprovalDesc": "تم إنشاء حسابك وهو بانتظار الموافقة. يرجى التواصل مع المشرف أو المسؤول لتفعيل الوصول.",
     "priority.low": "منخفضة",
     "priority.medium": "متوسطة",
     "priority.high": "عالية",

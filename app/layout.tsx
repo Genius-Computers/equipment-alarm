@@ -6,6 +6,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { ThemeProvider } from "@/components/theme-provider";
+import ApprovalGate from "@/components/ApprovalGate";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +34,9 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}><StackProvider app={stackServerApp}><StackTheme>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <LanguageProvider>
-            {children}
+            <Suspense fallback={null}>
+              <ApprovalGate>{children}</ApprovalGate>
+            </Suspense>
             <Toaster />
           </LanguageProvider>
         </ThemeProvider>
