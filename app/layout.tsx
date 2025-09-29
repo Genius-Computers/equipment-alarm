@@ -31,16 +31,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}><StackProvider app={stackServerApp}><StackTheme>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <LanguageProvider>
-            <Suspense fallback={null}>
-              <ApprovalGate>{children}</ApprovalGate>
-            </Suspense>
-            <Toaster />
-          </LanguageProvider>
-        </ThemeProvider>
-      </StackTheme></StackProvider></body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <StackProvider app={stackServerApp}>
+          <StackTheme>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+              <LanguageProvider>
+                <Suspense fallback={null}>
+                  <ApprovalGate>{children}</ApprovalGate>
+                </Suspense>
+                <Toaster />
+              </LanguageProvider>
+            </ThemeProvider>
+          </StackTheme>
+        </StackProvider>
+      </body>
     </html>
   );
 }

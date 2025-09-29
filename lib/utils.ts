@@ -90,13 +90,13 @@ export const MAINTENANCE_INTERVAL_DAYS_MAP: Record<string, number> = {
   '1 year': 365,
 }
 
-export function deriveMaintenanceInfo(input: { lastMaintenance?: string; maintenanceInterval: string }): { status: 'good' | 'due' | 'overdue'; nextMaintenance: string; daysUntil: number } {
+export function deriveMaintenanceInfo(input: { lastMaintenance?: string; maintenanceInterval: string }): { maintenanceStatus: 'good' | 'due' | 'overdue'; nextMaintenance: string; daysUntil: number } {
   const last = input.lastMaintenance ? new Date(input.lastMaintenance) : new Date()
   const next = new Date(last)
   const addDays = MAINTENANCE_INTERVAL_DAYS_MAP[input.maintenanceInterval] ?? 30
   next.setDate(last.getDate() + addDays)
   const today = new Date()
   const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  const status: 'good' | 'due' | 'overdue' = diffDays < 0 ? 'overdue' : diffDays <= 7 ? 'due' : 'good'
-  return { status, nextMaintenance: next.toISOString(), daysUntil: diffDays }
+  const maintenanceStatus: 'good' | 'due' | 'overdue' = diffDays < 0 ? 'overdue' : diffDays <= 7 ? 'due' : 'good'
+  return { maintenanceStatus, nextMaintenance: next.toISOString(), daysUntil: diffDays }
 }

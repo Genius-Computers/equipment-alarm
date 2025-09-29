@@ -34,6 +34,8 @@ interface ServiceRequestDialogProps {
   trigger?: React.ReactNode;
   existing?: JServiceRequest;
   onCreated?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const ServiceRequestDialog = ({
@@ -42,9 +44,21 @@ const ServiceRequestDialog = ({
   trigger,
   existing,
   onCreated,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
 }: ServiceRequestDialogProps) => {
   const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Use external control if provided, otherwise use internal state
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (externalOnOpenChange) {
+      externalOnOpenChange(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const { createRequest, updateDetails } = useServiceRequests({ autoRefresh: false });

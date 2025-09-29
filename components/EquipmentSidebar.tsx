@@ -15,7 +15,7 @@ interface EquipmentSidebarProps {
 const EquipmentSidebar = ({ loading, equipment, onAdd, submitting = false }: EquipmentSidebarProps) => {
   return (
     <div className="space-y-6">
-      <AddEquipmentForm onAddEquipment={onAdd} submitting={submitting} />
+      <AddEquipmentForm onSubmitEquipment={onAdd} submitting={submitting} />
 
       {loading ? (
         <div className="space-y-4">

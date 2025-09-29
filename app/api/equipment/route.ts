@@ -18,11 +18,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       data: rows.map((r) => {
         const camel = snakeToCamelCase(r) as Record<string, unknown>;
-        const { status, nextMaintenance } = deriveMaintenanceInfo({
+        const { maintenanceStatus, nextMaintenance } = deriveMaintenanceInfo({
           lastMaintenance: camel.lastMaintenance as string | undefined,
           maintenanceInterval: (camel.maintenanceInterval as string) || '',
         });
-        return { ...camel, status, nextMaintenance };
+        return { ...camel, maintenanceStatus, nextMaintenance };
       }),
       meta: { page, pageSize, total }
     });

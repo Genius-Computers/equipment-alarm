@@ -1,80 +1,127 @@
 "use client";
+import React, { useState } from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlusCircle, Box, Calendar, AlertCircle, Headphones } from "lucide-react";
 import Header from "@/components/Header";
-import EquipmentFilters from "@/components/EquipmentFilters";
-import EquipmentList from "@/components/EquipmentList";
-import EquipmentSidebar from "@/components/EquipmentSidebar";
+import AddEquipmentForm from "@/components/AddEquipmentForm";
+import ServiceRequestDialog from "@/components/ServiceRequestDialog";
 import { useEquipment } from "@/hooks/useEquipment";
-import { useLanguage } from "@/hooks/useLanguage";
-import CustomPagination from "@/components/CustomPagination";
+import Link from "next/link";
 
-const Index = () => {
-  const { t } = useLanguage();
-  const {
-    equipment,
-    filteredEquipment,
-    loading,
-    error,
-    isUpdating,
-    isInserting,
-    page,
-    pageSize,
-    total,
-    searchTerm,
-    statusFilter,
-    setSearchTerm,
-    setStatusFilter,
-    setPage,
-    addEquipment,
-    updateEquipment,
-  } = useEquipment();
-
+const Page = () => {
+  const { addEquipment, equipmentNameCache, isCaching } = useEquipment(false);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>("");
+  const [serviceRequestDialogOpen, setServiceRequestDialogOpen] = useState(false);
   return (
-    <div className="min-h-screen bg-background">
+    <main>
       <Header />
-
-      <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            <EquipmentSidebar loading={loading || isInserting} equipment={equipment} onAdd={addEquipment} submitting={isInserting} />
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            <EquipmentFilters
-              searchTerm={searchTerm}
-              statusFilter={statusFilter}
-              onSearchChange={setSearchTerm}
-              onStatusChange={setStatusFilter}
-            />
-
-            <EquipmentList loading={loading || isInserting} items={filteredEquipment} onEdit={updateEquipment} updating={isUpdating} />
-            <CustomPagination
-              page={page}
-              pageSize={pageSize}
-              total={total}
-              onPrev={() => setPage((p) => Math.max(1, p - 1))}
-              onNext={() => {
-                const totalPages = Math.max(1, Math.ceil(total / pageSize));
-                setPage((p) => Math.min(totalPages, p + 1));
-              }}
-            />
-
-            {!loading && filteredEquipment.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">{t("search.noResults")}</p>
-              </div>
-            )}
-            {error && (
-              <div className="text-center py-4">
-                <p className="text-destructive text-sm">{error}</p>
-              </div>
-            )}
-          </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            {
+              title: "Add Equipment/Device",
+              description: "Register new devices into the system.",
+              icon: <PlusCircle className="h-6 w-6 cursor-pointer text-primary" />,
+              cta: <AddEquipmentForm onSubmitEquipment={addEquipment} />,
+            },
+            {
+              title: "Inventory",
+              description: "View and manage all available equipment.",
+              icon: <Box className="h-6 w-6 cursor-pointer text-green-600" />,
+              cta: (
+                <Link href={"/equipments"} className="w-full">
+                  <Button variant="outline" className="w-full">
+                    Open
+                  </Button>
+                </Link>
+              ),
+            },
+            {
+              title: "Maintenance Schedule Preview",
+              description: "Check upcoming maintenance tasks.",
+              icon: <Calendar className="h-6 w-6 cursor-pointer text-purple-600" />,
+              cta: (
+                <Link href={"/service-requests"} className="w-full">
+                  <Button variant="outline" className="w-full">
+                    Open
+                  </Button>
+                </Link>
+              ),
+            },
+            {
+              title: "Maintenance Overdue",
+              description: "See devices with overdue maintenance.",
+              icon: <AlertCircle className="h-6 w-6 cursor-pointer text-red-600" />,
+              cta: (
+                <Link href={"/equipments?status=overdue"} className="w-full">
+                  <Button variant="outline" className="w-full">
+                    Open
+                  </Button>
+                </Link>
+              ),
+            },
+            {
+              title: "Raise a Service Request",
+              description: "Submit a new support or service request.",
+              icon: <Headphones className="h-6 w-6 cursor-pointer text-orange-500" />,
+              cta: (
+                <>
+                  <Select
+                    value={selectedEquipmentId}
+                    onValueChange={(value) => {
+                      setSelectedEquipmentId(value);
+                      setServiceRequestDialogOpen(true);
+                    }}
+                    disabled={isCaching || equipmentNameCache.length === 0}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={isCaching ? "Loading..." : "Select Equipment"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipmentNameCache.map((eq) => (
+                        <SelectItem key={eq.id} value={eq.id}>
+                          {eq.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedEquipmentId && (
+                    <ServiceRequestDialog
+                      equipmentId={selectedEquipmentId}
+                      equipmentName={equipmentNameCache.find((eq) => eq.id === selectedEquipmentId)?.name}
+                      open={serviceRequestDialogOpen}
+                      onOpenChange={(isOpen) => {
+                        setServiceRequestDialogOpen(isOpen);
+                        if (!isOpen) {
+                          setSelectedEquipmentId("");
+                        }
+                      }}
+                      onCreated={() => {
+                        setServiceRequestDialogOpen(false);
+                        setSelectedEquipmentId("");
+                      }}
+                    />
+                  )}
+                </>
+              ),
+            },
+          ].map((c) => (
+            <Card key={c.title} className="flex flex-col justify-between">
+              <CardHeader className="flex items-center gap-4">
+                <div className="p-2 rounded-full bg-muted/50">{c.icon}</div>
+                <div>
+                  <CardTitle>{c.title}</CardTitle>
+                  <CardDescription>{c.description}</CardDescription>
+                </div>
+              </CardHeader>
+              <CardFooter>{c?.cta}</CardFooter>
+            </Card>
+          ))}
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 };
 
-export default Index;
+export default Page;

@@ -14,7 +14,7 @@ const translations = {
   en: {
     // Header
     "header.title": "University of Ha'il",
-    "header.subtitle": "Equipment Maintenance System",
+    "header.subtitle": "Biomedical Equipment Dashboard",
     "header.department": "Maintenance Department",
     "header.facility": "Facility Management",
     
@@ -60,6 +60,17 @@ const translations = {
     "form.save": "Save",
     "form.back": "Back",
     "form.next": "Next",
+    "form.model": "Model",
+    "form.manufacturer": "Manufacturer",
+    "form.serialNumber": "Serial Number",
+    "form.status": "Status",
+    "form.selectStatus": "Select status",
+    "form.newInstallation": "New Installation",
+    "form.working": "Working",
+    "form.repair": "Repair",
+    "form.maintenance": "Maintenance",
+    "form.partReplacement": "Part Replacement",
+    "form.forInstallation": "For Installation",
     
     // Alerts
     "alert.allCurrent": "All Equipment Current",
@@ -85,6 +96,7 @@ const translations = {
     "toast.fillRequired": "Please fill in all required fields",
     "toast.success": "Success", 
     "toast.equipmentAdded": "Equipment added successfully",
+    "toast.equipmentUpdated": "Equipment updated successfully",
     "toast.maintenanceScheduled": "Maintenance Scheduled",
     "toast.maintenanceScheduledDesc": "Maintenance for {name} has been scheduled.",
     "toast.serviceRequestCreated": "Service request created",
@@ -191,7 +203,7 @@ const translations = {
   ar: {
     // Header
     "header.title": "نظام صيانة المعدات",
-    "header.subtitle": "جامعة حائل",
+    "header.subtitle": "لوحة متابعة أجهزة طبية",
     "header.department": "قسم الصيانة",
     "header.facility": "إدارة المرافق",
     
@@ -237,6 +249,17 @@ const translations = {
     "form.save": "حفظ",
     "form.back": "رجوع",
     "form.next": "التالي",
+    "form.model": "الطراز",
+    "form.manufacturer": "الشركة المصنعة",
+    "form.serialNumber": "الرقم التسلسلي",
+    "form.status": "الحالة",
+    "form.selectStatus": "اختر الحالة",
+    "form.newInstallation": "تثبيت جديد",
+    "form.working": "عملي",
+    "form.repair": "إصلاح",
+    "form.maintenance": "صيانة",
+    "form.partReplacement": "إستبدال القطعة",
+    "form.forInstallation": "للتثبيت",
 
     // Alerts
     "alert.allCurrent": "جميع المعدات محدثة",
@@ -262,6 +285,7 @@ const translations = {
     "toast.fillRequired": "يرجى ملء جميع الحقول المطلوبة",
     "toast.success": "نجح",
     "toast.equipmentAdded": "تم إضافة المعدة بنجاح",
+    "toast.equipmentUpdated": "تم تحديث المعدة بنجاح",
     "toast.maintenanceScheduled": "تم جدولة الصيانة",
     "toast.maintenanceScheduledDesc": "تم جدولة الصيانة لـ {name}.",
     "toast.serviceRequestCreated": "تم إنشاء طلب الخدمة",

@@ -31,7 +31,11 @@ export const ensureSchema = async () => {
       location text,
       last_maintenance text,
       maintenance_interval text,
-      in_use boolean not null default true
+      in_use boolean not null default true,
+      model text,
+      manufacturer text,
+      serial_number text,
+      status text not null default 'Working'
     )`;
   await sql`
     create table if not exists service_request (
@@ -55,7 +59,24 @@ export const ensureSchema = async () => {
       recommendation text,
       spare_parts_needed jsonb
     )`;
+  // Add new columns to the equipment table if they do not exist
+  await sql`
+    alter table equipment
+      add column if not exists model text,
+      add column if not exists manufacturer text,
+      add column if not exists serial_number text,
+      add column if not exists status text not null default 'Working'`;
 };
+
+export const listEquipmentCache = async () => {
+  const sql = getDb();
+  await ensureSchema();
+  const rows = await sql`
+    select id, name from equipment where deleted_at is null;
+  `;
+
+  return { rows: rows as Pick<DbEquipment, 'id' | 'name'>[] };
+}
 
 export const listEquipmentPaginated = async (
   page: number = 1,

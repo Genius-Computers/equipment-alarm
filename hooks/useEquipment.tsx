@@ -1,12 +1,25 @@
-"use client"
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Equipment, EquipmentStatus, JEquipment } from "@/lib/types";
+import { Equipment, EquipmentMaintenanceStatus, JEquipment } from "@/lib/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
-export function useEquipment() {
+const EQUIPMENT_CACHE_KEY = "EquipmentCacheKey";
+
+export function useEquipment(list = true) {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
+
+  // Read initial status filter from URL query params
+  const getInitialStatus = (): "all" | EquipmentMaintenanceStatus => {
+    const statusParam = searchParams.get("status");
+    if (statusParam && ["all", "good", "due", "overdue"].includes(statusParam)) {
+      return statusParam as "all" | EquipmentMaintenanceStatus;
+    }
+    return "all";
+  };
 
   const [equipment, setEquipment] = useState<Array<JEquipment>>([]);
   const [page, setPage] = useState(1);
@@ -17,8 +30,11 @@ export function useEquipment() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isInserting, setIsInserting] = useState(false);
 
+  const [equipmentNameCache, setEquipmentNameCache] = useState<{ name: string; id: string }[]>([]);
+  const [isCaching, setIsCaching] = useState<boolean>(false);
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | EquipmentStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | EquipmentMaintenanceStatus>(getInitialStatus());
 
   const refresh = useCallback(async () => {
     try {
@@ -39,8 +55,39 @@ export function useEquipment() {
   }, [page, pageSize]);
 
   useEffect(() => {
+    if (!list) return;
     void refresh();
-  }, [refresh]);
+  }, [refresh, list]);
+
+  const fetchCache = useCallback(async () => {
+    try {
+      if (sessionStorage.getItem(EQUIPMENT_CACHE_KEY)) {
+        setEquipmentNameCache(JSON.parse(sessionStorage.getItem(EQUIPMENT_CACHE_KEY)!));
+        return;
+      }
+      setIsCaching(true);
+      const res = await fetch(`/api/equipment/cache`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load equipment");
+      const json = await res.json();
+      const data = json.data;
+      setEquipmentNameCache(data);
+      sessionStorage.setItem(EQUIPMENT_CACHE_KEY, JSON.stringify(data));
+    } catch {
+      setEquipmentNameCache([]);
+      sessionStorage.removeItem(EQUIPMENT_CACHE_KEY);
+    } finally {
+      setIsCaching(false);
+    }
+  }, []);
+
+  const reCache = useCallback(async () => {
+    sessionStorage.removeItem(EQUIPMENT_CACHE_KEY);
+    fetchCache();
+  }, [fetchCache]);
+
+  useEffect(() => {
+    fetchCache();
+  }, [fetchCache]);
 
   const addEquipment = useCallback(
     async (newEquipment: Omit<Equipment, "id">) => {
@@ -55,6 +102,7 @@ export function useEquipment() {
         const { data } = await res.json();
         setEquipment((prev) => [...prev, data as JEquipment]);
         toast(t("toast.success"), { description: t("toast.equipmentAdded") });
+        reCache();
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Failed to add equipment";
         toast(t("toast.error"), { description: message });
@@ -62,7 +110,7 @@ export function useEquipment() {
         setIsInserting(false);
       }
     },
-    [t]
+    [t, reCache]
   );
 
   const updateEquipment = useCallback(
@@ -85,6 +133,7 @@ export function useEquipment() {
         const { data } = await res.json();
         setEquipment((prev) => prev.map((e) => (e.id === (data as JEquipment).id ? (data as JEquipment) : e)));
         toast(t("toast.success"), { description: t("toast.equipmentUpdated") });
+        reCache();
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Failed to update equipment";
         toast(t("toast.error"), { description: message });
@@ -92,7 +141,7 @@ export function useEquipment() {
         setIsUpdating(false);
       }
     },
-    [t]
+    [t, reCache]
   );
 
   const filtered = useMemo(() => {
@@ -101,7 +150,7 @@ export function useEquipment() {
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+      const matchesStatus = statusFilter === "all" || item.maintenanceStatus === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [equipment, searchTerm, statusFilter]);
@@ -118,6 +167,8 @@ export function useEquipment() {
     total,
     searchTerm,
     statusFilter,
+    equipmentNameCache,
+    isCaching,
     setSearchTerm,
     setStatusFilter,
     setPage,

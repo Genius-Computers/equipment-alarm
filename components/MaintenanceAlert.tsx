@@ -3,7 +3,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/hooks/useLanguage";
-import { EquipmentStatus, JEquipment } from "@/lib/types";
+import { EquipmentMaintenanceStatus, JEquipment } from "@/lib/types";
 import { getDaysUntilMaintenance } from "./EquipmentCard";
 
 interface MaintenanceAlertProps {
@@ -12,8 +12,8 @@ interface MaintenanceAlertProps {
 
 const MaintenanceAlert = ({ equipment }: MaintenanceAlertProps) => {
   const { t } = useLanguage();
-  const dueSoon = equipment.filter((eq) => eq.status === EquipmentStatus.DUE);
-  const overdue = equipment.filter((eq) => eq.status === EquipmentStatus.OVERDUE);
+  const dueSoon = equipment.filter((eq) => eq.maintenanceStatus === EquipmentMaintenanceStatus.DUE);
+  const overdue = equipment.filter((eq) => eq.maintenanceStatus === EquipmentMaintenanceStatus.OVERDUE);
 
   if (dueSoon.length === 0 && overdue.length === 0 && equipment.length > 0) {
     return (
@@ -66,8 +66,8 @@ const MaintenanceAlert = ({ equipment }: MaintenanceAlertProps) => {
                         {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
                       </p>
                     )}
-                    <Badge variant={item.status === EquipmentStatus.OVERDUE ? "destructive" : "secondary"}>
-                      {item.status === EquipmentStatus.OVERDUE ? t("equipment.overdue") : t("equipment.dueSoon")}
+                    <Badge variant={item.maintenanceStatus === EquipmentMaintenanceStatus.OVERDUE ? "destructive" : "secondary"}>
+                      {item.maintenanceStatus === EquipmentMaintenanceStatus.OVERDUE ? t("equipment.overdue") : t("equipment.dueSoon")}
                     </Badge>
                   </div>
                 </div>

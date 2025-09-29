@@ -19,13 +19,17 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       last_maintenance: body.lastMaintenance,
       maintenance_interval: body.maintenanceInterval,
       in_use: Boolean(body.inUse),
+      status: body.status,
+      model: body.model,
+      manufacturer: body.manufacturer,
+      serial_number: body.serialNumber
     }, user.id);
     const camel = snakeToCamelCase(row) as Record<string, unknown>;
-    const { status, nextMaintenance } = deriveMaintenanceInfo({
+    const { maintenanceStatus, nextMaintenance } = deriveMaintenanceInfo({
       lastMaintenance: camel.lastMaintenance as string | undefined,
       maintenanceInterval: (camel.maintenanceInterval as string) || '',
     });
-    return NextResponse.json({ data: { ...camel, status, nextMaintenance } });
+    return NextResponse.json({ data: { ...camel, maintenanceStatus, nextMaintenance } });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });

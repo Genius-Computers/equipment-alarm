@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter, Search } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
-import { EquipmentStatus } from "@/lib/types";
+import { EquipmentMaintenanceStatus } from "@/lib/types";
 
 interface EquipmentFiltersProps {
   searchTerm: string;
-  statusFilter: "all" | EquipmentStatus;
+  statusFilter: "all" | EquipmentMaintenanceStatus;
   onSearchChange: (value: string) => void;
-  onStatusChange: (value: "all" | EquipmentStatus) => void;
+  onStatusChange: (value: "all" | EquipmentMaintenanceStatus) => void;
 }
 
 const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusChange }: EquipmentFiltersProps) => {
@@ -30,7 +30,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
 
       <div className="flex items-center gap-2">
         <Filter className="h-4 w-4 text-muted-foreground" />
-        <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as "all" | EquipmentStatus)}>
+        <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as "all" | EquipmentMaintenanceStatus)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder={t("filter.byStatus")} />
           </SelectTrigger>
