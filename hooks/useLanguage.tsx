@@ -12,6 +12,11 @@ interface LanguageContextType {
 
 const translations = {
   en: {
+    // Table
+    "table.toggleDetails": "Toggle details",
+    // Common
+    "common.noResults": "No results",
+
     // Header
     "header.title": "University of Ha'il",
     "header.subtitle": "Biomedical Equipment Dashboard",
@@ -19,11 +24,13 @@ const translations = {
     "header.facility": "Facility Management",
     
     // Equipment Card
+    "equipment.name": "Name",
     "equipment.upToDate": "Up to Date",
     "equipment.dueSoon": "Due Soon", 
     "equipment.overdue": "Overdue",
     "equipment.lastMaintenance": "Last Maintenance",
     "equipment.nextMaintenance": "Next Maintenance",
+    "equipment.location": "Location",
     "equipment.inDays": "In {days} days",
     "equipment.overdueBy": "Overdue by {days} days",
     "equipment.every": "Every",
@@ -36,6 +43,7 @@ const translations = {
     "equipment.edit": "Edit",
     "equipment.inUse": "In Use",
     "equipment.notInUse": "Not In Use",
+    "equipment.status": "Status",
     "equipment.markMaintenanceCompleted": "Mark Maintenance Completed",
     "equipment.equipmentUpdated": "Equipment Updated",
     
@@ -57,6 +65,7 @@ const translations = {
     "form.addEquipment": "Add Equipment",
     "form.cancel": "Cancel",
     "form.required": "*",
+    "form.edit": "Edit",
     "form.save": "Save",
     "form.back": "Back",
     "form.next": "Next",
@@ -137,6 +146,8 @@ const translations = {
     "priority.urgent": "Urgent",
 
     // Service Request
+    "serviceRequest.title": "Service Request",
+    "serviceRequest.manage": "Manage",
     "serviceRequest.manageRequests": "Manage Service Requests",
     "serviceRequest.newRequest": "Raise Service Request",
     "serviceRequest.createTitle": "Create Service Request",
@@ -175,6 +186,7 @@ const translations = {
     "serviceRequest.selectTechnician": "Select Technician",
     "serviceRequest.assignedTechnician": "Technician",
     "serviceRequest.assignedToMe": "Assigned to me",
+    "serviceRequest.none": "None",
 
     // Spare parts in Service Request
     "serviceRequest.spareParts.title": "Spare Parts",
@@ -201,6 +213,11 @@ const translations = {
     "users.copyError": "Failed to copy link",
   },
   ar: {
+    // Table
+    "table.toggleDetails": "تبديل التفاصيل",
+    // Common
+    "common.noResults": "لا توجد نتائج",
+
     // Header
     "header.title": "نظام صيانة المعدات",
     "header.subtitle": "لوحة متابعة أجهزة طبية",
@@ -208,11 +225,13 @@ const translations = {
     "header.facility": "إدارة المرافق",
     
     // Equipment Card
+    "equipment.name": "الاسم",
     "equipment.upToDate": "محدث",
     "equipment.dueSoon": "مستحق قريباً",
     "equipment.overdue": "متأخر",
     "equipment.lastMaintenance": "آخر صيانة",
     "equipment.nextMaintenance": "الصيانة القادمة",
+    "equipment.location": "الموقع",
     "equipment.inDays": "خلال {days} أيام",
     "equipment.overdueBy": "متأخر بـ {days} أيام",
     "equipment.every": "كل",
@@ -225,6 +244,7 @@ const translations = {
     "equipment.edit": "تعديل",
     "equipment.inUse": "في الاستخدام",
     "equipment.notInUse": "غير في الاستخدام",
+    "equipment.status": "الحالة",
     "equipment.markMaintenanceCompleted": "تم إنهاء الصيانة",
     "equipment.equipmentUpdated": "تم تحديث المعدة",
 
@@ -246,6 +266,7 @@ const translations = {
     "form.addEquipment": "إضافة معدة",
     "form.cancel": "إلغاء",
     "form.required": "*",
+    "form.edit": "تعديل",
     "form.save": "حفظ",
     "form.back": "رجوع",
     "form.next": "التالي",
@@ -326,6 +347,8 @@ const translations = {
     "priority.urgent": "عاجلة",
 
     // Service Request
+    "serviceRequest.title": "طلب خدمة",
+    "serviceRequest.manage": "إدارة",
     "serviceRequest.manageRequests": "إدارة طلبات الخدمة",
     "serviceRequest.newRequest": "إنشاء طلب خدمة",
     "serviceRequest.createTitle": "إنشاء طلب خدمة",
@@ -364,6 +387,7 @@ const translations = {
     "serviceRequest.selectTechnician": "اختر الفني",
     "serviceRequest.assignedTechnician": "الفني",
     "serviceRequest.assignedToMe": "معين لي",
+    "serviceRequest.none": "لا يوجد",
 
     // Spare parts in Service Request
     "serviceRequest.spareParts.title": "قطع الغيار",
