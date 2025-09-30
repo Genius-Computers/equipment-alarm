@@ -39,6 +39,16 @@ export interface JEquipment extends Equipment {
     latestPendingServiceRequest: ServiceRequest
 }
 
+export interface EquipmentCache {
+    id: string;
+    name: string;
+    partNumber: string;
+    location: string;
+    model: string;
+    manufacturer: string;
+    serialNumber: string;
+}
+
 export interface DbEquipment extends DbBaseAudit {
     name: string;
     model: string;

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Equipment, EquipmentMaintenanceStatus, JEquipment } from "@/lib/types";
+import { Equipment, EquipmentCache, EquipmentMaintenanceStatus, JEquipment } from "@/lib/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
 const EQUIPMENT_CACHE_KEY = "EquipmentCacheKey";
@@ -30,10 +30,10 @@ export function useEquipment(list = true) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isInserting, setIsInserting] = useState(false);
 
-  const [equipmentNameCache, setEquipmentNameCache] = useState<{ name: string; id: string }[]>([]);
+  const [equipmentNameCache, setEquipmentNameCache] = useState<EquipmentCache[]>([]);
   const [isCaching, setIsCaching] = useState<boolean>(false);
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState<"all" | EquipmentMaintenanceStatus>(getInitialStatus());
 
   const refresh = useCallback(async () => {
@@ -144,20 +144,31 @@ export function useEquipment(list = true) {
     [t, reCache]
   );
 
+  const searchResults = useMemo(() => {
+    if (!searchTerm) return [];
+    return equipmentNameCache.filter((item) => {
+      return (
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.partNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+  }, [equipmentNameCache, searchTerm]);
+
   const filtered = useMemo(() => {
     return equipment.filter((item) => {
-      const matchesSearch =
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.location.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "all" || item.maintenanceStatus === statusFilter;
-      return matchesSearch && matchesStatus;
+      return matchesStatus;
     });
-  }, [equipment, searchTerm, statusFilter]);
+  }, [equipment, statusFilter]);
 
   return {
     equipment,
     filteredEquipment: filtered,
+    searchResults,
     loading,
     error,
     isUpdating,

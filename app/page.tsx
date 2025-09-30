@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Search as SearchIcon } from "lucide-react";
 import { PlusCircle, Box, Calendar, AlertCircle, Headphones } from "lucide-react";
 import Header from "@/components/Header";
 import AddEquipmentForm from "@/components/AddEquipmentForm";
@@ -11,13 +13,65 @@ import { useEquipment } from "@/hooks/useEquipment";
 import Link from "next/link";
 
 const Page = () => {
-  const { addEquipment, equipmentNameCache, isCaching } = useEquipment(false);
+  const {
+    addEquipment,
+    equipmentNameCache,
+    isCaching,
+    searchTerm,
+    setSearchTerm,
+    searchResults,
+  } = useEquipment(false);
+
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>("");
   const [serviceRequestDialogOpen, setServiceRequestDialogOpen] = useState(false);
   return (
     <main>
       <Header />
       <div className="container mx-auto px-6 py-8">
+        {/* Homepage Search */}
+        <div className="mb-10">
+          <div className="relative">
+            <SearchIcon className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search equipment by name, part number, or location"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rtl:pl-4 rtl:pr-10"
+            />
+          </div>
+
+          {(searchTerm?.trim()?.length ?? 0) > 0 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {isCaching ? "Loading cache..." : `${searchResults.length} result${searchResults.length === 1 ? "" : "s"}`}
+              </p>
+            </div>
+          )}
+
+          {(searchTerm?.trim()?.length ?? 0) > 0 && (
+            <div className="mt-6">
+              {/* Compressed results UI */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {searchResults.map((e) => (
+                  <Link key={e.id} href={`/equipments/${e.id}`} className="rounded-lg border p-4 hover:bg-muted/40 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{e.name}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {[e.partNumber, e.model, e.manufacturer].filter(Boolean).join(" • ")}
+                    </div>
+                    {e.location ? <div className="text-xs mt-1">{e.location}</div> : null}
+                    {e.serialNumber ? <div className="text-xs text-muted-foreground mt-1">SN: {e.serialNumber}</div> : null}
+                  </Link>
+                ))}
+              </div>
+              {!isCaching && searchResults.length === 0 && (
+                <div className="text-center py-10 text-muted-foreground text-sm">No equipment found.</div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             {

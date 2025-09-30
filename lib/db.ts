@@ -72,10 +72,12 @@ export const listEquipmentCache = async () => {
   const sql = getDb();
   await ensureSchema();
   const rows = await sql`
-    select id, name from equipment where deleted_at is null;
+    select id, name, part_number, location, model, manufacturer, serial_number, status
+    from equipment
+    where deleted_at is null;
   `;
 
-  return { rows: rows as Pick<DbEquipment, 'id' | 'name'>[] };
+  return { rows: rows as Pick<DbEquipment, 'id' | 'name' | 'part_number' | 'location' | 'model' | 'manufacturer' | 'serial_number' | 'status'>[] };
 }
 
 export const listEquipmentPaginated = async (
@@ -151,6 +153,17 @@ export const updateEquipment = async (
     returning *`;
   return row as unknown as DbEquipment;
 };
+
+export const getEquipmentById = async (id: string): Promise<DbEquipment | null> => {
+  const sql = getDb();
+  await ensureSchema();
+  const rows = await sql`
+    select * from equipment e
+    where e.id = ${id} and e.deleted_at is null
+    limit 1
+  `;
+  return (rows && rows.length > 0 ? (rows[0] as unknown as DbEquipment) : null);
+}
 
 export const listServiceRequestPaginated = async (
   page: number = 1,

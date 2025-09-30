@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listEquipmentCache } from '@/lib/db';
+import { snakeToCamelCase } from '@/lib/utils';
 import { getCurrentServerUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -10,7 +11,9 @@ export async function GET(req: NextRequest) {
     }
 
     const { rows } = await listEquipmentCache();
-    return NextResponse.json({ data: rows });
+    // Return camelCase objects for client cache usage
+    const data = rows.map((r) => snakeToCamelCase(r));
+    return NextResponse.json({ data });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
