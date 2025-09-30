@@ -33,6 +33,9 @@ export function useEquipment(list = true) {
   const [equipmentNameCache, setEquipmentNameCache] = useState<EquipmentCache[]>([]);
   const [isCaching, setIsCaching] = useState<boolean>(false);
 
+  // Single equipment detail state
+  const [currentEquipment, setCurrentEquipment] = useState<Equipment | null>(null);
+
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState<"all" | EquipmentMaintenanceStatus>(getInitialStatus());
 
@@ -88,6 +91,23 @@ export function useEquipment(list = true) {
   useEffect(() => {
     fetchCache();
   }, [fetchCache]);
+
+  const loadEquipmentById = useCallback(async (id: string) => {
+    try {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
+      const res = await fetch(`/api/equipment/${id}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load equipment");
+      const json = await res.json();
+      setCurrentEquipment(json.data as Equipment);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Error loading equipment";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const addEquipment = useCallback(
     async (newEquipment: Omit<Equipment, "id">) => {
@@ -180,11 +200,13 @@ export function useEquipment(list = true) {
     statusFilter,
     equipmentNameCache,
     isCaching,
+    currentEquipment,
     setSearchTerm,
     setStatusFilter,
     setPage,
     setPageSize,
     refresh,
+    loadEquipmentById,
     addEquipment,
     updateEquipment,
   } as const;

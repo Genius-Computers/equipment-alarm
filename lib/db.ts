@@ -169,90 +169,42 @@ export const listServiceRequestPaginated = async (
   page: number = 1,
   pageSize: number = 50,
   scope?: 'pending' | 'completed',
-  assignedToTechnicianId?: string
+  assignedToTechnicianId?: string,
+  equipmentId?: string
 ): Promise<{ rows: (DbServiceRequest & { equipment: DbEquipment | null })[]; total: number }> => {
   const sql = getDb();
   await ensureSchema();
   const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
   const limit = Math.max(1, Number(pageSize));
 
-  let total = 0;
-  let rows: unknown[] = [];
+  const scopeFilter = scope === 'pending'
+    ? sql`(sr.approval_status = 'pending' or sr.work_status = 'pending')`
+    : scope === 'completed'
+    ? sql`(sr.approval_status <> 'pending' and sr.work_status <> 'pending')`
+    : sql`true`;
 
-  if (scope === 'pending') {
-    if (assignedToTechnicianId) {
-      const countRows = await sql`select count(*)::int as count from service_request sr where (sr.approval_status = 'pending' or sr.work_status = 'pending') and sr.assigned_technician_id = ${assignedToTechnicianId}`;
-      total = (countRows?.[0]?.count as number) ?? 0;
-      rows = await sql`
-        select sr.*, to_jsonb(e) as equipment
-        from service_request sr
-        left join equipment e on e.id = sr.equipment_id
-        where (sr.approval_status = 'pending' or sr.work_status = 'pending')
-          and sr.assigned_technician_id = ${assignedToTechnicianId}
-        order by sr.created_at desc
-        limit ${limit} offset ${offset}
-      `;
-    } else {
-      const countRows = await sql`select count(*)::int as count from service_request sr where (sr.approval_status = 'pending' or sr.work_status = 'pending')`;
-      total = (countRows?.[0]?.count as number) ?? 0;
-      rows = await sql`
-        select sr.*, to_jsonb(e) as equipment
-        from service_request sr
-        left join equipment e on e.id = sr.equipment_id
-        where (sr.approval_status = 'pending' or sr.work_status = 'pending')
-        order by sr.created_at desc
-        limit ${limit} offset ${offset}
-      `;
-    }
-  } else if (scope === 'completed') {
-    if (assignedToTechnicianId) {
-      const countRows = await sql`select count(*)::int as count from service_request sr where (sr.approval_status <> 'pending' and sr.work_status <> 'pending') and sr.assigned_technician_id = ${assignedToTechnicianId}`;
-      total = (countRows?.[0]?.count as number) ?? 0;
-      rows = await sql`
-        select sr.*, to_jsonb(e) as equipment
-        from service_request sr
-        left join equipment e on e.id = sr.equipment_id
-        where (sr.approval_status <> 'pending' and sr.work_status <> 'pending')
-          and sr.assigned_technician_id = ${assignedToTechnicianId}
-        order by sr.created_at desc
-        limit ${limit} offset ${offset}
-      `;
-    } else {
-      const countRows = await sql`select count(*)::int as count from service_request sr where (sr.approval_status <> 'pending' and sr.work_status <> 'pending')`;
-      total = (countRows?.[0]?.count as number) ?? 0;
-      rows = await sql`
-        select sr.*, to_jsonb(e) as equipment
-        from service_request sr
-        left join equipment e on e.id = sr.equipment_id
-        where (sr.approval_status <> 'pending' and sr.work_status <> 'pending')
-        order by sr.created_at desc
-        limit ${limit} offset ${offset}
-      `;
-    }
-  } else {
-    if (assignedToTechnicianId) {
-      const countRows = await sql`select count(*)::int as count from service_request sr where sr.assigned_technician_id = ${assignedToTechnicianId}`;
-      total = (countRows?.[0]?.count as number) ?? 0;
-      rows = await sql`
-        select sr.*, to_jsonb(e) as equipment
-        from service_request sr
-        left join equipment e on e.id = sr.equipment_id
-        where sr.assigned_technician_id = ${assignedToTechnicianId}
-        order by sr.created_at desc
-        limit ${limit} offset ${offset}
-      `;
-    } else {
-      const countRows = await sql`select count(*)::int as count from service_request`;
-      total = (countRows?.[0]?.count as number) ?? 0;
-      rows = await sql`
-        select sr.*, to_jsonb(e) as equipment
-        from service_request sr
-        left join equipment e on e.id = sr.equipment_id
-        order by sr.created_at desc
-        limit ${limit} offset ${offset}
-      `;
-    }
-  }
+  const techFilter = assignedToTechnicianId ? sql`sr.assigned_technician_id = ${assignedToTechnicianId}` : sql`true`;
+  const equipmentFilter = equipmentId ? sql`sr.equipment_id = ${equipmentId}` : sql`true`;
+
+  const countRows = await sql`
+    select count(*)::int as count
+    from service_request sr
+    where ${scopeFilter}
+      and ${techFilter}
+      and ${equipmentFilter}
+  `;
+  const total = (countRows?.[0]?.count as number) ?? 0;
+
+  const rows = await sql`
+    select sr.*, to_jsonb(e) as equipment
+    from service_request sr
+    left join equipment e on e.id = sr.equipment_id
+    where ${scopeFilter}
+      and ${techFilter}
+      and ${equipmentFilter}
+    order by sr.created_at desc
+    limit ${limit} offset ${offset}
+  `;
 
   return { rows: rows as unknown as (DbServiceRequest & { equipment: DbEquipment | null })[], total };
 };

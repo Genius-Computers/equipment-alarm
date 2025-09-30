@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
     const scope = scopeParam === 'pending' || scopeParam === 'completed' ? scopeParam : undefined;
     const assignedToParam = searchParams.get('assignedTo');
     const assignedToTechnicianId = assignedToParam === 'me' ? user.id : undefined;
-    const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId);
+    const equipmentId = searchParams.get('equipmentId') || undefined;
+    const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId);
 
     // Fetch technicians for assigned_technician_id values
     const techIds = Array.from(new Set((rows.map((r) => r.assigned_technician_id).filter(Boolean) as string[])));

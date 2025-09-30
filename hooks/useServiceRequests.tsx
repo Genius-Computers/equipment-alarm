@@ -55,6 +55,29 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		}
 	}, [page, pageSize, scope, assignedToMe]);
 
+	const loadForEquipment = useCallback(
+		async (equipmentId: string, options?: { page?: number; pageSize?: number }) => {
+			try {
+				if (!equipmentId) return;
+				setLoading(true);
+				setError(null);
+				const p = options?.page ?? 1;
+				const ps = options?.pageSize ?? 100;
+				const res = await fetch(`/api/service-request?equipmentId=${equipmentId}&page=${p}&pageSize=${ps}`, { cache: "no-store" });
+				if (!res.ok) throw new Error("Failed to load service requests");
+				const json = await res.json();
+				const rows: Array<JServiceRequest> = Array.isArray(json.data) ? json.data : [];
+				setTotal(Number(json?.meta?.total || 0));
+				setRequests(rows);
+			} catch (e: unknown) {
+				const message = e instanceof Error ? e.message : "Error loading service requests";
+				setError(message);
+			} finally {
+				setLoading(false);
+			}
+		}, []
+	);
+
 	useEffect(() => {
         if (!autoRefresh) return;
 			// If switching to a scope/assignment we already have cached for this page/pageSize, hydrate quickly
@@ -215,6 +238,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		setScope,
 		setAssignedToMe,
 		refresh,
+		loadForEquipment,
 		createRequest,
 		updateDetails,
 		changeApprovalStatus,
