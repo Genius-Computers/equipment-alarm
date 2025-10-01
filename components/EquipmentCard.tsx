@@ -8,6 +8,8 @@ import EquipmentForm from "./AddEquipmentForm";
 
 import { Equipment, JEquipment, JServiceRequest } from "@/lib/types";
 import { MAINTENANCE_INTERVAL_DAYS_MAP } from "@/lib/utils";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface EquipmentCardProps {
   equipment: JEquipment;
@@ -28,117 +30,133 @@ export const getDaysUntilMaintenance = (equipment: JEquipment) => {
 const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: EquipmentCardProps) => {
   const { t } = useLanguage();
   const daysUntil = getDaysUntilMaintenance(equipment);
+  const pathname = usePathname();
+  const href = `/equipments/${equipment.id}`;
+  const isSameRoute = pathname === href;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">{equipment.name}</CardTitle>
-          <div className="flex items-center gap-2">
-            {!equipment.inUse && (
-              <Badge variant="destructive">
-                <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
-                {t("equipment.notInUse")}
-              </Badge>
-            )}
+    <Link
+      href={href}
+      onClick={(e) => {
+        if (isSameRoute || disabled) e.preventDefault();
+      }}
+    >
+      <Card className="hover:shadow-lg transition-shadow duration-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold">{equipment.name}</CardTitle>
+            <div className="flex items-center gap-2">
+              {!equipment.inUse && (
+                <Badge variant="destructive">
+                  <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
+                  {t("equipment.notInUse")}
+                </Badge>
+              )}
+            </div>
           </div>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {t("equipment.part")}: {equipment.partNumber}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
-          {equipment.location}
-        </div>
+          <p className="text-sm text-muted-foreground">
+            {t("equipment.part")}: {equipment.partNumber}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+            {equipment.location}
+          </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
-            <p className="font-medium">{new Date(equipment.lastMaintenance).toLocaleDateString()}</p>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
+              <p className="font-medium">{new Date(equipment.lastMaintenance).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">{t("equipment.nextMaintenance")}</p>
+              {/* <p className="font-medium">{equipment.nextMaintenance}</p> */}
+              {daysUntil <= 7 && daysUntil > 0 && (
+                <p className="text-warning text-xs">{t("equipment.inDays", { days: daysUntil })}</p>
+              )}
+              {daysUntil <= 0 && (
+                <p className="text-destructive text-xs font-medium">
+                  {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="text-muted-foreground">{t("equipment.nextMaintenance")}</p>
-            {/* <p className="font-medium">{equipment.nextMaintenance}</p> */}
-            {daysUntil <= 7 && daysUntil > 0 && (
-              <p className="text-warning text-xs">{t("equipment.inDays", { days: daysUntil })}</p>
-            )}
-            {daysUntil <= 0 && (
-              <p className="text-destructive text-xs font-medium">
-                {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
-              </p>
-            )}
-          </div>
-        </div>
 
-        {equipment.latestPendingServiceRequest && (
-          <div className="rounded-md border p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center justify-between w-full gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                  <span className="capitalize font-medium">
-                    {equipment.latestPendingServiceRequest.requestType.replaceAll("_", " ")}
-                  </span>
+          {equipment.latestPendingServiceRequest && (
+            <div
+              className="rounded-md border p-3 space-y-2"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between w-full gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Wrench className="h-4 w-4 text-muted-foreground" />
+                    <span className="capitalize font-medium">
+                      {equipment.latestPendingServiceRequest.requestType.replaceAll("_", " ")}
+                    </span>
+                  </div>
+                  <Badge variant="secondary" className="capitalize">
+                    {equipment.latestPendingServiceRequest.priority}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="capitalize">
-                  {equipment.latestPendingServiceRequest.priority}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className="bg-primary/10 text-primary border-primary/20 capitalize">
+                  {t("serviceRequest.approvalStatus")}: {equipment.latestPendingServiceRequest.approvalStatus}
+                </Badge>
+                <Badge className="bg-muted text-foreground/80 border border-border capitalize">
+                  {t("serviceRequest.workStatus")}: {equipment.latestPendingServiceRequest.workStatus}
                 </Badge>
               </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge className="bg-primary/10 text-primary border-primary/20 capitalize">
-                {t("serviceRequest.approvalStatus")}: {equipment.latestPendingServiceRequest.approvalStatus}
-              </Badge>
-              <Badge className="bg-muted text-foreground/80 border border-border capitalize">
-                {t("serviceRequest.workStatus")}: {equipment.latestPendingServiceRequest.workStatus}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div>
-                {t("serviceRequest.scheduledAt")}:{" "}
-                {new Date(equipment.latestPendingServiceRequest.scheduledAt).toLocaleString()}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div>
+                  {t("serviceRequest.scheduledAt")}:{" "}
+                  {new Date(equipment.latestPendingServiceRequest.scheduledAt).toLocaleString()}
+                </div>
+                <ServiceRequestDialog
+                  equipmentId={equipment.id}
+                  equipmentName={equipment.name}
+                  existing={equipment.latestPendingServiceRequest as JServiceRequest}
+                  trigger={
+                    <Button size="sm" variant="outline">
+                      <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                    </Button>
+                  }
+                />
               </div>
-              <ServiceRequestDialog
-                equipmentId={equipment.id}
-                equipmentName={equipment.name}
-                existing={equipment.latestPendingServiceRequest as JServiceRequest}
-                trigger={
-                  <Button size="sm" variant="outline">
-                    <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-                  </Button>
-                }
-              />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center">
+              <Wrench className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 text-muted-foreground" />
+              <span>
+                {t("equipment.every")} {equipment.maintenanceInterval}
+              </span>
             </div>
           </div>
-        )}
 
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center">
-            <Wrench className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 text-muted-foreground" />
-            <span>
-              {t("equipment.every")} {equipment.maintenanceInterval}
-            </span>
+          <div className="flex gap-2 pt-2">
+            {onEditEquipment && (
+              <EquipmentForm
+                mode="edit"
+                equipment={equipment}
+                onSubmitEquipment={(updated) => onEditEquipment(updated as Equipment)}
+                submitting={disabled}
+              />
+            )}
           </div>
-        </div>
 
-        <div className="flex gap-2 pt-2">
-          {onEditEquipment && (
-            <EquipmentForm
-              mode="edit"
-              equipment={equipment}
-              onSubmitEquipment={(updated) => onEditEquipment(updated as Equipment)}
-              submitting={disabled}
-            />
-          )}
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <ServiceRequestDialog equipmentId={equipment.id} equipmentName={equipment.name} />
-        </div>
-      </CardContent>
-    </Card>
+          <div className="flex gap-2 pt-2">
+            <ServiceRequestDialog equipmentId={equipment.id} equipmentName={equipment.name} />
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 };
 

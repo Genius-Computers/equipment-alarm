@@ -11,6 +11,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Equipment, JEquipment } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { Wrench, MapPin, Pencil, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface EquipmentTableProps {
   items: JEquipment[];
@@ -23,17 +24,14 @@ const cellClass = "px-3 py-3 text-sm align-middle";
 
 const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps) => {
   const { t } = useLanguage();
+  const router = useRouter();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggleExpanded = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   if (!items || items.length === 0) {
-    return (
-      <Card className="p-6 text-center text-sm text-muted-foreground">
-        {t("common.noResults")}
-      </Card>
-    );
+    return <Card className="p-6 text-center text-sm text-muted-foreground">{t("common.noResults")}</Card>;
   }
 
   return (
@@ -62,16 +60,18 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
 
             return (
               <Fragment key={e.id}>
-                <tr className="border-t hover:bg-muted/30">
+                <tr onClick={() => router.push(`/equipments/${e.id}`)} className="border-t hover:bg-muted/30">
                   <td className={cellClass}>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
                         aria-label={t("table.toggleDetails") || "Toggle details"}
-                        onClick={() => toggleExpanded(e.id)}
-                        className="h-7 w-7"
-                      >
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleExpanded(e.id);
+                        }}
+                        className="h-7 w-7">
                         {expanded[e.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       </Button>
                       {!e.inUse && (
@@ -93,7 +93,9 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
                   <td className={cellClass}>{new Date(e.lastMaintenance).toLocaleDateString()}</td>
                   <td className={cellClass}>
                     {nextMaintenanceLabel ? (
-                      <span className={daysUntil <= 0 ? "text-destructive" : "text-warning"}>{nextMaintenanceLabel}</span>
+                      <span className={daysUntil <= 0 ? "text-destructive" : "text-warning"}>
+                        {nextMaintenanceLabel}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -104,7 +106,10 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
                     </Badge>
                   </td>
                   <td className={cellClass}>
-                    <div className="flex items-center gap-2 justify-end">
+                    <div
+                      className="flex items-center gap-2 justify-end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <ServiceRequestDialog
                         equipmentId={e.id}
                         equipmentName={e.name}
@@ -153,20 +158,27 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
                                 </Badge>
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {t("serviceRequest.scheduledAt")}: {new Date(e.latestPendingServiceRequest.scheduledAt).toLocaleString()}
+                                {t("serviceRequest.scheduledAt")}:{" "}
+                                {new Date(e.latestPendingServiceRequest.scheduledAt).toLocaleString()}
                               </div>
                             </div>
 
                             {e.latestPendingServiceRequest.problemDescription ? (
                               <div className="text-sm">
-                                <div className="text-muted-foreground mb-1">{t("serviceRequest.problemDescription")}</div>
-                                <div className="whitespace-pre-wrap break-words">{e.latestPendingServiceRequest.problemDescription}</div>
+                                <div className="text-muted-foreground mb-1">
+                                  {t("serviceRequest.problemDescription")}
+                                </div>
+                                <div className="whitespace-pre-wrap break-words">
+                                  {e.latestPendingServiceRequest.problemDescription}
+                                </div>
                               </div>
                             ) : null}
                             {e.latestPendingServiceRequest.recommendation ? (
                               <div className="text-sm">
                                 <div className="text-muted-foreground mb-1">{t("serviceRequest.recommendation")}</div>
-                                <div className="whitespace-pre-wrap break-words">{e.latestPendingServiceRequest.recommendation}</div>
+                                <div className="whitespace-pre-wrap break-words">
+                                  {e.latestPendingServiceRequest.recommendation}
+                                </div>
                               </div>
                             ) : null}
                           </div>
@@ -199,5 +211,3 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
 };
 
 export default EquipmentTable;
-
-

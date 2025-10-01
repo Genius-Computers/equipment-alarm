@@ -98,31 +98,14 @@ const ServiceRequestDialog = ({
   const [parts, setParts] = useState<SparePart[]>([]);
   const [draft, setDraft] = useState<SparePart>({ part: "", description: "", quantity: 1, cost: 0, source: "" });
 
-  // Prevent scheduling in the past
-  const isScheduledAtValid = useMemo(() => {
-    if (!form.scheduledAt) return false;
-    const selected = new Date(form.scheduledAt);
-    const now = new Date();
-    return selected.getTime() >= now.getTime();
-  }, [form.scheduledAt]);
-
-  const minScheduledAt = (() => {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
-      d.getMinutes()
-    )}`;
-  })();
-
   const isValid = useMemo(() => {
     return (
       !!form.requestType &&
       !!form.priority &&
       !!form.scheduledAt &&
-      isScheduledAtValid &&
       !!form.assignedTechnicianId
     );
-  }, [form, isScheduledAtValid]);
+  }, [form]);
 
   const totalCost = useMemo(
     () => parts.reduce((sum, p) => sum + (Number(p.cost) || 0) * (Number(p.quantity) || 0), 0),
@@ -315,8 +298,6 @@ const ServiceRequestDialog = ({
                   <Label>{t("serviceRequest.scheduledAt")}</Label>
                   <Input
                     type="datetime-local"
-                    min={minScheduledAt}
-                    aria-invalid={!isScheduledAtValid}
                     value={form.scheduledAt}
                     onChange={(e) => setForm((s) => ({ ...s, scheduledAt: e.target.value }))}
                   />

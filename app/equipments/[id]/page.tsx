@@ -121,14 +121,14 @@ const DetailPage = () => {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">{currentEquipment?.name}</h2>
-              <ServiceRequestDialog equipmentId={id} equipmentName={currentEquipment?.name} trigger={<Button>{t("serviceRequest.create") || "New Request"}</Button>} />
+              <ServiceRequestDialog equipmentId={id} equipmentName={currentEquipment?.name} trigger={<Button>{t("serviceRequest.create")}</Button>} />
             </div>
 
             <EquipmentCard equipment={equipmentForCard} />
 
-            <div className="space-y-4">
+            <div className="space-y-4 pt-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">{t("serviceRequest.title") || "Service Requests"}</h3>
+                <h3 className="text-lg font-medium">{t("serviceRequest.title")}</h3>
                 <div className="flex items-center gap-2">
                   <button
                     className={`px-3 py-1 rounded border text-sm ${scope === "pending" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
