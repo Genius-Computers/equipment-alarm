@@ -25,10 +25,9 @@ export default function AppSidebar() {
   const role = user?.clientReadOnlyMetadata?.role as string | undefined;
   const { isRTL, t } = useLanguage();
 
-  return (
+  return pathname.startsWith("/handler/") ? null : (
     <Sidebar collapsible="icon" side={isRTL ? "right" : "left"}>
-      <SidebarHeader className="px-3 py-2">
-      </SidebarHeader>
+      <SidebarHeader className="px-3 py-2"></SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>{t("sidebar.menu")}</SidebarGroupLabel>
