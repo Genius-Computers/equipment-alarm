@@ -233,6 +233,14 @@ const translations = {
     "settings.themeHint": "Choose light, dark or system",
     "settings.language": "Language",
     "settings.selectLanguage": "Select language",
+    
+    // Sidebar
+    "sidebar.menu": "Menu",
+    "sidebar.home": "Home",
+    "sidebar.inventory": "Inventory",
+    "sidebar.serviceRequests": "Service Requests",
+    "sidebar.manageUsers": "Manage Users",
+    "sidebar.accountSettings": "Account / Settings",
   },
   ar: {
     // Table
@@ -456,6 +464,14 @@ const translations = {
     "settings.themeHint": "اختر فاتحًا أو داكنًا أو النظام",
     "settings.language": "اللغة",
     "settings.selectLanguage": "اختر اللغة",
+    
+    // Sidebar
+    "sidebar.menu": "القائمة",
+    "sidebar.home": "الرئيسية",
+    "sidebar.inventory": "المخزون",
+    "sidebar.serviceRequests": "طلبات الخدمة",
+    "sidebar.manageUsers": "إدارة المستخدمين",
+    "sidebar.accountSettings": "الحساب / الإعدادات",
   }
 };
 

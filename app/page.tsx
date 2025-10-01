@@ -10,6 +10,7 @@ import AddEquipmentForm from "@/components/AddEquipmentForm";
 import ServiceRequestDialog from "@/components/ServiceRequestDialog";
 import { useEquipment } from "@/hooks/useEquipment";
 import Link from "next/link";
+import EquipmentResultCard from "@/components/EquipmentResultCard";
 
 const Page = () => {
   const {
@@ -52,16 +53,7 @@ const Page = () => {
               {/* Compressed results UI */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {searchResults.map((e) => (
-                  <Link key={e.id} href={`/equipments/${e.id}`} className="rounded-lg border p-4 hover:bg-muted/40 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{e.name}</div>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {[e.partNumber, e.model, e.manufacturer].filter(Boolean).join(" • ")}
-                    </div>
-                    {e.location ? <div className="text-xs mt-1">{e.location}</div> : null}
-                    {e.serialNumber ? <div className="text-xs text-muted-foreground mt-1">SN: {e.serialNumber}</div> : null}
-                  </Link>
+                  <EquipmentResultCard key={e.id} equipment={e} />
                 ))}
               </div>
               {!isCaching && searchResults.length === 0 && (

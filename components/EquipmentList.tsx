@@ -44,7 +44,7 @@ const EquipmentList = ({ loading, items, onEdit, updating = false }: EquipmentLi
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(4)].map((_, index) => (
             <div key={index} className="rounded-lg border p-0">
               <div className="p-4 border-b">
@@ -92,7 +92,7 @@ const EquipmentList = ({ loading, items, onEdit, updating = false }: EquipmentLi
           ))}
         </div>
       ) : view === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map((item) => (
             <EquipmentCard key={item.id} equipment={item} onEditEquipment={onEdit} disabled={updating} />
           ))}

@@ -41,9 +41,6 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
             <SelectItem value="overdue">{t("filter.overdue")}</SelectItem>
           </SelectContent>
         </Select>
-        <Link href="/service-requests" className="text-sm underline text-muted-foreground">
-          {t("serviceRequest.manageRequests")}
-        </Link>
       </div>
     </div>
   );

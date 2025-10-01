@@ -13,27 +13,31 @@ import {
   SidebarSeparator,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Home, Box, Calendar, Settings as SettingsIcon } from "lucide-react";
+import { Home, Box, Calendar, Settings as SettingsIcon, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useUser } from "@stackframe/stack";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || (href !== "/" && pathname?.startsWith(href));
+  const user = useUser();
+  const role = user?.clientReadOnlyMetadata?.role as string | undefined;
+  const { isRTL, t } = useLanguage();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" side={isRTL ? "right" : "left"}>
       <SidebarHeader className="px-3 py-2">
-        <div className="text-sm font-medium">Navigation</div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("sidebar.menu")}</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/")}> 
+              <SidebarMenuButton asChild isActive={isActive("/")}>
                 <Link href="/">
                   <Home />
-                  <span>Home</span>
+                  <span>{t("sidebar.home")}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -41,7 +45,7 @@ export default function AppSidebar() {
               <SidebarMenuButton asChild isActive={isActive("/equipments")}>
                 <Link href="/equipments">
                   <Box />
-                  <span>Equipments</span>
+                  <span>{t("sidebar.inventory")}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -49,16 +53,26 @@ export default function AppSidebar() {
               <SidebarMenuButton asChild isActive={isActive("/service-requests")}>
                 <Link href="/service-requests">
                   <Calendar />
-                  <span>Service Requests</span>
+                  <span>{t("sidebar.serviceRequests")}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarSeparator />
+            {role === "admin" && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/users")}>
+                  <Link href="/users">
+                    <Users />
+                    <span>{t("sidebar.manageUsers")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive("/settings")}>
                 <Link href="/settings">
                   <SettingsIcon />
-                  <span>Account / Settings</span>
+                  <span>{t("sidebar.accountSettings")}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

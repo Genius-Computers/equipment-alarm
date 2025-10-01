@@ -13,7 +13,7 @@ import Link from "next/link";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Settings, User as UserIcon, Palette } from "lucide-react";
+import { Settings, User as UserIcon, Palette, LogOut } from "lucide-react";
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
@@ -53,11 +53,18 @@ export default function SettingsPage() {
                 <CardTitle>{t("settings.title") || "Settings"}</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>{t("settings.subtitle") || "Manage your account, preferences and appearance."}</p>
+                <p>{t("settings.subtitle")}</p>
                 <Separator />
                 <div className="flex items-center justify-between">
-                  <span>{t("settings.themeQuick") || "Theme"}</span>
+                  <span>{t("settings.themeQuick")}</span>
                   <ModeToggle />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <span>{t("auth.signOut")}</span>
+                  <Button variant="outline" size="icon">
+                    <LogOut className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -76,19 +83,42 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="displayName">{t("settings.displayName") || "Display name"}</Label>
-                  <Input id="displayName" value={form.displayName} onChange={(e) => setForm((s) => ({ ...s, displayName: e.target.value }))} disabled={loading || saving} />
+                  <Input
+                    id="displayName"
+                    value={form.displayName}
+                    onChange={(e) => setForm((s) => ({ ...s, displayName: e.target.value }))}
+                    disabled={loading || saving}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="designation">{t("settings.designation") || "Designation"}</Label>
-                  <Input id="designation" placeholder={t("settings.designationPlaceholder") || "e.g. Biomedical Engineer"} value={form.designation} onChange={(e) => setForm((s) => ({ ...s, designation: e.target.value }))} disabled={loading || saving} />
+                  <Input
+                    id="designation"
+                    placeholder={t("settings.designationPlaceholder") || "e.g. Biomedical Engineer"}
+                    value={form.designation}
+                    onChange={(e) => setForm((s) => ({ ...s, designation: e.target.value }))}
+                    disabled={loading || saving}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="department">{t("settings.department") || "Department"}</Label>
-                  <Input id="department" placeholder={t("settings.departmentPlaceholder") || "e.g. Maintenance"} value={form.department} onChange={(e) => setForm((s) => ({ ...s, department: e.target.value }))} disabled={loading || saving} />
+                  <Input
+                    id="department"
+                    placeholder={t("settings.departmentPlaceholder") || "e.g. Maintenance"}
+                    value={form.department}
+                    onChange={(e) => setForm((s) => ({ ...s, department: e.target.value }))}
+                    disabled={loading || saving}
+                  />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="phone">{t("settings.phone") || "Phone"}</Label>
-                  <Input id="phone" placeholder={t("settings.phonePlaceholder") || "e.g. +966 5XXXXXXXX"} value={form.phone} onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} disabled={loading || saving} />
+                  <Input
+                    id="phone"
+                    placeholder={t("settings.phonePlaceholder") || "e.g. +966 5XXXXXXXX"}
+                    value={form.phone}
+                    onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
+                    disabled={loading || saving}
+                  />
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col md:flex-row md:justify-between gap-3">
@@ -96,7 +126,7 @@ export default function SettingsPage() {
                   <Link href="/handler/forgot-password">{t("settings.resetPassword") || "Reset password"}</Link>
                 </Button>
                 <Button onClick={onSave} disabled={saving || loading}>
-                  {saving ? (t("settings.saving") || "Saving...") : (t("settings.save") || "Save changes")}
+                  {saving ? t("settings.saving") || "Saving..." : t("settings.save") || "Save changes"}
                 </Button>
               </CardFooter>
             </Card>
@@ -111,12 +141,14 @@ export default function SettingsPage() {
                   <Label htmlFor="theme">{t("settings.theme") || "Theme"}</Label>
                   <div className="flex items-center gap-2">
                     <ModeToggle />
-                    <span className="text-xs text-muted-foreground">{t("settings.themeHint") || "Choose light, dark or system"}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("settings.themeHint") || "Choose light, dark or system"}
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="language">{t("settings.language") || "Language"}</Label>
-                  <Select value={language} onValueChange={(v) => (v === 'ar' || v === 'en') && setLanguage(v)}>
+                  <Select value={language} onValueChange={(v) => (v === "ar" || v === "en") && setLanguage(v)}>
                     <SelectTrigger id="language">
                       <SelectValue placeholder={t("settings.selectLanguage") || "Select language"} />
                     </SelectTrigger>

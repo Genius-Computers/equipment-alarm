@@ -2,7 +2,6 @@
 import Header from "@/components/Header";
 import EquipmentFilters from "@/components/EquipmentFilters";
 import EquipmentList from "@/components/EquipmentList";
-import EquipmentSidebar from "@/components/EquipmentSidebar";
 import { useEquipment } from "@/hooks/useEquipment";
 import { useLanguage } from "@/hooks/useLanguage";
 import CustomPagination from "@/components/CustomPagination";
@@ -10,7 +9,6 @@ import CustomPagination from "@/components/CustomPagination";
 const Page = () => {
   const { t } = useLanguage();
   const {
-    equipment,
     filteredEquipment,
     loading,
     error,
@@ -24,7 +22,6 @@ const Page = () => {
     setSearchTerm,
     setStatusFilter,
     setPage,
-    addEquipment,
     updateEquipment,
   } = useEquipment();
 
@@ -33,11 +30,7 @@ const Page = () => {
       <Header />
 
       <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            <EquipmentSidebar loading={loading || isInserting} equipment={equipment} onAdd={addEquipment} submitting={isInserting} />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
