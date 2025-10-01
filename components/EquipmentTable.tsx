@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Equipment, JEquipment } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
-import { Wrench, MapPin, Pencil, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Wrench, Pencil, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface EquipmentTableProps {
