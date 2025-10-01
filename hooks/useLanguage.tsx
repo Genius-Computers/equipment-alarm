@@ -49,8 +49,8 @@ const translations = {
     
     // Add Equipment Form
     "form.addNewEquipment": "Add New Equipment",
-    "form.machineName": "Machine Name",
-    "form.partNumber": "Part Number",
+    "form.machineName": "Equipment/Device name",
+    "form.partNumber": "Tag Number",
     "form.location": "Location",
     "form.maintenanceInterval": "Maintenance Interval",
     "form.lastMaintenanceDate": "Last Maintenance Date",

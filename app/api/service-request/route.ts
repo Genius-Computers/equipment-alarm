@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
     const assignedToParam = searchParams.get('assignedTo');
     const assignedToTechnicianId = assignedToParam === 'me' ? user.id : undefined;
     const equipmentId = searchParams.get('equipmentId') || undefined;
-    const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId);
+    const priority = searchParams.get('priority') || undefined; // expected: 'low' | 'medium' | 'high' | 'all'
+    const approval = searchParams.get('approval') || undefined; // expected: 'pending' | 'approved' | 'rejected' | 'all'
+    const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval);
 
     // Fetch technicians for assigned_technician_id values
     const techIds = Array.from(new Set((rows.map((r) => r.assigned_technician_id).filter(Boolean) as string[])));

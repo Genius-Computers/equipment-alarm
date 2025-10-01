@@ -13,17 +13,41 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get('page') ?? '1');
     const pageSize = Number(searchParams.get('pageSize') ?? '10');
-    const { rows, total } = await listEquipmentPaginated(page, pageSize);
+    const q = searchParams.get('q') || undefined;
+    const status = searchParams.get('status') || undefined; // 'all' | 'good' | 'due' | 'overdue'
+
+    // If filtering by derived status, fetch a large chunk and paginate after deriving
+    const deriving = Boolean(status && status !== 'all');
+    const dbPage = deriving ? 1 : page;
+    const dbPageSize = deriving ? 5000 : pageSize; // pragmatic cap
+    const { rows, total } = await listEquipmentPaginated(dbPage, dbPageSize, q);
+
+    const mapped = rows.map((r) => {
+      const camel = snakeToCamelCase(r) as Record<string, unknown>;
+      const { maintenanceStatus, nextMaintenance } = deriveMaintenanceInfo({
+        lastMaintenance: camel.lastMaintenance as string | undefined,
+        maintenanceInterval: (camel.maintenanceInterval as string) || '',
+      });
+      return { ...camel, maintenanceStatus, nextMaintenance } as Record<string, unknown> & { maintenanceStatus: string };
+    });
+
+    const filteredByStatus = !status || status === 'all'
+      ? mapped
+      : mapped.filter((e) => (e.maintenanceStatus as string) === status);
+
+    // If we derived filter, we must paginate the filtered set
+    if (deriving) {
+      const start = Math.max(0, (page - 1) * pageSize);
+      const end = start + pageSize;
+      const sliced = filteredByStatus.slice(start, end);
+      return NextResponse.json({
+        data: sliced,
+        meta: { page, pageSize, total: filteredByStatus.length }
+      });
+    }
 
     return NextResponse.json({
-      data: rows.map((r) => {
-        const camel = snakeToCamelCase(r) as Record<string, unknown>;
-        const { maintenanceStatus, nextMaintenance } = deriveMaintenanceInfo({
-          lastMaintenance: camel.lastMaintenance as string | undefined,
-          maintenanceInterval: (camel.maintenanceInterval as string) || '',
-        });
-        return { ...camel, maintenanceStatus, nextMaintenance };
-      }),
+      data: filteredByStatus,
       meta: { page, pageSize, total }
     });
   } catch (error: unknown) {

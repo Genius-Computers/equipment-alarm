@@ -82,14 +82,31 @@ export const listEquipmentCache = async () => {
 
 export const listEquipmentPaginated = async (
   page: number = 1,
-  pageSize: number = 4
+  pageSize: number = 4,
+  q?: string
 ): Promise<{ rows: (DbEquipment & { latest_pending_service_request: DbServiceRequest | null })[]; total: number }> => {
   const sql = getDb();
   await ensureSchema();
   const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
   const limit = Math.max(1, Number(pageSize));
 
-  const countRows = await sql`select count(*)::int as count from equipment`;
+  const textFilter = q && q.trim().length > 0
+    ? sql`(
+        e.name ilike ${'%' + q + '%'} or
+        e.part_number ilike ${'%' + q + '%'} or
+        e.location ilike ${'%' + q + '%'} or
+        e.model ilike ${'%' + q + '%'} or
+        e.manufacturer ilike ${'%' + q + '%'} or
+        e.serial_number ilike ${'%' + q + '%'}
+      )`
+    : sql`true`;
+
+  const countRows = await sql`
+    select count(*)::int as count
+    from equipment e
+    where e.deleted_at is null
+      and ${textFilter}
+  `;
   const total = (countRows?.[0]?.count as number) ?? 0;
 
   const rows = await sql`
@@ -105,6 +122,8 @@ export const listEquipmentPaginated = async (
       order by s.scheduled_at desc
       limit 1
     ) s on true
+    where e.deleted_at is null
+      and ${textFilter}
     order by e.name asc
     limit ${limit} offset ${offset}
   `;
@@ -170,7 +189,9 @@ export const listServiceRequestPaginated = async (
   pageSize: number = 50,
   scope?: 'pending' | 'completed',
   assignedToTechnicianId?: string,
-  equipmentId?: string
+  equipmentId?: string,
+  priority?: string,
+  approval?: string,
 ): Promise<{ rows: (DbServiceRequest & { equipment: DbEquipment | null })[]; total: number }> => {
   const sql = getDb();
   await ensureSchema();
@@ -185,6 +206,8 @@ export const listServiceRequestPaginated = async (
 
   const techFilter = assignedToTechnicianId ? sql`sr.assigned_technician_id = ${assignedToTechnicianId}` : sql`true`;
   const equipmentFilter = equipmentId ? sql`sr.equipment_id = ${equipmentId}` : sql`true`;
+  const priorityFilter = priority && priority !== 'all' ? sql`sr.priority = ${priority}` : sql`true`;
+  const approvalFilter = approval && approval !== 'all' ? sql`sr.approval_status = ${approval}` : sql`true`;
 
   const countRows = await sql`
     select count(*)::int as count
@@ -192,6 +215,8 @@ export const listServiceRequestPaginated = async (
     where ${scopeFilter}
       and ${techFilter}
       and ${equipmentFilter}
+      and ${priorityFilter}
+      and ${approvalFilter}
   `;
   const total = (countRows?.[0]?.count as number) ?? 0;
 
@@ -202,6 +227,8 @@ export const listServiceRequestPaginated = async (
     where ${scopeFilter}
       and ${techFilter}
       and ${equipmentFilter}
+      and ${priorityFilter}
+      and ${approvalFilter}
     order by sr.created_at desc
     limit ${limit} offset ${offset}
   `;

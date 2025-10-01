@@ -32,6 +32,7 @@ export function useEquipment(list = true) {
 
   const [equipmentNameCache, setEquipmentNameCache] = useState<EquipmentCache[]>([]);
   const [isCaching, setIsCaching] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
 
   // Single equipment detail state
   const [currentEquipment, setCurrentEquipment] = useState<Equipment | null>(null);
@@ -39,11 +40,16 @@ export function useEquipment(list = true) {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState<"all" | EquipmentMaintenanceStatus>(getInitialStatus());
 
+  // Server-driven search results for homepage and list
+  const [searchResults, setSearchResults] = useState<Array<JEquipment>>([]);
+
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/equipment?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
+      const q = encodeURIComponent(searchTerm || "");
+      const status = encodeURIComponent(statusFilter || "all");
+      const res = await fetch(`/api/equipment?page=${page}&pageSize=${pageSize}&q=${q}&status=${status}` as string, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load equipment");
       const json = await res.json();
       const rows: Array<JEquipment> = Array.isArray(json.data) ? json.data : [];
@@ -55,11 +61,19 @@ export function useEquipment(list = true) {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, searchTerm, statusFilter]);
 
+  // Debounced list refresh when filters/pagination change
   useEffect(() => {
     if (!list) return;
-    void refresh();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      void refresh();
+    }, 1000);
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
   }, [refresh, list]);
 
   const fetchCache = useCallback(async () => {
@@ -164,26 +178,39 @@ export function useEquipment(list = true) {
     [t, reCache]
   );
 
-  const searchResults = useMemo(() => {
-    if (!searchTerm) return [];
-    return equipmentNameCache.filter((item) => {
-      return (
-        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.partNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    });
-  }, [equipmentNameCache, searchTerm]);
+  // Debounced server search for homepage (non-list usage)
+  useEffect(() => {
+    if (list) return; // homepage search mode only
+    const q = (searchTerm || "").trim();
+    if (q.length === 0) {
+      setSearchResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    setIsSearching(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/equipment?page=1&pageSize=25&q=${encodeURIComponent(q)}`, { cache: "no-store", signal: controller.signal });
+        if (!res.ok) throw new Error("Failed to search equipment");
+        const json = await res.json();
+        const rows: Array<JEquipment> = Array.isArray(json.data) ? json.data : [];
+        setSearchResults(rows);
+      } catch {
+        // ignore abort or network error for search UX
+      } finally {
+        setIsSearching(false);
+      }
+    }, 1000);
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [list, searchTerm]);
 
   const filtered = useMemo(() => {
-    return equipment.filter((item) => {
-      const matchesStatus = statusFilter === "all" || item.maintenanceStatus === statusFilter;
-      return matchesStatus;
-    });
-  }, [equipment, statusFilter]);
+    // Server already applied filters; expose as-is
+    return equipment;
+  }, [equipment]);
 
   return {
     equipment,
@@ -193,6 +220,7 @@ export function useEquipment(list = true) {
     error,
     isUpdating,
     isInserting,
+    isSearching,
     page,
     pageSize,
     total,

@@ -21,8 +21,6 @@ const Page = () => {
 		pageSize,
 		total,
 		setPage,
-		searchTerm,
-		setSearchTerm,
 		priorityFilter,
 		setPriorityFilter,
 		assignedToMe,
@@ -40,8 +38,6 @@ const Page = () => {
 			<Header />
 			<main className="container mx-auto px-6 py-8 space-y-6">
 				<ServiceRequestFilters
-					search={searchTerm}
-					onSearchChange={setSearchTerm}
 					priority={priorityFilter}
 					onPriorityChange={setPriorityFilter}
 					showAssignedToggle={role === "user"}

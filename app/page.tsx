@@ -20,6 +20,7 @@ const Page = () => {
     searchTerm,
     setSearchTerm,
     searchResults,
+    isSearching,
   } = useEquipment(false);
 
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>("");
@@ -33,7 +34,7 @@ const Page = () => {
           <div className="relative">
             <SearchIcon className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search equipment by name, part number, or location"
+              placeholder="Search equipment by name, tag number, or location"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 rtl:pl-4 rtl:pr-10"
@@ -43,7 +44,7 @@ const Page = () => {
           {(searchTerm?.trim()?.length ?? 0) > 0 && (
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {isCaching ? "Loading cache..." : `${searchResults.length} result${searchResults.length === 1 ? "" : "s"}`}
+                {isSearching ? "Searching..." : `${searchResults.length} result${searchResults.length === 1 ? "" : "s"}`}
               </p>
             </div>
           )}
@@ -56,7 +57,7 @@ const Page = () => {
                   <EquipmentResultCard key={e.id} equipment={e} />
                 ))}
               </div>
-              {!isCaching && searchResults.length === 0 && (
+              {!isSearching && searchResults.length === 0 && (
                 <div className="text-center py-10 text-muted-foreground text-sm">No equipment found.</div>
               )}
             </div>

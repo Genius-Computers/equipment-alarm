@@ -24,7 +24,6 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	const [isInserting, setIsInserting] = useState(false);
 	const [updatingById, setUpdatingById] = useState<Record<string, { approval?: boolean; work?: boolean; details?: boolean }>>({});
 
-    const [searchTerm, setSearchTerm] = useState("");
 	const [priorityFilter, setPriorityFilter] = useState<"all" | JServiceRequest["priority"]>("all");
 	const [approvalFilter, setApprovalFilter] = useState<"all" | JServiceRequest["approvalStatus"]>("all");
 
@@ -38,22 +37,27 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 			setLoading(true);
 			setError(null);
 			const assignedParam = assignedToMe ? "&assignedTo=me" : "";
-			const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}${assignedParam}` , { cache: "no-store" });
+			const pr = encodeURIComponent(priorityFilter || "all");
+			const ap = encodeURIComponent(approvalFilter || "all");
+			const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}${assignedParam}&priority=${pr}&approval=${ap}` , { cache: "no-store" });
 			if (!res.ok) throw new Error("Failed to load service requests");
 			const json = await res.json();
 			const rows: Array<JServiceRequest> = Array.isArray(json.data) ? json.data : [];
 			setTotal(Number(json?.meta?.total || 0));
 			setRequests(rows);
-			// update cache for scope + assignment filter
-			const key = `${scope}:${assignedToMe ? "me" : "all"}`;
-			setCache((prev) => ({ ...prev, [key]: { page, pageSize, total: Number(json?.meta?.total || 0), rows } }));
+			// update cache only for default filter state (no search; all priority/approval)
+			const allowCache = (priorityFilter === "all") && (approvalFilter === "all");
+			if (allowCache) {
+				const key = `${scope}:${assignedToMe ? "me" : "all"}`;
+				setCache((prev) => ({ ...prev, [key]: { page, pageSize, total: Number(json?.meta?.total || 0), rows } }));
+			}
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : "Error loading service requests";
 			setError(message);
 		} finally {
 			setLoading(false);
 		}
-	}, [page, pageSize, scope, assignedToMe]);
+	}, [page, pageSize, scope, assignedToMe, priorityFilter, approvalFilter]);
 
 	const loadForEquipment = useCallback(
 		async (
@@ -90,18 +94,26 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	);
 
 	useEffect(() => {
-        if (!autoRefresh) return;
-			// If switching to a scope/assignment we already have cached for this page/pageSize, hydrate quickly
+		if (!autoRefresh) return;
+		// hydrate from cache only when no active filters/search
+		const allowCache = (priorityFilter === "all") && (approvalFilter === "all");
+		if (allowCache) {
 			const key = `${scope}:${assignedToMe ? "me" : "all"}`;
 			const scoped = cache[key];
-        if (scoped && scoped.page === page && scoped.pageSize === pageSize && Array.isArray(scoped.rows)) {
-            setRequests(scoped.rows);
-            setTotal(scoped.total);
-            setLoading(false);
-            return;
-        }
-        void refresh();
-	}, [autoRefresh, refresh, scope, page, pageSize, assignedToMe]);
+			if (scoped && scoped.page === page && scoped.pageSize === pageSize && Array.isArray(scoped.rows)) {
+				setRequests(scoped.rows);
+				setTotal(scoped.total);
+				setLoading(false);
+				return;
+			}
+		}
+		const controller = new AbortController();
+		const timeout = setTimeout(() => { void refresh(); }, 1000);
+		return () => {
+			controller.abort();
+			clearTimeout(timeout);
+		};
+	}, [autoRefresh, refresh, scope, page, pageSize, assignedToMe, priorityFilter, approvalFilter]);
 
 	const createRequest = useCallback(
 		async (input: ServiceRequestCreateInput) => {
@@ -216,15 +228,9 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	);
 
 	const filtered = useMemo(() => {
-		return requests.filter((r) => {
-			const matchesSearch =
-				(r.requestType || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-				(r.problemDescription || "").toLowerCase().includes(searchTerm.toLowerCase());
-			const matchesPriority = priorityFilter === "all" || r.priority === priorityFilter;
-			const matchesApproval = approvalFilter === "all" || r.approvalStatus === approvalFilter;
-			return matchesSearch && matchesPriority && matchesApproval;
-		});
-	}, [requests, searchTerm, priorityFilter, approvalFilter]);
+		// Server applies filters; return as-is
+		return requests;
+	}, [requests]);
 
 	return {
 		requests,
@@ -238,10 +244,8 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		total,
 		scope,
 		assignedToMe,
-		searchTerm,
 		priorityFilter,
 		approvalFilter,
-		setSearchTerm,
 		setPriorityFilter,
 		setApprovalFilter,
 		setPage,
