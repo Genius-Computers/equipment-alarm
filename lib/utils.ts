@@ -71,12 +71,21 @@ export function formatStackUserLight(u: any): User | null {
   if (!u) return null
   const role = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).role as string | undefined) ||
                (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).role as string | undefined))
+  const phone = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).phone as string | undefined) ||
+                 (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).phone as string | undefined))
+  const designation = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).designation as string | undefined) ||
+                       (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).designation as string | undefined))
+  const department = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).department as string | undefined) ||
+                      (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).department as string | undefined))
   return {
     id: u.id,
     displayName: u.displayName,
     email: u.primaryEmail,
     role,
     signedUpAt: u.signedUpAt?.toISOString?.(),
+    phone,
+    designation,
+    department,
   } as User
 }
 

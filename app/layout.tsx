@@ -8,6 +8,8 @@ import { LanguageProvider } from "@/hooks/useLanguage";
 import { ThemeProvider } from "@/components/theme-provider";
 import ApprovalGate from "@/components/ApprovalGate";
 import { Suspense } from "react";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import AppSidebar from "@/components/AppSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +39,15 @@ export default function RootLayout({
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               <LanguageProvider>
                 <Suspense fallback={null}>
-                  <ApprovalGate>{children}</ApprovalGate>
+                  <SidebarProvider>
+                    <AppSidebar />
+                    <SidebarInset>
+                      <div className="flex items-center gap-2 p-2 border-b">
+                        <SidebarTrigger />
+                      </div>
+                      <ApprovalGate>{children}</ApprovalGate>
+                    </SidebarInset>
+                  </SidebarProvider>
                 </Suspense>
                 <Toaster />
               </LanguageProvider>

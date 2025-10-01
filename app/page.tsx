@@ -4,8 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/comp
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search as SearchIcon } from "lucide-react";
-import { PlusCircle, Box, Calendar, AlertCircle, Headphones } from "lucide-react";
+import { Search as SearchIcon, Box, Calendar, AlertCircle, Headphones, PlusCircle } from "lucide-react";
 import Header from "@/components/Header";
 import AddEquipmentForm from "@/components/AddEquipmentForm";
 import ServiceRequestDialog from "@/components/ServiceRequestDialog";

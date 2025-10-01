@@ -211,6 +211,28 @@ const translations = {
     "users.copyLink": "Copy link",
     "users.copied": "Link copied",
     "users.copyError": "Failed to copy link",
+
+    // Settings
+    "settings.title": "Settings",
+    "settings.subtitle": "Manage your account, preferences and appearance.",
+    "settings.account": "Account",
+    "settings.email": "Email",
+    "settings.displayName": "Display name",
+    "settings.phone": "Phone",
+    "settings.phonePlaceholder": "e.g. +966 5XXXXXXXX",
+    "settings.designation": "Designation",
+    "settings.designationPlaceholder": "e.g. Biomedical Engineer",
+    "settings.department": "Department",
+    "settings.departmentPlaceholder": "e.g. Maintenance",
+    "settings.resetPassword": "Reset password",
+    "settings.saving": "Saving...",
+    "settings.save": "Save changes",
+    "settings.appearance": "Appearance",
+    "settings.theme": "Theme",
+    "settings.themeQuick": "Quick theme",
+    "settings.themeHint": "Choose light, dark or system",
+    "settings.language": "Language",
+    "settings.selectLanguage": "Select language",
   },
   ar: {
     // Table
@@ -412,6 +434,28 @@ const translations = {
     "users.copyLink": "نسخ الرابط",
     "users.copied": "تم نسخ الرابط",
     "users.copyError": "تعذر نسخ الرابط",
+
+    // Settings
+    "settings.title": "الإعدادات",
+    "settings.subtitle": "إدارة الحساب والتفضيلات والمظهر.",
+    "settings.account": "الحساب",
+    "settings.email": "البريد الإلكتروني",
+    "settings.displayName": "الاسم المعروض",
+    "settings.phone": "رقم الهاتف",
+    "settings.phonePlaceholder": "مثال: +966 5XXXXXXXX",
+    "settings.designation": "المسمى الوظيفي",
+    "settings.designationPlaceholder": "مثال: مهندس أجهزة طبية",
+    "settings.department": "القسم",
+    "settings.departmentPlaceholder": "مثال: الصيانة",
+    "settings.resetPassword": "إعادة تعيين كلمة المرور",
+    "settings.saving": "جارٍ الحفظ...",
+    "settings.save": "حفظ التغييرات",
+    "settings.appearance": "المظهر",
+    "settings.theme": "السمة",
+    "settings.themeQuick": "سمة سريعة",
+    "settings.themeHint": "اختر فاتحًا أو داكنًا أو النظام",
+    "settings.language": "اللغة",
+    "settings.selectLanguage": "اختر اللغة",
   }
 };
 

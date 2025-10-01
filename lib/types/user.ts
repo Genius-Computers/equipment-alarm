@@ -16,4 +16,7 @@ export interface User {
   email?: string
   role?: UserRole; 
   signedUpAt?: string
+  phone?: string
+  designation?: string
+  department?: string
 }
