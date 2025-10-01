@@ -56,19 +56,30 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	}, [page, pageSize, scope, assignedToMe]);
 
 	const loadForEquipment = useCallback(
-		async (equipmentId: string, options?: { page?: number; pageSize?: number }) => {
+		async (
+			equipmentId: string,
+			options?: { page?: number; pageSize?: number; scope?: "pending" | "completed" }
+		) => {
 			try {
 				if (!equipmentId) return;
 				setLoading(true);
 				setError(null);
 				const p = options?.page ?? 1;
 				const ps = options?.pageSize ?? 100;
-				const res = await fetch(`/api/service-request?equipmentId=${equipmentId}&page=${p}&pageSize=${ps}`, { cache: "no-store" });
+				const sc = options?.scope;
+				const scopeParam = sc ? `&scope=${sc}` : "";
+				const res = await fetch(
+					`/api/service-request?equipmentId=${equipmentId}&page=${p}&pageSize=${ps}${scopeParam}`,
+					{ cache: "no-store" }
+				);
 				if (!res.ok) throw new Error("Failed to load service requests");
 				const json = await res.json();
 				const rows: Array<JServiceRequest> = Array.isArray(json.data) ? json.data : [];
 				setTotal(Number(json?.meta?.total || 0));
 				setRequests(rows);
+				// align local pagination state with what we loaded
+				setPage(p);
+				setPageSize(ps);
 			} catch (e: unknown) {
 				const message = e instanceof Error ? e.message : "Error loading service requests";
 				setError(message);
