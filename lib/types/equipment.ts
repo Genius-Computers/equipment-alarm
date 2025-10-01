@@ -21,6 +21,7 @@ export interface Equipment {
     name: string;
     partNumber: string;
     location: string;
+    subLocation: string;
     lastMaintenance: string;
     maintenanceInterval: string;
     inUse: boolean;
@@ -44,6 +45,7 @@ export interface EquipmentCache {
     name: string;
     partNumber: string;
     location: string;
+    subLocation: string;
     model: string;
     manufacturer: string;
     serialNumber: string;
@@ -57,6 +59,7 @@ export interface DbEquipment extends DbBaseAudit {
     status: EquipmentStatus;
     part_number: string;
     location: string;
+    sub_location: string;
     last_maintenance: string;
     maintenance_interval: string;
     in_use: boolean;

@@ -29,6 +29,7 @@ export const ensureSchema = async () => {
       name text not null,
       part_number text,
       location text,
+      sub_location text,
       last_maintenance text,
       maintenance_interval text,
       in_use boolean not null default true,
@@ -65,19 +66,20 @@ export const ensureSchema = async () => {
       add column if not exists model text,
       add column if not exists manufacturer text,
       add column if not exists serial_number text,
-      add column if not exists status text not null default 'Working'`;
+      add column if not exists status text not null default 'Working',
+      add column if not exists sub_location text`;
 };
 
 export const listEquipmentCache = async () => {
   const sql = getDb();
   await ensureSchema();
   const rows = await sql`
-    select id, name, part_number, location, model, manufacturer, serial_number, status
+    select id, name, part_number, location, sub_location, model, manufacturer, serial_number, status
     from equipment
     where deleted_at is null;
   `;
 
-  return { rows: rows as Pick<DbEquipment, 'id' | 'name' | 'part_number' | 'location' | 'model' | 'manufacturer' | 'serial_number' | 'status'>[] };
+  return { rows: rows as Pick<DbEquipment, 'id' | 'name' | 'part_number' | 'location' | 'sub_location' | 'model' | 'manufacturer' | 'serial_number' | 'status'>[] };
 }
 
 export const listEquipmentPaginated = async (
@@ -95,6 +97,7 @@ export const listEquipmentPaginated = async (
         e.name ilike ${'%' + q + '%'} or
         e.part_number ilike ${'%' + q + '%'} or
         e.location ilike ${'%' + q + '%'} or
+        e.sub_location ilike ${'%' + q + '%'} or
         e.model ilike ${'%' + q + '%'} or
         e.manufacturer ilike ${'%' + q + '%'} or
         e.serial_number ilike ${'%' + q + '%'}
@@ -140,11 +143,11 @@ export const insertEquipment = async (
   const [row] = await sql`
     insert into equipment (
       created_at, created_by,
-      name, part_number, location,
+      name, part_number, location, sub_location,
       last_maintenance, maintenance_interval, in_use
     ) values (
       now(), ${actorId},
-      ${input.name}, ${input.part_number}, ${input.location},
+      ${input.name}, ${input.part_number}, ${input.location}, ${input.sub_location},
       ${input.last_maintenance}, ${input.maintenance_interval}, ${input.in_use ?? true}
     ) returning *`;
   return row;
@@ -165,6 +168,7 @@ export const updateEquipment = async (
       name = ${input.name},
       part_number = ${input.part_number},
       location = ${input.location},
+      sub_location = ${input.sub_location},
       last_maintenance = ${input.last_maintenance},
       maintenance_interval = ${input.maintenance_interval},
       in_use = ${input.in_use ?? true}

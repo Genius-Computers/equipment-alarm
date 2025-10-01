@@ -63,6 +63,11 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
             <MapPin className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
             {equipment.location}
           </div>
+          {equipment.subLocation ? (
+            <div className="flex items-center text-xs text-muted-foreground">
+              <span className="ml-6 rtl:ml-0 rtl:mr-6">{t("form.subLocation")}: {equipment.subLocation}</span>
+            </div>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -80,6 +85,25 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
                   {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
                 </p>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-1">
+              <p className="text-muted-foreground">{t("form.model")}</p>
+              <p className="font-medium">{equipment.model || "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground">{t("form.manufacturer")}</p>
+              <p className="font-medium">{equipment.manufacturer || "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground">{t("form.serialNumber")}</p>
+              <p className="font-medium">{equipment.serialNumber || "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground">{t("equipment.status")}</p>
+              <p className="font-medium capitalize">{equipment.status}</p>
             </div>
           </div>
 
@@ -137,6 +161,9 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
               <span>
                 {t("equipment.every")} {equipment.maintenanceInterval}
               </span>
+            </div>
+            <div className="text-muted-foreground text-xs">
+              {t("equipment.inUse")}: {equipment.inUse ? t("equipment.inUse") : t("equipment.notInUse")}
             </div>
           </div>
 

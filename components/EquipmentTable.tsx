@@ -40,11 +40,16 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
         <thead className="bg-muted/50">
           <tr>
             <th className={headerClass}>{t("equipment.name")}</th>
+            <th className={headerClass}>{t("form.model")}</th>
+            <th className={headerClass}>{t("form.manufacturer")}</th>
+            <th className={headerClass}>{t("form.serialNumber")}</th>
             <th className={headerClass}>{t("equipment.part")}</th>
             <th className={headerClass}>{t("equipment.location")}</th>
+            <th className={headerClass}>{t("form.subLocation")}</th>
             <th className={headerClass}>{t("equipment.lastMaintenance")}</th>
-            <th className={headerClass}>{t("equipment.nextMaintenance")}</th>
             <th className={headerClass}>{t("equipment.status")}</th>
+            <th className={headerClass}>{t("equipment.nextMaintenance")}</th>
+            <th className={headerClass}>{t("form.maintenanceInterval")}</th>
             <th className={headerClass}></th>
           </tr>
         </thead>
@@ -83,14 +88,22 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
                       <div className="font-medium">{e.name}</div>
                     </div>
                   </td>
+                  <td className={cellClass}>{e.model || "—"}</td>
+                  <td className={cellClass}>{e.manufacturer || "—"}</td>
+                  <td className={cellClass}>{e.serialNumber || "—"}</td>
                   <td className={cellClass}>{e.partNumber}</td>
                   <td className={cellClass}>
                     <div className="inline-flex items-center gap-1 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
                       <span>{e.location}</span>
                     </div>
                   </td>
+                  <td className={cellClass}>{e.subLocation || "—"}</td>
                   <td className={cellClass}>{new Date(e.lastMaintenance).toLocaleDateString()}</td>
+                  <td className={cellClass}>
+                    <Badge variant="secondary" className="capitalize">
+                      {e.status}
+                    </Badge>
+                  </td>
                   <td className={cellClass}>
                     {nextMaintenanceLabel ? (
                       <span className={daysUntil <= 0 ? "text-destructive" : "text-warning"}>
@@ -100,16 +113,9 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
+                  <td className={cellClass}>{e.maintenanceInterval}</td>
                   <td className={cellClass}>
-                    <Badge variant="secondary" className="capitalize">
-                      {e.status}
-                    </Badge>
-                  </td>
-                  <td className={cellClass}>
-                    <div
-                      className="flex items-center gap-2 justify-end"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
                       <ServiceRequestDialog
                         equipmentId={e.id}
                         equipmentName={e.name}
@@ -138,7 +144,7 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
                 </tr>
                 {expanded[e.id] && (
                   <tr className="border-t">
-                    <td className="px-3 py-3" colSpan={7}>
+                    <td className="px-3 py-3" colSpan={8}>
                       <div className="rounded-md border p-4 bg-card">
                         {e.latestPendingServiceRequest ? (
                           <div className="flex flex-col gap-3">

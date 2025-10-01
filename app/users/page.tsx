@@ -201,14 +201,14 @@ const UsersPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {rows.filter((u) => !u.role).map((u) => (
-                <div key={u.id} className="flex items-center gap-3 border rounded-md p-3">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{u.displayName || u.email || u.id}</div>
-                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                <div key={u.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border rounded-md p-3">
+                  <div className="sm:flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{u.displayName || u.email || u.id}</div>
+                    <div className="text-xs text-muted-foreground truncate">{u.email}</div>
                   </div>
                   <Badge variant="secondary" className="capitalize">Pending</Badge>
                   <Select value={undefined} onValueChange={(v) => changeRole(u.id, v)}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-full sm:w-[160px]">
                       <SelectValue placeholder={t("users.role")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -217,8 +217,8 @@ const UsersPage = () => {
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Separator orientation="vertical" className="h-6" />
-                  <Button variant="outline" size="sm" onClick={() => deleteUser(u.id)}>Delete</Button>
+                  <Separator orientation="vertical" className="h-6 hidden sm:flex" />
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => deleteUser(u.id)}>Delete</Button>
                 </div>
               ))}
             </CardContent>
@@ -240,19 +240,19 @@ const UsersPage = () => {
             ))
           ) : (
             rows.filter((u) => !!u.role).map((u) => (
-              <Card key={u.id} className="hover:shadow-lg transition-shadow duration-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span>{u.displayName || u.email || u.id}</span>
+              <Card key={u.id} className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 flex-wrap">
+                    <span className="flex-1 min-w-0 truncate">{u.displayName || u.email || u.id}</span>
                     <Badge variant="secondary" className="capitalize">{u.role}</Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex items-center gap-3">
-                  <div className="text-sm text-muted-foreground flex-1">
-                    {u.email}
+                <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="text-sm text-muted-foreground sm:flex-1 min-w-0">
+                    <span className="block truncate">{u.email}</span>
                   </div>
                   <Select value={u.role!} onValueChange={(v) => changeRole(u.id, v)}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-full sm:w-[160px]">
                       <SelectValue placeholder={t("users.role")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -261,8 +261,8 @@ const UsersPage = () => {
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Separator orientation="vertical" className="h-6" />
-                  <Button variant="destructive" size="sm" onClick={() => deleteUser(u.id)}>Delete</Button>
+                  <Separator orientation="vertical" className="h-6 hidden sm:flex" />
+                  <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={() => deleteUser(u.id)}>Delete</Button>
                 </CardContent>
               </Card>
             ))

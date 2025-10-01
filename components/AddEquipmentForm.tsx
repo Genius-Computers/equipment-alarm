@@ -40,6 +40,7 @@ const EquipmentForm = ({
         name: equipment.name,
         partNumber: equipment.partNumber,
         location: equipment.location,
+        subLocation: equipment.subLocation || "",
         maintenanceInterval: equipment.maintenanceInterval,
         lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
         model: equipment.model || "",
@@ -53,6 +54,7 @@ const EquipmentForm = ({
       name: "",
       partNumber: "",
       location: "",
+      subLocation: "",
       maintenanceInterval: "",
       lastMaintenance: "",
       model: "",
@@ -91,6 +93,7 @@ const EquipmentForm = ({
         name: formData.name,
         partNumber: formData.partNumber,
         location: formData.location,
+        subLocation: formData.subLocation,
         maintenanceInterval: formData.maintenanceInterval,
         lastMaintenance: lastDate.toISOString(),
         inUse: formData.inUse,
@@ -105,6 +108,7 @@ const EquipmentForm = ({
         name: formData.name,
         partNumber: formData.partNumber,
         location: formData.location,
+        subLocation: formData.subLocation,
         maintenanceInterval: formData.maintenanceInterval,
         lastMaintenance: lastDate.toISOString(),
         inUse: formData.inUse,
@@ -121,6 +125,7 @@ const EquipmentForm = ({
         name: "",
         partNumber: "",
         location: "",
+        subLocation: "",
         maintenanceInterval: "",
         lastMaintenance: "",
         model: "",
@@ -209,6 +214,18 @@ const EquipmentForm = ({
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               placeholder="e.g., Engineering Building - Floor 2"
               required
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="subLocation">
+              {t("form.subLocation") || "Sub-location"}
+            </Label>
+            <Input
+              id="subLocation"
+              value={formData.subLocation}
+              onChange={(e) => setFormData({ ...formData, subLocation: e.target.value })}
+              placeholder="e.g., Room 204 (North Wing)"
             />
           </div>
 
