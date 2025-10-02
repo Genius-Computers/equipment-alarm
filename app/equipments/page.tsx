@@ -22,6 +22,7 @@ const Page = () => {
     setSearchTerm,
     setStatusFilter,
     setPage,
+    refresh,
     updateEquipment,
   } = useEquipment();
 
@@ -41,7 +42,18 @@ const Page = () => {
               onStatusChange={setStatusFilter}
             />
 
-            <EquipmentList loading={loading || isInserting} items={filteredEquipment} onEdit={updateEquipment} updating={isUpdating} />
+            <EquipmentList
+              loading={loading || isInserting}
+              items={filteredEquipment}
+              onEdit={updateEquipment}
+              updating={isUpdating}
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              searchTerm={searchTerm}
+              statusFilter={statusFilter}
+              onRefresh={refresh}
+            />
             <CustomPagination
               page={page}
               pageSize={pageSize}

@@ -100,6 +100,19 @@ const translations = {
     "filter.overdue": "Overdue",
     "filter.all": "All",
     "search.noResults": "No equipment found matching your criteria.",
+    // CSV
+    "csv.export": "Export CSV",
+    "csv.import": "Import CSV",
+    "csv.importing": "Importing...",
+    "csv.imported": "CSV imported successfully",
+    "csv.noRows": "No data rows found in CSV",
+    "csv.missingHeaders": "Missing required headers: {missing}",
+    // List label
+    "list.label.showing": "Showing {from}-{to} of {total}",
+    "list.label.filteredBy": "filtered by",
+    "list.label.search": "search \"{q}\"",
+    "list.label.status": "status: {status}",
+    "list.label.and": "and",
     
     // Toast Messages
     "toast.error": "Error",
@@ -332,6 +345,19 @@ const translations = {
     "filter.overdue": "متأخر",
     "filter.all": "الجميع",
     "search.noResults": "لم يتم العثور على معدات تطابق معاييرك.",
+    // CSV
+    "csv.export": "تصدير CSV",
+    "csv.import": "استيراد CSV",
+    "csv.importing": "جارٍ الاستيراد...",
+    "csv.imported": "تم استيراد CSV بنجاح",
+    "csv.noRows": "لا توجد بيانات في ملف CSV",
+    "csv.missingHeaders": "حقول إلزامية مفقودة: {missing}",
+    // List label
+    "list.label.showing": "عرض {from}-{to} من {total}",
+    "list.label.filteredBy": "مفلترة حسب",
+    "list.label.search": "بحث \"{q}\"",
+    "list.label.status": "الحالة: {status}",
+    "list.label.and": "و",
     
     // Toast Messages
     "toast.error": "خطأ",

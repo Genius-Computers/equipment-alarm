@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState } from "react";
 import EquipmentCard from "@/components/EquipmentCard";
@@ -7,28 +7,76 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Equipment, JEquipment } from "@/lib/types";
 import { LayoutGrid, List } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
+import EquipmentCSVExport from "@/components/EquipmentCSVExport";
+import EquipmentCSVImport from "@/components/EquipmentCSVImport";
 
 interface EquipmentListProps {
   loading: boolean;
   items: JEquipment[];
   onEdit: (updated: Equipment) => Promise<void> | void;
   updating?: boolean;
+  // for label context
+  total: number;
+  page: number;
+  pageSize: number;
+  searchTerm?: string;
+  statusFilter?: "all" | "good" | "due" | "overdue";
+  onRefresh?: () => void;
 }
 
-const EquipmentList = ({ loading, items, onEdit, updating = false }: EquipmentListProps) => {
+const EquipmentList = ({
+  loading,
+  items,
+  onEdit,
+  updating = false,
+  total,
+  page,
+  pageSize,
+  searchTerm = "",
+  statusFilter = "all",
+  onRefresh,
+}: EquipmentListProps) => {
   const [view, setView] = useState<"grid" | "table">("table");
+  const { t } = useLanguage();
+
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, Math.max(total, items.length));
+
+  const hasSearch = (searchTerm || "").trim().length > 0;
+  const hasStatus = statusFilter !== "all";
+  const statusLabelMap: Record<string, string> = {
+    all: t("filter.all"),
+    good: t("filter.upToDate"),
+    due: t("filter.dueSoon"),
+    overdue: t("filter.overdue"),
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        {loading ? (
+          <div />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {t("list.label.showing", { from: String(from), to: String(to), total: String(total) })}
+            {(hasSearch || hasStatus) && (
+              <>
+                {" "}
+                {t("list.label.filteredBy")} {hasSearch && t("list.label.search", { q: searchTerm })}
+                {hasSearch && hasStatus && ` ${t("list.label.and")} `}
+                {hasStatus && t("list.label.status", { status: statusLabelMap[statusFilter] })}
+              </>
+            )}
+          </p>
+        )}
         <div className="inline-flex gap-2" role="tablist" aria-label="View mode">
           <Button
             variant={view === "table" ? "default" : "outline"}
             size="sm"
             onClick={() => setView("table")}
             aria-pressed={view === "table"}
-            aria-label="Table view"
-          >
+            aria-label="Table view">
             <List className="h-4 w-4" />
           </Button>
           <Button
@@ -36,10 +84,12 @@ const EquipmentList = ({ loading, items, onEdit, updating = false }: EquipmentLi
             size="sm"
             onClick={() => setView("grid")}
             aria-pressed={view === "grid"}
-            aria-label="Grid view"
-          >
+            aria-label="Grid view">
             <LayoutGrid className="h-4 w-4" />
           </Button>
+          <div className="w-px h-6 bg-border mx-2" />
+          <EquipmentCSVExport items={items} />
+          <EquipmentCSVImport onImported={onRefresh} />
         </div>
       </div>
 

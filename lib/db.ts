@@ -144,11 +144,13 @@ export const insertEquipment = async (
     insert into equipment (
       created_at, created_by,
       name, part_number, location, sub_location,
-      last_maintenance, maintenance_interval, in_use
+      last_maintenance, maintenance_interval, in_use,
+      model, manufacturer, serial_number, status
     ) values (
       now(), ${actorId},
       ${input.name}, ${input.part_number}, ${input.location}, ${input.sub_location},
-      ${input.last_maintenance}, ${input.maintenance_interval}, ${input.in_use ?? true}
+      ${input.last_maintenance}, ${input.maintenance_interval}, ${input.in_use ?? true},
+      ${input.model}, ${input.manufacturer}, ${input.serial_number}, ${input.status}
     ) returning *`;
   return row;
 };
@@ -171,10 +173,66 @@ export const updateEquipment = async (
       sub_location = ${input.sub_location},
       last_maintenance = ${input.last_maintenance},
       maintenance_interval = ${input.maintenance_interval},
-      in_use = ${input.in_use ?? true}
+      in_use = ${input.in_use ?? true},
+      model = ${input.model},
+      manufacturer = ${input.manufacturer},
+      serial_number = ${input.serial_number},
+      status = ${input.status}
     where id = ${id}
     returning *`;
   return row as unknown as DbEquipment;
+};
+
+export const bulkInsertEquipment = async (
+  inputs: Array<Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>>,
+  actorId: string,
+) => {
+  const sql = getDb();
+  await ensureSchema();
+  if (!inputs || inputs.length === 0) return [];
+  const names = inputs.map((i) => i.name ?? null);
+  const partNumbers = inputs.map((i) => i.part_number ?? null);
+  const locations = inputs.map((i) => i.location ?? null);
+  const subLocations = inputs.map((i) => i.sub_location ?? null);
+  const lastMaintenance = inputs.map((i) => i.last_maintenance ?? null);
+  const maintenanceIntervals = inputs.map((i) => i.maintenance_interval ?? null);
+  const inUse = inputs.map((i) => (i.in_use ?? true));
+  const models = inputs.map((i) => i.model ?? null);
+  const manufacturers = inputs.map((i) => i.manufacturer ?? null);
+  const serialNumbers = inputs.map((i) => i.serial_number ?? null);
+  const statuses = inputs.map((i) => i.status ?? 'Working');
+
+  const rows = await sql`
+    insert into equipment (
+      created_at, created_by,
+      name, part_number, location, sub_location,
+      last_maintenance, maintenance_interval, in_use,
+      model, manufacturer, serial_number, status
+    )
+    select
+      now(), ${actorId},
+      t.name, t.part_number, t.location, t.sub_location,
+      t.last_maintenance, t.maintenance_interval, t.in_use,
+      t.model, t.manufacturer, t.serial_number, t.status
+    from unnest(
+      ${names}::text[],
+      ${partNumbers}::text[],
+      ${locations}::text[],
+      ${subLocations}::text[],
+      ${lastMaintenance}::text[],
+      ${maintenanceIntervals}::text[],
+      ${inUse}::boolean[],
+      ${models}::text[],
+      ${manufacturers}::text[],
+      ${serialNumbers}::text[],
+      ${statuses}::text[]
+    ) as t(
+      name, part_number, location, sub_location,
+      last_maintenance, maintenance_interval, in_use,
+      model, manufacturer, serial_number, status
+    )
+    returning *`;
+  return rows as unknown as DbEquipment[];
 };
 
 export const getEquipmentById = async (id: string): Promise<DbEquipment | null> => {
