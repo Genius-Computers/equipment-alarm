@@ -183,6 +183,21 @@ export const updateEquipment = async (
   return row as unknown as DbEquipment;
 };
 
+export const softDeleteEquipment = async (
+  id: string,
+  actorId: string,
+) => {
+  const sql = getDb();
+  await ensureSchema();
+  const [row] = await sql`
+    update equipment set
+      deleted_by = ${actorId},
+      deleted_at = now()
+    where id = ${id} and deleted_at is null
+    returning *`;
+  return row as unknown as DbEquipment | undefined;
+};
+
 export const bulkInsertEquipment = async (
   inputs: Array<Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>>,
   actorId: string,

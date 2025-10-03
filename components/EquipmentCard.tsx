@@ -1,4 +1,4 @@
-import { MapPin, Wrench, Pencil, XCircle } from "lucide-react";
+import { MapPin, Wrench, Pencil, XCircle, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 interface EquipmentCardProps {
   equipment: JEquipment;
   onEditEquipment?: (updated: Equipment) => void;
+  onDeleteEquipment?: (id: string) => void;
   disabled?: boolean;
 }
 
@@ -27,7 +28,7 @@ export const getDaysUntilMaintenance = (equipment: JEquipment) => {
   return diffDays;
 };
 
-const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: EquipmentCardProps) => {
+const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled = false }: EquipmentCardProps) => {
   const { t } = useLanguage();
   const daysUntil = getDaysUntilMaintenance(equipment);
   const pathname = usePathname();
@@ -175,6 +176,21 @@ const EquipmentCard = ({ equipment, onEditEquipment, disabled = false }: Equipme
                 onSubmitEquipment={(updated) => onEditEquipment(updated as Equipment)}
                 submitting={disabled}
               />
+            )}
+            {onDeleteEquipment && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (disabled) return;
+                  const confirmed = window.confirm("Delete this equipment? This can be undone by admins.");
+                  if (confirmed) onDeleteEquipment(equipment.id);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+              </Button>
             )}
           </div>
 

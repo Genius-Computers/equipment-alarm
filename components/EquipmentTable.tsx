@@ -10,19 +10,20 @@ import { Card } from "@/components/ui/card";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Equipment, JEquipment } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
-import { Wrench, Pencil, XCircle } from "lucide-react";
+import { Wrench, Pencil, XCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface EquipmentTableProps {
   items: JEquipment[];
   onEdit: (updated: Equipment) => Promise<void> | void;
+  onDelete?: (id: string) => Promise<void> | void;
   updating?: boolean;
 }
 
 const headerClass = "px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide";
 const cellClass = "px-3 py-3 text-sm align-middle";
 
-const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps) => {
+const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: EquipmentTableProps) => {
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -124,6 +125,19 @@ const EquipmentTable = ({ items, onEdit, updating = false }: EquipmentTableProps
                           </Button>
                         }
                       />
+                      {onDelete && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            if (updating) return;
+                            const confirmed = window.confirm("Delete this equipment? This can be undone by admins.");
+                            if (confirmed) onDelete(e.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

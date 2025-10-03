@@ -179,6 +179,27 @@ export function useEquipment(list = true) {
     [t, reCache]
   );
 
+  const deleteEquipment = useCallback(
+    async (id: string) => {
+      try {
+        setIsUpdating(true);
+        const res = await fetch(`/api/equipment/${id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("Failed to delete equipment");
+        setEquipment((prev) => prev.filter((e) => e.id !== id));
+        toast(t("toast.success"), { description: t("toast.updated") });
+        reCache();
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Failed to delete equipment";
+        toast(t("toast.error"), { description: message });
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [t, reCache]
+  );
+
   // Debounced server search for homepage (non-list usage)
   useEffect(() => {
     if (list) return; // homepage search mode only
@@ -238,5 +259,6 @@ export function useEquipment(list = true) {
     loadEquipmentById,
     addEquipment,
     updateEquipment,
+    deleteEquipment,
   } as const;
 }

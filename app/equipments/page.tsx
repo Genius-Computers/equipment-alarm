@@ -24,6 +24,7 @@ const Page = () => {
     setPage,
     refresh,
     updateEquipment,
+    deleteEquipment,
   } = useEquipment();
 
   return (
@@ -46,6 +47,7 @@ const Page = () => {
               loading={loading || isInserting}
               items={filteredEquipment}
               onEdit={updateEquipment}
+              onDelete={deleteEquipment}
               updating={isUpdating}
               total={total}
               page={page}

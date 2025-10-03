@@ -15,6 +15,7 @@ interface EquipmentListProps {
   loading: boolean;
   items: JEquipment[];
   onEdit: (updated: Equipment) => Promise<void> | void;
+  onDelete?: (id: string) => Promise<void> | void;
   updating?: boolean;
   // for label context
   total: number;
@@ -36,6 +37,7 @@ const EquipmentList = ({
   searchTerm = "",
   statusFilter = "all",
   onRefresh,
+  onDelete,
 }: EquipmentListProps) => {
   const [view, setView] = useState<"grid" | "table">("table");
   const { t } = useLanguage();
@@ -144,11 +146,17 @@ const EquipmentList = ({
       ) : view === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map((item) => (
-            <EquipmentCard key={item.id} equipment={item} onEditEquipment={onEdit} disabled={updating} />
+            <EquipmentCard
+              key={item.id}
+              equipment={item}
+              onEditEquipment={onEdit}
+              onDeleteEquipment={onDelete}
+              disabled={updating}
+            />
           ))}
         </div>
       ) : (
-        <EquipmentTable items={items} onEdit={onEdit} updating={updating} />
+        <EquipmentTable items={items} onEdit={onEdit} onDelete={onDelete} updating={updating} />
       )}
     </div>
   );
