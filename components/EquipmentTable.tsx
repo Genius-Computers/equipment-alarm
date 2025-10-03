@@ -12,6 +12,9 @@ import { Equipment, JEquipment } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { Wrench, Pencil, XCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useSelfProfile } from "@/hooks/useSelfProfile";
+import { canApprove } from "@/lib/types/user";
 
 interface EquipmentTableProps {
   items: JEquipment[];
@@ -26,6 +29,8 @@ const cellClass = "px-3 py-3 text-sm align-middle";
 const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: EquipmentTableProps) => {
   const { t } = useLanguage();
   const router = useRouter();
+  const { profile } = useSelfProfile();
+  const canDelete = canApprove(profile?.role);
 
   if (!items || items.length === 0) {
     return <Card className="p-6 text-center text-sm text-muted-foreground">{t("common.noResults")}</Card>;
@@ -125,18 +130,33 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                           </Button>
                         }
                       />
-                      {onDelete && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => {
-                            if (updating) return;
-                            const confirmed = window.confirm("Delete this equipment? This can be undone by admins.");
-                            if (confirmed) onDelete(e.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      {onDelete && canDelete && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              aria-label={t("equipment.delete")}
+                              disabled={updating}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t("equipment.deleteTitle")}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t("equipment.deleteDescription", { name: e.name })}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t("form.cancel")}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onDelete(e.id)}>
+                                {t("equipment.delete")}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </td>

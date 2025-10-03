@@ -10,6 +10,9 @@ import { Equipment, JEquipment, JServiceRequest } from "@/lib/types";
 import { MAINTENANCE_INTERVAL_DAYS_MAP } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useSelfProfile } from "@/hooks/useSelfProfile";
+import { canApprove } from "@/lib/types/user";
 
 interface EquipmentCardProps {
   equipment: JEquipment;
@@ -30,10 +33,12 @@ export const getDaysUntilMaintenance = (equipment: JEquipment) => {
 
 const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled = false }: EquipmentCardProps) => {
   const { t } = useLanguage();
+  const { profile } = useSelfProfile();
   const daysUntil = getDaysUntilMaintenance(equipment);
   const pathname = usePathname();
   const href = `/equipments/${equipment.id}`;
   const isSameRoute = pathname === href;
+  const canDelete = canApprove(profile?.role);
 
   return (
     <Link
@@ -177,20 +182,33 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
                 submitting={disabled}
               />
             )}
-            {onDeleteEquipment && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (disabled) return;
-                  const confirmed = window.confirm("Delete this equipment? This can be undone by admins.");
-                  if (confirmed) onDeleteEquipment(equipment.id);
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-              </Button>
+            {onDeleteEquipment && canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    aria-label={t("equipment.delete")}
+                    disabled={disabled}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("equipment.deleteTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t("equipment.deleteDescription", { name: equipment.name })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("form.cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDeleteEquipment(equipment.id)}>
+                      {t("equipment.delete")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
 

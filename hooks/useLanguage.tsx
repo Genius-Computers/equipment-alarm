@@ -46,6 +46,9 @@ const translations = {
     "equipment.status": "Status",
     "equipment.markMaintenanceCompleted": "Mark Maintenance Completed",
     "equipment.equipmentUpdated": "Equipment Updated",
+    "equipment.delete": "Delete",
+    "equipment.deleteTitle": "Delete equipment?",
+    "equipment.deleteDescription": "This will remove {name} from the list.",
     
     // Add Equipment Form
     "form.addNewEquipment": "Add New Equipment",
@@ -291,6 +294,9 @@ const translations = {
     "equipment.status": "الحالة",
     "equipment.markMaintenanceCompleted": "تم إنهاء الصيانة",
     "equipment.equipmentUpdated": "تم تحديث المعدة",
+    "equipment.delete": "حذف",
+    "equipment.deleteTitle": "حذف المعدة؟",
+    "equipment.deleteDescription": "سيتم إزالة {name} من القائمة.",
 
     // Add Equipment Form
     "form.addNewEquipment": "إضافة معدة جديدة",
