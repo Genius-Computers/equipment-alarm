@@ -58,10 +58,10 @@ const MaintenanceAlert = ({ equipment }: MaintenanceAlertProps) => {
                     <p className="text-sm text-muted-foreground">{item.location}</p>
                   </div>
                   <div className="text-right">
-                    {daysUntil <= 7 && daysUntil > 0 && (
+                    {daysUntil && daysUntil <= 7 && daysUntil > 0 && (
                       <p className="text-warning text-xs">{t("equipment.inDays", { days: daysUntil })}</p>
                     )}
-                    {daysUntil <= 0 && (
+                    {daysUntil && daysUntil <= 0 && (
                       <p className="text-destructive text-xs font-medium">
                         {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
                       </p>

@@ -10,7 +10,6 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { toast } from "sonner";
 import Link from "next/link";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Settings, User as UserIcon, Palette, LogOut } from "lucide-react";
