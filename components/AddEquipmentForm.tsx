@@ -8,7 +8,7 @@ import { Loader2, Plus, Pencil } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
-import { Equipment, EquipmentStatus } from "@/lib/types";
+import { Equipment } from "@/lib/types";
 
 interface EquipmentFormProps {
   onSubmitEquipment: (equipment: Omit<Equipment, "id"> | Equipment) => void;
@@ -46,7 +46,7 @@ const EquipmentForm = ({
         model: equipment.model || "",
         manufacturer: equipment.manufacturer || "",
         serialNumber: equipment.serialNumber || "",
-        status: equipment.status || EquipmentStatus.NEW_INSTALLATION,
+        status: equipment.status,
         inUse: equipment.inUse ?? true,
       };
     }
@@ -60,7 +60,7 @@ const EquipmentForm = ({
       model: "",
       manufacturer: "",
       serialNumber: "",
-      status: EquipmentStatus.NEW_INSTALLATION,
+      status: "",
       inUse: true,
     };
   };
@@ -131,7 +131,7 @@ const EquipmentForm = ({
         model: "",
         manufacturer: "",
         serialNumber: "",
-        status: EquipmentStatus.NEW_INSTALLATION,
+        status: "",
         inUse: true,
       });
     }
@@ -292,19 +292,12 @@ const EquipmentForm = ({
             </div>
             <div className="flex flex-col gap-1">
               <Label htmlFor="status">{t("form.status")}</Label>
-              <Select onValueChange={(value) => setFormData({ ...formData, status: value as EquipmentStatus })}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("form.selectStatus")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={EquipmentStatus.NEW_INSTALLATION}>{t("status.newInstallation")}</SelectItem>
-                  <SelectItem value={EquipmentStatus.WORKING}>{t("status.working")}</SelectItem>
-                  <SelectItem value={EquipmentStatus.REPAIR}>{t("status.repair")}</SelectItem>
-                  <SelectItem value={EquipmentStatus.MAINTENANCE}>{t("status.maintenance")}</SelectItem>
-                  <SelectItem value={EquipmentStatus.PART_REPLACEMENT}>{t("status.partReplacement")}</SelectItem>
-                  <SelectItem value={EquipmentStatus.FOR_INSTALLATION}>{t("status.forInstallation")}</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="serialNumber"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                placeholder="e.g., New Installation/Working"
+              />
             </div>
           </div>
 

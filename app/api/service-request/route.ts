@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { insertServiceRequest, listServiceRequestPaginated } from '@/lib/db';
 import { camelToSnakeCase, formatStackUserLight, snakeToCamelCase } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
-import { getCurrentServerUser } from '@/lib/auth';
+import { ensureRole, getCurrentServerUser } from '@/lib/auth';
+import { APPROVER_ROLES } from '@/lib/types/user';
 import { stackServerApp } from '@/stack';
 
 export async function GET(req: NextRequest) {
@@ -55,10 +56,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Must be authenticated; any signed-in user can create requests
     const user = await getCurrentServerUser(req);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // Only supervisor/admin can create requests
+    try {
+      ensureRole(user, APPROVER_ROLES);
+    } catch {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const body = await req.json();
 

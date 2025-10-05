@@ -175,6 +175,7 @@ export default function PrintPage(props: PageProps) {
               </div>
               <div className={isRTL ? "text-left" : "text-right"}>
                 <div className="text-xs text-neutral-700">{t("serviceRequest.createTitle")}</div>
+                <div className="text-xs text-neutral-700">Ticket: {data?.ticketId || data?.id}</div>
                 <div className="text-xs text-neutral-700">{t("serviceRequest.scheduledAt")}: _____________</div>
               </div>
             </div>
@@ -192,8 +193,8 @@ export default function PrintPage(props: PageProps) {
                 <div className="text-xs text-neutral-700">{requestTypeLabel}</div>
               </div>
               <div className="col-span-1 border p-2">
-                <div className="font-medium">ID</div>
-                <div className="text-xs text-neutral-700">{data?.id}</div>
+                <div className="font-medium">Ticket</div>
+                <div className="text-xs text-neutral-700">{data?.ticketId}</div>
               </div>
               <div className="col-span-1 border p-2">
                 <div className="font-medium">{t("serviceRequest.scheduledAt")}</div>

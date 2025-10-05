@@ -27,6 +27,8 @@ import {
 } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
+import { useSelfProfile } from "@/hooks/useSelfProfile";
+import { isApproverRole } from "@/lib/types/user";
 
 interface ServiceRequestDialogProps {
   equipmentId: string;
@@ -60,8 +62,11 @@ const ServiceRequestDialog = ({
     }
   };
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<0 | 1 | 2>(0);
+  // Two-section model for edit: 'basic' and 'details'
+  const [section, setSection] = useState<"basic" | "details">("basic");
   const { createRequest, updateDetails } = useServiceRequests({ autoRefresh: false });
+  const { profile } = useSelfProfile();
+  const isApprover = isApproverRole(profile?.role);
 
   const [form, setForm] = useState({
     requestType: ServiceRequestType.PREVENTIVE_MAINTENANCE,
@@ -131,16 +136,24 @@ const ServiceRequestDialog = ({
     try {
       setLoading(true);
       if (existing) {
-        await updateDetails(existing.id, {
-          requestType: form.requestType,
-          scheduledAt: form.scheduledAt,
-          priority: form.priority,
-          assignedTechnicianId: form.assignedTechnicianId,
-          problemDescription: form.problemDescription,
-          technicalAssessment: form.technicalAssessment,
-          recommendation: form.recommendation,
-          sparePartsNeeded: parts,
-        });
+        const body = isApprover
+          ? {
+              requestType: form.requestType,
+              scheduledAt: form.scheduledAt,
+              priority: form.priority,
+              assignedTechnicianId: form.assignedTechnicianId,
+              problemDescription: form.problemDescription,
+              technicalAssessment: form.technicalAssessment,
+              recommendation: form.recommendation,
+              sparePartsNeeded: parts,
+            }
+          : {
+              problemDescription: form.problemDescription,
+              technicalAssessment: form.technicalAssessment,
+              recommendation: form.recommendation,
+              sparePartsNeeded: parts,
+            };
+        await updateDetails(existing.id, body);
         toast(t("toast.success"), { description: t("toast.serviceRequestUpdated") });
       } else {
         const created = await createRequest({
@@ -179,7 +192,7 @@ const ServiceRequestDialog = ({
       open={open}
       onOpenChange={(v) => {
         setOpen(v);
-        if (!v) setStep(0);
+        if (!v) setSection("basic");
       }}>
       <DialogTrigger asChild>
         <div className="flex gap-2">
@@ -217,12 +230,33 @@ const ServiceRequestDialog = ({
           <DialogDescription>{t("serviceRequest.description")}</DialogDescription>
         </DialogHeader>
 
-        {/* stepper */}
-        <div className="flex items-center justify-between gap-2 mb-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className={`flex-1 h-1 rounded ${step >= i ? "bg-primary" : "bg-muted"}`} />
-          ))}
-        </div>
+        {/* section switcher for editing */}
+        {existing ? (
+          <div className="flex items-center gap-2 mb-2">
+            {isApprover ? (
+              <div className="inline-flex rounded-md border bg-muted/50 p-1">
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-sm rounded ${section === "basic" ? "bg-background border" : ""}`}
+                  onClick={() => setSection("basic")}
+                  disabled={loading}
+                >
+                  {t("serviceRequest.basic") || "Basic"}
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-sm rounded ${section === "details" ? "bg-background border" : ""}`}
+                  onClick={() => setSection("details")}
+                  disabled={loading}
+                >
+                  {t("serviceRequest.details") || "Technician Details"}
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">{t("serviceRequest.details") || "Technician Details"}</div>
+            )}
+          </div>
+        ) : null}
 
         {isBlockingLoading ? (
           <div className="space-y-4">
@@ -249,13 +283,16 @@ const ServiceRequestDialog = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {step === 0 && (
+            {/* Creation: single basic form. Editing: basic section (approver only) */}
+            {(!existing || (existing && section === "basic" && isApprover)) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label>{t("serviceRequest.requestType")}</Label>
                   <Select
                     value={form.requestType}
-                    onValueChange={(v) => setForm((s) => ({ ...s, requestType: v as ServiceRequestType }))}>
+                    onValueChange={(v) => setForm((s) => ({ ...s, requestType: v as ServiceRequestType }))}
+                    disabled={Boolean(existing) && !isApprover}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={t("serviceRequest.selectType")} />
                     </SelectTrigger>
@@ -292,7 +329,7 @@ const ServiceRequestDialog = ({
               </div>
             )}
 
-            {step === 0 && (
+            {(!existing || (existing && section === "basic" && isApprover)) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label>{t("serviceRequest.scheduledAt")}</Label>
@@ -300,6 +337,7 @@ const ServiceRequestDialog = ({
                     type="datetime-local"
                     value={form.scheduledAt}
                     onChange={(e) => setForm((s) => ({ ...s, scheduledAt: e.target.value }))}
+                    disabled={Boolean(existing) && !isApprover}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -307,7 +345,7 @@ const ServiceRequestDialog = ({
                   <Select
                     value={form.assignedTechnicianId}
                     onValueChange={(v) => setForm((s) => ({ ...s, assignedTechnicianId: v }))}
-                    disabled={techLoading}>
+                    disabled={techLoading || (Boolean(existing) && !isApprover)}>
                     <SelectTrigger>
                       <SelectValue placeholder={t("serviceRequest.selectTechnician")} />
                     </SelectTrigger>
@@ -323,7 +361,8 @@ const ServiceRequestDialog = ({
               </div>
             )}
 
-            {step === 1 && (
+            {/* Details section for editing */}
+            {existing && section === "details" && (
               <div className="flex flex-col gap-2">
                 <Label>{t("serviceRequest.problemDescription")}</Label>
                 <Textarea
@@ -335,7 +374,7 @@ const ServiceRequestDialog = ({
               </div>
             )}
 
-            {step === 1 && (
+            {existing && section === "details" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label>{t("serviceRequest.technicalAssessment")}</Label>
@@ -358,8 +397,8 @@ const ServiceRequestDialog = ({
               </div>
             )}
 
-            {/* Spare parts section */}
-            {step === 2 && (
+            {/* Spare parts inline with details */}
+            {existing && section === "details" && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-medium">{t("serviceRequest.spareParts.title")}</Label>
@@ -493,29 +532,26 @@ const ServiceRequestDialog = ({
         )}
 
         <DialogFooter>
-          {step > 0 ? (
-            <Button
-              variant="outline"
-              onClick={() => setStep((s) => (s - 1) as 0 | 1 | 2)}
-              disabled={loading || isBlockingLoading}>
-              {t("form.back")}
-            </Button>
+          {existing ? (
+            <>
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={loading || isBlockingLoading}>
+                {t("form.cancel")}
+              </Button>
+              <Button onClick={handleSubmit} disabled={!isValid || loading || isBlockingLoading} className="gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {t("form.save")}
+              </Button>
+            </>
           ) : (
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={loading || isBlockingLoading}>
-              {t("form.cancel")}
-            </Button>
-          )}
-          {step < 2 ? (
-            <Button
-              onClick={() => setStep((s) => (s + 1) as 0 | 1 | 2)}
-              disabled={(step === 0 && !isValid) || loading || isBlockingLoading}>
-              {t("form.next")}
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={!isValid || loading || isBlockingLoading} className="gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {existing ? t("form.save") : t("serviceRequest.create")}
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={loading || isBlockingLoading}>
+                {t("form.cancel")}
+              </Button>
+              <Button onClick={handleSubmit} disabled={!isValid || loading || isBlockingLoading} className="gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {t("serviceRequest.create")}
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>

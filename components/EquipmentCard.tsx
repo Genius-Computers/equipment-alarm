@@ -1,4 +1,4 @@
-import { MapPin, Wrench, Pencil, XCircle, Trash2 } from "lucide-react";
+import { MapPin, Wrench, XCircle, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,21 @@ import { useLanguage } from "@/hooks/useLanguage";
 import ServiceRequestDialog from "./ServiceRequestDialog";
 import EquipmentForm from "./AddEquipmentForm";
 
-import { Equipment, JEquipment, JServiceRequest } from "@/lib/types";
+import { Equipment, JEquipment } from "@/lib/types";
 import { MAINTENANCE_INTERVAL_DAYS_MAP } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { canApprove } from "@/lib/types/user";
 
@@ -42,14 +52,14 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
   const href = `/equipments/${equipment.id}`;
   const isSameRoute = pathname === href;
   const canDelete = canApprove(profile?.role);
+  const canCreateRequest = canApprove(profile?.role);
 
   return (
     <Link
       href={href}
       onClick={(e) => {
         if (isSameRoute || disabled) e.preventDefault();
-      }}
-    >
+      }}>
       <Card className="hover:shadow-lg transition-shadow duration-200">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -63,9 +73,11 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
               )}
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {t("equipment.part")}: {equipment.partNumber}
-          </p>
+          {equipment.partNumber && (
+            <p className="text-sm text-muted-foreground">
+              {t("equipment.part")}: {equipment.partNumber}
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center text-sm text-muted-foreground">
@@ -74,7 +86,9 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
           </div>
           {equipment.subLocation ? (
             <div className="flex items-center text-xs text-muted-foreground">
-              <span className="ml-6 rtl:ml-0 rtl:mr-6">{t("form.subLocation")}: {equipment.subLocation}</span>
+              <span className="ml-6 rtl:ml-0 rtl:mr-6">
+                {t("form.subLocation")}: {equipment.subLocation}
+              </span>
             </div>
           ) : null}
 
@@ -120,54 +134,6 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
             </div>
           </div>
 
-          {equipment.latestPendingServiceRequest && (
-            <div
-              className="rounded-md border p-3 space-y-2"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center justify-between w-full gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Wrench className="h-4 w-4 text-muted-foreground" />
-                    <span className="capitalize font-medium">
-                      {equipment.latestPendingServiceRequest.requestType.replaceAll("_", " ")}
-                    </span>
-                  </div>
-                  <Badge variant="secondary" className="capitalize">
-                    {equipment.latestPendingServiceRequest.priority}
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge className="bg-primary/10 text-primary border-primary/20 capitalize">
-                  {t("serviceRequest.approvalStatus")}: {equipment.latestPendingServiceRequest.approvalStatus}
-                </Badge>
-                <Badge className="bg-muted text-foreground/80 border border-border capitalize">
-                  {t("serviceRequest.workStatus")}: {equipment.latestPendingServiceRequest.workStatus}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div>
-                  {t("serviceRequest.scheduledAt")}:{" "}
-                  {new Date(equipment.latestPendingServiceRequest.scheduledAt).toLocaleString()}
-                </div>
-                <ServiceRequestDialog
-                  equipmentId={equipment.id}
-                  equipmentName={equipment.name}
-                  existing={equipment.latestPendingServiceRequest as JServiceRequest}
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-                    </Button>
-                  }
-                />
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center justify-between text-sm">
             {equipment.maintenanceInterval ? (
               <div className="flex items-center">
@@ -177,9 +143,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
                 </span>
               </div>
             ) : (
-              <div className="text-muted-foreground text-xs">
-                {t("equipment.noMaintenanceSchedule")}
-              </div>
+              <div className="text-muted-foreground text-xs">{t("equipment.noMaintenanceSchedule")}</div>
             )}
             <div className="text-muted-foreground text-xs">
               {t("equipment.inUse")}: {equipment.inUse ? t("equipment.inUse") : t("equipment.notInUse")}
@@ -198,12 +162,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
             {onDeleteEquipment && canDelete && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    aria-label={t("equipment.delete")}
-                    disabled={disabled}
-                  >
+                  <Button variant="destructive" size="sm" aria-label={t("equipment.delete")} disabled={disabled}>
                     <Trash2 className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
                   </Button>
                 </AlertDialogTrigger>
@@ -226,7 +185,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
           </div>
 
           <div className="flex gap-2 pt-2">
-            <ServiceRequestDialog equipmentId={equipment.id} equipmentName={equipment.name} />
+            {canCreateRequest && <ServiceRequestDialog equipmentId={equipment.id} equipmentName={equipment.name} />}
           </div>
         </CardContent>
       </Card>

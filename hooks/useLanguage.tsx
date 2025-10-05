@@ -49,6 +49,7 @@ const translations = {
     "equipment.delete": "Delete",
     "equipment.deleteTitle": "Delete equipment?",
     "equipment.deleteDescription": "This will remove {name} from the list.",
+    "equipment.noMaintenanceSchedule": "No maintenance scheduled",
     
     // Add Equipment Form
     "form.addNewEquipment": "Add New Equipment",
@@ -172,6 +173,8 @@ const translations = {
     "serviceRequest.createTitle": "Create Service Request",
     "serviceRequest.editTitle": "Edit Service Request",
     "serviceRequest.description": "Fill in the details below to raise a service request.",
+    "serviceRequest.basic": "Basic",
+    "serviceRequest.details": "Technician Details",
     "serviceRequest.requestType": "Request Type",
     "serviceRequest.selectType": "Select type",
     "serviceRequest.types.preventive": "Preventive maintenance",
@@ -201,6 +204,9 @@ const translations = {
     "serviceRequest.statuses.completed": "Completed",
     "serviceRequest.statuses.cancelled": "Cancelled",
     "serviceRequest.create": "Create Request",
+    "serviceRequest.addDetails": "Add Details",
+    "serviceRequest.detailsPendingTitle": "Technician details pending",
+    "serviceRequest.detailsPendingDesc": "Complete assessment, recommendation, and spare parts.",
     "serviceRequest.openRequest": "Open request",
     "serviceRequest.selectTechnician": "Select Technician",
     "serviceRequest.assignedTechnician": "Technician",
@@ -299,6 +305,7 @@ const translations = {
     "equipment.delete": "حذف",
     "equipment.deleteTitle": "حذف المعدة؟",
     "equipment.deleteDescription": "سيتم إزالة {name} من القائمة.",
+    "equipment.noMaintenanceSchedule": "لا يوجد جدول صيانة",
 
     // Add Equipment Form
     "form.addNewEquipment": "إضافة معدة جديدة",
@@ -422,6 +429,8 @@ const translations = {
     "serviceRequest.createTitle": "إنشاء طلب خدمة",
     "serviceRequest.editTitle": "تعديل طلب الخدمة",
     "serviceRequest.description": "املأ التفاصيل أدناه لإنشاء طلب خدمة.",
+    "serviceRequest.basic": "الأساسي",
+    "serviceRequest.details": "تفاصيل الفني",
     "serviceRequest.requestType": "نوع الطلب",
     "serviceRequest.selectType": "اختر النوع",
     "serviceRequest.types.preventive": "صيانة وقائية",
@@ -451,6 +460,9 @@ const translations = {
     "serviceRequest.statuses.completed": "مكتمل",
     "serviceRequest.statuses.cancelled": "ملغي",
     "serviceRequest.create": "إنشاء الطلب",
+    "serviceRequest.addDetails": "إضافة التفاصيل",
+    "serviceRequest.detailsPendingTitle": "تفاصيل الفني قيد الإكمال",
+    "serviceRequest.detailsPendingDesc": "أكمل التقييم الفني، التوصية وقطع الغيار.",
     "serviceRequest.openRequest": "طلب مفتوح",
     "serviceRequest.selectTechnician": "اختر الفني",
     "serviceRequest.assignedTechnician": "الفني",

@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { DbEquipment, DbServiceRequest } from './types';
-import { toJsonbParam } from './utils';
+import { toJsonbParam, generateTicketId } from './utils';
+import { randomUUID } from 'crypto';
 
 // Simple Neon client factory. Uses DATABASE_URL from env.
 export const getDb = () => {
@@ -58,7 +59,8 @@ export const ensureSchema = async () => {
       problem_description text,
       technical_assessment text,
       recommendation text,
-      spare_parts_needed jsonb
+      spare_parts_needed jsonb,
+      ticket_id text not null
     )`;
   // Add new columns to the equipment table if they do not exist
   await sql`
@@ -68,6 +70,11 @@ export const ensureSchema = async () => {
       add column if not exists serial_number text,
       add column if not exists status text not null default 'Working',
       add column if not exists sub_location text`;
+
+  await sql`
+    alter table service_request
+      add column if not exists ticket_id text
+  `;
 };
 
 export const listEquipmentCache = async () => {
@@ -331,19 +338,22 @@ export const insertServiceRequest = async (
 ) => {
   const sql = getDb();
   await ensureSchema();
+  const explicitId = randomUUID();
+  const createdAt = new Date();
+  const ticketId = generateTicketId(createdAt, explicitId);
   const [row] = await sql`
     insert into service_request (
-      created_at, created_by,
+      id, created_at, created_by,
       equipment_id, assigned_technician_id, request_type, scheduled_at,
       priority, approval_status, work_status,
       problem_description, technical_assessment, recommendation,
-      spare_parts_needed
+      spare_parts_needed, ticket_id
     ) values (
-      now(), ${actorId},
+      ${explicitId}, ${createdAt}, ${actorId},
       ${input.equipment_id}, ${input.assigned_technician_id}, ${input.request_type}, ${input.scheduled_at},
       ${input.priority}, ${input.approval_status}, ${input.work_status},
       ${input.problem_description}, ${input.technical_assessment}, ${input.recommendation},
-      ${toJsonbParam(input.spare_parts_needed)}::jsonb
+      ${toJsonbParam(input.spare_parts_needed)}::jsonb, ${ticketId}
     ) returning *`;
   return row;
 };

@@ -89,6 +89,19 @@ export function formatStackUserLight(u: any): User | null {
   } as User
 }
 
+// Ticket ID generator: YYYYMMDD-<six-digit-unique>
+export function generateTicketId(createdAt: string | Date | undefined, id: string): string {
+  const dateObj = createdAt ? new Date(createdAt) : new Date()
+  const yyyy = String(dateObj.getFullYear())
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
+  const dd = String(dateObj.getDate()).padStart(2, '0')
+  const datePrefix = `${yyyy}${mm}${dd}`
+  const hex = (id || '').replace(/-/g, '').slice(0, 6) || '000000'
+  const numeric = Number.parseInt(hex, 16)
+  const suffix = String(Number.isFinite(numeric) ? numeric : 0).padStart(6, '0').slice(-6)
+  return `${datePrefix}-${suffix}`
+}
+
 // Maintenance derivation helpers
 export const MAINTENANCE_INTERVAL_DAYS_MAP: Record<string, number> = {
   '1 week': 7,

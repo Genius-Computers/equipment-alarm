@@ -38,6 +38,7 @@ export enum ServiceRequestWorkStatus {
 
 export interface ServiceRequest {
     id: string;
+    ticketId?: string;
     equipmentId: string;
     assignedTechnicianId?: string;
     requestType: ServiceRequestType;
@@ -68,4 +69,5 @@ export interface DbServiceRequest extends DbBaseAudit {
     technical_assessment?: string;
     recommendation?: string;
     spare_parts_needed?: SparePartNeeded[];
+    ticket_id?: string;
 }

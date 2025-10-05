@@ -7,15 +7,6 @@ export enum EquipmentMaintenanceStatus {
     OVERDUE = "overdue",
 }
 
-export enum EquipmentStatus {
-    WORKING = 'Working',
-    NEW_INSTALLATION = 'New Unit / For Installation',
-    REPAIR = 'For Repair',
-    MAINTENANCE = 'For Maintenance',
-    PART_REPLACEMENT = 'For Replacement of Parts',
-    FOR_INSTALLATION = 'For Installation',
-}
-
 export interface Equipment {
     id: string;
     name: string;
@@ -25,7 +16,7 @@ export interface Equipment {
     lastMaintenance?: string;
     maintenanceInterval?: string;
     inUse: boolean;
-    status: EquipmentStatus;
+    status: string;
     model: string;
     manufacturer: string;
     serialNumber: string;
@@ -56,7 +47,7 @@ export interface DbEquipment extends DbBaseAudit {
     model: string;
     manufacturer: string;
     serial_number: string;
-    status: EquipmentStatus;
+    status: string;
     part_number: string;
     location: string;
     sub_location: string;

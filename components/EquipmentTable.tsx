@@ -31,6 +31,7 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
   const router = useRouter();
   const { profile } = useSelfProfile();
   const canDelete = canApprove(profile?.role);
+  const canCreateRequest = canApprove(profile?.role);
 
   if (!items || items.length === 0) {
     return <Card className="p-6 text-center text-sm text-muted-foreground">{t("common.noResults")}</Card>;
@@ -109,17 +110,19 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                   <td className={cellClass}>{e.maintenanceInterval || "—"}</td>
                   <td className={cellClass}>
                     <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
-                      <ServiceRequestDialog
-                        equipmentId={e.id}
-                        equipmentName={e.name}
-                        existing={e.latestPendingServiceRequest as JServiceRequest}
-                        trigger={
-                          <Button size="sm" variant="outline">
-                            <Wrench className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-                            {t("serviceRequest.manage")}
-                          </Button>
-                        }
-                      />
+                      {canCreateRequest && (
+                        <ServiceRequestDialog
+                          equipmentId={e.id}
+                          equipmentName={e.name}
+                          existing={e.latestPendingServiceRequest as JServiceRequest}
+                          trigger={
+                            <Button size="sm" variant="outline">
+                              <Wrench className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                              {t("serviceRequest.manage")}
+                            </Button>
+                          }
+                        />
+                      )}
                       <EquipmentForm
                         mode="edit"
                         equipment={e as unknown as Equipment}

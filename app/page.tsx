@@ -8,6 +8,8 @@ import { Search as SearchIcon, Box, Calendar, AlertCircle, Headphones, PlusCircl
 import Header from "@/components/Header";
 import AddEquipmentForm from "@/components/AddEquipmentForm";
 import ServiceRequestDialog from "@/components/ServiceRequestDialog";
+import { useSelfProfile } from "@/hooks/useSelfProfile";
+import { canApprove } from "@/lib/types/user";
 import { useEquipment } from "@/hooks/useEquipment";
 import Link from "next/link";
 import EquipmentResultCard from "@/components/EquipmentResultCard";
@@ -25,6 +27,8 @@ const Page = () => {
 
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>("");
   const [serviceRequestDialogOpen, setServiceRequestDialogOpen] = useState(false);
+  const { profile } = useSelfProfile();
+  const canCreateRequest = canApprove(profile?.role);
   return (
     <main>
       <Header />
@@ -114,40 +118,44 @@ const Page = () => {
               icon: <Headphones className="h-6 w-6 cursor-pointer text-orange-500" />,
               cta: (
                 <>
-                  <Select
-                    value={selectedEquipmentId}
-                    onValueChange={(value) => {
-                      setSelectedEquipmentId(value);
-                      setServiceRequestDialogOpen(true);
-                    }}
-                    disabled={isCaching || equipmentNameCache.length === 0}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={isCaching ? "Loading..." : "Select Equipment"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {equipmentNameCache.map((eq) => (
-                        <SelectItem key={eq.id} value={eq.id}>
-                          {eq.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedEquipmentId && (
-                    <ServiceRequestDialog
-                      equipmentId={selectedEquipmentId}
-                      equipmentName={equipmentNameCache.find((eq) => eq.id === selectedEquipmentId)?.name}
-                      open={serviceRequestDialogOpen}
-                      onOpenChange={(isOpen) => {
-                        setServiceRequestDialogOpen(isOpen);
-                        if (!isOpen) {
-                          setSelectedEquipmentId("");
-                        }
-                      }}
-                      onCreated={() => {
-                        setServiceRequestDialogOpen(false);
-                        setSelectedEquipmentId("");
-                      }}
-                    />
+                  {canCreateRequest && (
+                    <>
+                      <Select
+                        value={selectedEquipmentId}
+                        onValueChange={(value) => {
+                          setSelectedEquipmentId(value);
+                          setServiceRequestDialogOpen(true);
+                        }}
+                        disabled={isCaching || equipmentNameCache.length === 0}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={isCaching ? "Loading..." : "Select Equipment"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {equipmentNameCache.map((eq) => (
+                            <SelectItem key={eq.id} value={eq.id}>
+                              {eq.name} {eq.serialNumber ? `(${eq.serialNumber})` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedEquipmentId && (
+                        <ServiceRequestDialog
+                          equipmentId={selectedEquipmentId}
+                          equipmentName={equipmentNameCache.find((eq) => eq.id === selectedEquipmentId)?.name}
+                          open={serviceRequestDialogOpen}
+                          onOpenChange={(isOpen) => {
+                            setServiceRequestDialogOpen(isOpen);
+                            if (!isOpen) {
+                              setSelectedEquipmentId("");
+                            }
+                          }}
+                          onCreated={() => {
+                            setServiceRequestDialogOpen(false);
+                            setSelectedEquipmentId("");
+                          }}
+                        />
+                      )}
+                    </>
                   )}
                 </>
               ),
