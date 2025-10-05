@@ -24,7 +24,7 @@ const translations = {
     "header.facility": "Facility Management",
     
     // Equipment Card
-    "equipment.name": "Name",
+    "equipment.name": "Equipment/Device Name",
     "equipment.upToDate": "Up to Date",
     "equipment.dueSoon": "Due Soon", 
     "equipment.overdue": "Overdue",
@@ -110,6 +110,8 @@ const translations = {
     "csv.imported": "CSV imported successfully",
     "csv.noRows": "No data rows found in CSV",
     "csv.missingHeaders": "Missing required headers: {missing}",
+    "csv.downloadTemplate": "Download Template",
+    "csv.templateDownloaded": "Template downloaded successfully",
     // List label
     "list.label.showing": "Showing {from}-{to} of {total}",
     "list.label.filteredBy": "filtered by",
@@ -358,6 +360,8 @@ const translations = {
     "csv.imported": "تم استيراد CSV بنجاح",
     "csv.noRows": "لا توجد بيانات في ملف CSV",
     "csv.missingHeaders": "حقول إلزامية مفقودة: {missing}",
+    "csv.downloadTemplate": "تحميل القالب",
+    "csv.templateDownloaded": "تم تحميل القالب بنجاح",
     // List label
     "list.label.showing": "عرض {from}-{to} من {total}",
     "list.label.filteredBy": "مفلترة حسب",

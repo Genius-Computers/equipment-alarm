@@ -22,6 +22,9 @@ interface EquipmentCardProps {
 }
 
 export const getDaysUntilMaintenance = (equipment: JEquipment) => {
+  if (!equipment.maintenanceInterval) {
+    return null;
+  }
   const last = equipment.lastMaintenance ? new Date(equipment.lastMaintenance) : new Date();
   const next = new Date(last);
   const addDays = MAINTENANCE_INTERVAL_DAYS_MAP[equipment.maintenanceInterval] ?? 30;
@@ -75,24 +78,28 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
-              <p className="font-medium">{new Date(equipment.lastMaintenance).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">{t("equipment.nextMaintenance")}</p>
-              {/* <p className="font-medium">{equipment.nextMaintenance}</p> */}
-              {daysUntil <= 7 && daysUntil > 0 && (
-                <p className="text-warning text-xs">{t("equipment.inDays", { days: daysUntil })}</p>
-              )}
-              {daysUntil <= 0 && (
-                <p className="text-destructive text-xs font-medium">
-                  {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
+          {equipment.lastMaintenance || equipment.maintenanceInterval ? (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
+                <p className="font-medium">
+                  {equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toLocaleDateString() : "—"}
                 </p>
-              )}
+              </div>
+              <div>
+                <p className="text-muted-foreground">{t("equipment.nextMaintenance")}</p>
+                {/* <p className="font-medium">{equipment.nextMaintenance}</p> */}
+                {daysUntil !== null && daysUntil <= 7 && daysUntil > 0 && (
+                  <p className="text-warning text-xs">{t("equipment.inDays", { days: daysUntil })}</p>
+                )}
+                {daysUntil !== null && daysUntil <= 0 && (
+                  <p className="text-destructive text-xs font-medium">
+                    {t("equipment.overdueBy", { days: Math.abs(daysUntil) })}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-1">
@@ -162,12 +169,18 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
           )}
 
           <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center">
-              <Wrench className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 text-muted-foreground" />
-              <span>
-                {t("equipment.every")} {equipment.maintenanceInterval}
-              </span>
-            </div>
+            {equipment.maintenanceInterval ? (
+              <div className="flex items-center">
+                <Wrench className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 text-muted-foreground" />
+                <span>
+                  {t("equipment.every")} {equipment.maintenanceInterval}
+                </span>
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-xs">
+                {t("equipment.noMaintenanceSchedule")}
+              </div>
+            )}
             <div className="text-muted-foreground text-xs">
               {t("equipment.inUse")}: {equipment.inUse ? t("equipment.inUse") : t("equipment.notInUse")}
             </div>

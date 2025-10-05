@@ -10,35 +10,41 @@ interface EquipmentCSVExportProps {
   items: JEquipment[];
 }
 
+// User-friendly column names matching the form labels
+const USER_FRIENDLY_NAMES = {
+  name: "Equipment/Device name",
+  partNumber: "Tag Number",
+  location: "Location",
+  subLocation: "Sub-location",
+  model: "Model",
+  manufacturer: "Manufacturer",
+  serialNumber: "Serial Number",
+  status: "Status",
+};
+
 const EquipmentCSVExport = ({ items }: EquipmentCSVExportProps) => {
   const { t } = useLanguage();
 
   const handleExport = () => {
     const headers = [
-      "name",
-      "partNumber",
-      "location",
-      "subLocation",
-      "lastMaintenance",
-      "maintenanceInterval",
-      "inUse",
-      "model",
-      "manufacturer",
-      "serialNumber",
-      "status",
+      USER_FRIENDLY_NAMES.name,
+      USER_FRIENDLY_NAMES.partNumber,
+      USER_FRIENDLY_NAMES.location,
+      USER_FRIENDLY_NAMES.subLocation,
+      USER_FRIENDLY_NAMES.model,
+      USER_FRIENDLY_NAMES.manufacturer,
+      USER_FRIENDLY_NAMES.serialNumber,
+      USER_FRIENDLY_NAMES.status,
     ];
     const rows = items.map((e) => ({
-      name: e.name,
-      partNumber: e.partNumber,
-      location: e.location,
-      subLocation: e.subLocation ?? "",
-      lastMaintenance: e.lastMaintenance ?? "",
-      maintenanceInterval: e.maintenanceInterval ?? "",
-      inUse: e.inUse ? "true" : "false",
-      model: e.model ?? "",
-      manufacturer: e.manufacturer ?? "",
-      serialNumber: e.serialNumber ?? "",
-      status: e.status ?? "",
+      [USER_FRIENDLY_NAMES.name]: e.name,
+      [USER_FRIENDLY_NAMES.partNumber]: e.partNumber,
+      [USER_FRIENDLY_NAMES.location]: e.location,
+      [USER_FRIENDLY_NAMES.subLocation]: e.subLocation ?? "",
+      [USER_FRIENDLY_NAMES.model]: e.model ?? "",
+      [USER_FRIENDLY_NAMES.manufacturer]: e.manufacturer ?? "",
+      [USER_FRIENDLY_NAMES.serialNumber]: e.serialNumber ?? "",
+      [USER_FRIENDLY_NAMES.status]: e.status ?? "",
     }));
     const csv = stringifyCSV(headers, rows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

@@ -54,11 +54,11 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground space-y-2">
                 <p>{t("settings.subtitle")}</p>
-                <Separator />
-                <div className="flex items-center justify-between">
+                {/* <Separator /> */}
+                {/* <div className="flex items-center justify-between">
                   <span>{t("settings.themeQuick")}</span>
                   <ModeToggle />
-                </div>
+                </div> */}
                 <Separator />
                 <div className="flex items-center justify-between">
                   <span>{t("auth.signOut")}</span>
@@ -137,7 +137,7 @@ export default function SettingsPage() {
                 <CardTitle>{t("settings.appearance") || "Appearance"}</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="theme">{t("settings.theme") || "Theme"}</Label>
                   <div className="flex items-center gap-2">
                     <ModeToggle />
@@ -145,7 +145,7 @@ export default function SettingsPage() {
                       {t("settings.themeHint") || "Choose light, dark or system"}
                     </span>
                   </div>
-                </div>
+                </div> */}
                 <div className="space-y-2">
                   <Label htmlFor="language">{t("settings.language") || "Language"}</Label>
                   <Select value={language} onValueChange={(v) => (v === "ar" || v === "en") && setLanguage(v)}>

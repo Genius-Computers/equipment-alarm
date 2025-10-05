@@ -22,8 +22,8 @@ export interface Equipment {
     partNumber: string;
     location: string;
     subLocation: string;
-    lastMaintenance: string;
-    maintenanceInterval: string;
+    lastMaintenance?: string;
+    maintenanceInterval?: string;
     inUse: boolean;
     status: EquipmentStatus;
     model: string;
@@ -60,7 +60,7 @@ export interface DbEquipment extends DbBaseAudit {
     part_number: string;
     location: string;
     sub_location: string;
-    last_maintenance: string;
-    maintenance_interval: string;
+    last_maintenance?: string;
+    maintenance_interval?: string;
     in_use: boolean;
 }

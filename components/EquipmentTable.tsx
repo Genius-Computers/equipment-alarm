@@ -59,9 +59,9 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
           {items.map((e) => {
             const daysUntil = getDaysUntilMaintenance(e);
             const nextMaintenanceLabel =
-              daysUntil <= 0
+              daysUntil !== null && daysUntil <= 0
                 ? t("equipment.overdueBy", { days: Math.abs(daysUntil) })
-                : daysUntil <= 7
+                : daysUntil !== null && daysUntil <= 7
                 ? t("equipment.inDays", { days: daysUntil })
                 : "";
 
@@ -89,7 +89,9 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                     </div>
                   </td>
                   <td className={cellClass}>{e.subLocation || "—"}</td>
-                  <td className={cellClass}>{new Date(e.lastMaintenance).toLocaleDateString()}</td>
+                  <td className={cellClass}>
+                    {e.lastMaintenance ? new Date(e.lastMaintenance).toLocaleDateString() : "—"}
+                  </td>
                   <td className={cellClass}>
                     <Badge variant="secondary" className="capitalize">
                       {e.status}
@@ -97,14 +99,14 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                   </td>
                   <td className={cellClass}>
                     {nextMaintenanceLabel ? (
-                      <span className={daysUntil <= 0 ? "text-destructive" : "text-warning"}>
+                      <span className={daysUntil !== null && daysUntil <= 0 ? "text-destructive" : "text-warning"}>
                         {nextMaintenanceLabel}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className={cellClass}>{e.maintenanceInterval}</td>
+                  <td className={cellClass}>{e.maintenanceInterval || "—"}</td>
                   <td className={cellClass}>
                     <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
                       <ServiceRequestDialog

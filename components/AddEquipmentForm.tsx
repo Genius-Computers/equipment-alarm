@@ -77,14 +77,14 @@ const EquipmentForm = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.partNumber || !formData.location || !formData.maintenanceInterval) {
+    if (!formData.name || !formData.partNumber || !formData.location) {
       toast(t("toast.error"), {
         description: t("toast.fillRequired"),
       });
       return;
     }
 
-    const lastDate = new Date(formData.lastMaintenance || new Date());
+    const lastDate = formData.lastMaintenance ? new Date(formData.lastMaintenance).toISOString() : undefined;
     
     if (mode === "edit" && equipment) {
       // Edit mode: preserve the equipment ID
@@ -94,8 +94,8 @@ const EquipmentForm = ({
         partNumber: formData.partNumber,
         location: formData.location,
         subLocation: formData.subLocation,
-        maintenanceInterval: formData.maintenanceInterval,
-        lastMaintenance: lastDate.toISOString(),
+        maintenanceInterval: formData.maintenanceInterval || undefined,
+        lastMaintenance: lastDate,
         inUse: formData.inUse,
         model: formData.model,
         manufacturer: formData.manufacturer,
@@ -109,8 +109,8 @@ const EquipmentForm = ({
         partNumber: formData.partNumber,
         location: formData.location,
         subLocation: formData.subLocation,
-        maintenanceInterval: formData.maintenanceInterval,
-        lastMaintenance: lastDate.toISOString(),
+        maintenanceInterval: formData.maintenanceInterval || undefined,
+        lastMaintenance: lastDate,
         inUse: formData.inUse,
         model: formData.model,
         manufacturer: formData.manufacturer,
@@ -232,9 +232,9 @@ const EquipmentForm = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <Label htmlFor="maintenanceInterval">
-                {t("form.maintenanceInterval")} {t("form.required")}
+                {t("form.maintenanceInterval")}
               </Label>
-              <Select onValueChange={(value) => setFormData({ ...formData, maintenanceInterval: value })} required>
+              <Select onValueChange={(value) => setFormData({ ...formData, maintenanceInterval: value })} value={formData.maintenanceInterval}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("form.selectInterval")} />
                 </SelectTrigger>

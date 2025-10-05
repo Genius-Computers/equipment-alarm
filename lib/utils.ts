@@ -99,7 +99,11 @@ export const MAINTENANCE_INTERVAL_DAYS_MAP: Record<string, number> = {
   '1 year': 365,
 }
 
-export function deriveMaintenanceInfo(input: { lastMaintenance?: string; maintenanceInterval: string }): { maintenanceStatus: 'good' | 'due' | 'overdue'; nextMaintenance: string; daysUntil: number } {
+export function deriveMaintenanceInfo(input: { lastMaintenance?: string; maintenanceInterval?: string }): { maintenanceStatus: 'good' | 'due' | 'overdue'; nextMaintenance: string; daysUntil: number } {
+  if (!input.maintenanceInterval) {
+    // If no maintenance interval is set, return default "good" status
+    return { maintenanceStatus: 'good', nextMaintenance: '', daysUntil: 0 }
+  }
   const last = input.lastMaintenance ? new Date(input.lastMaintenance) : new Date()
   const next = new Date(last)
   const addDays = MAINTENANCE_INTERVAL_DAYS_MAP[input.maintenanceInterval] ?? 30
