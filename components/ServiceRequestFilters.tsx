@@ -42,7 +42,7 @@ export default function ServiceRequestFilters({
 					<div className="flex items-center gap-2 ml-2">
 						<Switch checked={!!assignedToMe} onCheckedChange={(v) => onAssignedToMeChange?.(v)} id="assigned-to-me" />
 						<label htmlFor="assigned-to-me" className="text-sm">
-							{t("filter.assignedToMe")}
+							{t("Assigned to me")}
 						</label>
 					</div>
 				) : null}
