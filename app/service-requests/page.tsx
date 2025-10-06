@@ -23,8 +23,6 @@ const Page = () => {
 		setPage,
 		priorityFilter,
 		setPriorityFilter,
-		overdueOnly,
-		setOverdueOnly,
 		assignedToMe,
 		setAssignedToMe,
 		scope,
@@ -45,8 +43,6 @@ const Page = () => {
 					showAssignedToggle={role === "user"}
 					assignedToMe={assignedToMe}
 					onAssignedToMeChange={setAssignedToMe}
-					overdueOnly={overdueOnly}
-					onOverdueOnlyChange={setOverdueOnly}
 				/>
 
 				<div className="flex items-center gap-2">
