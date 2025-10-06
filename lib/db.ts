@@ -332,6 +332,42 @@ export const getServiceRequestById = async (id: string): Promise<(DbServiceReque
   return (rows && rows.length > 0 ? (rows[0] as unknown as (DbServiceRequest & { equipment: DbEquipment | null })) : null);
 };
 
+// Compute next daily sequential ticket id in format YYYY-MM-DD-XXX (e.g., 2025-10-06-001)
+export const getNextTicketId = async (at: Date = new Date()): Promise<string> => {
+  try {
+    const sql = getDb();
+    await ensureSchema();
+    const yyyy = String(at.getFullYear());
+    const mm = String(at.getMonth() + 1).padStart(2, '0');
+    const dd = String(at.getDate()).padStart(2, '0');
+    const datePrefix = `${yyyy}-${mm}-${dd}`;
+
+    // Select max numeric suffix for tickets that match today's prefix
+    // Handle case where ticket_id might be null or table is empty
+    const rows = await sql`
+      select coalesce(max(
+        case 
+          when ticket_id is not null and ticket_id like ${datePrefix + '-%'}
+          then (split_part(ticket_id, '-', 4))::int
+          else 0
+        end
+      ), 0) as max_suffix
+      from service_request
+    ` as unknown as Array<{ max_suffix: number }>; 
+
+    const maxSuffix = (rows?.[0]?.max_suffix ?? 0) as number;
+    const next = String((Number.isFinite(maxSuffix) ? maxSuffix : 0) + 1).padStart(3, '0');
+    return `${datePrefix}-${next}`;
+  } catch (error) {
+    console.error('Error in getNextTicketId:', error);
+    // Fallback: return a basic ticket ID if database query fails
+    const yyyy = String(at.getFullYear());
+    const mm = String(at.getMonth() + 1).padStart(2, '0');
+    const dd = String(at.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}-001`;
+  }
+};
+
 export const insertServiceRequest = async (
   input: Omit<DbServiceRequest, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>,
   actorId: string,
@@ -340,7 +376,7 @@ export const insertServiceRequest = async (
   await ensureSchema();
   const explicitId = randomUUID();
   const createdAt = new Date();
-  const ticketId = generateTicketId(createdAt, explicitId);
+  const ticketId = await getNextTicketId(createdAt);
   const [row] = await sql`
     insert into service_request (
       id, created_at, created_by,

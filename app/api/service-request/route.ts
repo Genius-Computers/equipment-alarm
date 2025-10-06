@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insertServiceRequest, listServiceRequestPaginated } from '@/lib/db';
+import { insertServiceRequest, listServiceRequestPaginated, getNextTicketId } from '@/lib/db';
 import { camelToSnakeCase, formatStackUserLight, snakeToCamelCase } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
 import { ensureRole, getCurrentServerUser } from '@/lib/auth';
@@ -13,6 +13,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { searchParams } = new URL(req.url);
+    
+    // If ?nextTicket=true, return next ticket id for preview
+    if (searchParams.get('nextTicket') === 'true') {
+      try {
+        const next = await getNextTicketId(new Date());
+        return NextResponse.json({ data: { nextTicketId: next } });
+      } catch (error) {
+        console.error('Error getting next ticket ID:', error);
+        return NextResponse.json({ error: 'Failed to get next ticket ID' }, { status: 500 });
+      }
+    }
+    
     const page = Number(searchParams.get('page') ?? '1');
     const pageSize = Number(searchParams.get('pageSize') ?? '10');
     const scopeParam = searchParams.get('scope');

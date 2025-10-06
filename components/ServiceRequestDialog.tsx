@@ -62,11 +62,53 @@ const ServiceRequestDialog = ({
     }
   };
   const [loading, setLoading] = useState(false);
+  const [previewTicketId, setPreviewTicketId] = useState<string>("");
   // Two-section model for edit: 'basic' and 'details'
   const [section, setSection] = useState<"basic" | "details">("basic");
   const { createRequest, updateDetails } = useServiceRequests({ autoRefresh: false });
   const { profile } = useSelfProfile();
   const isApprover = isApproverRole(profile?.role);
+
+  // Fetch preview ticket ID when dialog opens (server authoritative)
+  useEffect(() => {
+    const fetchNext = async () => {
+      try {
+        console.log('Fetching next ticket ID...');
+        const res = await fetch(`/api/service-request?nextTicket=true`, { cache: 'no-store' });
+        console.log('Response status:', res.status);
+        if (res.ok) {
+          const j = await res.json();
+          console.log('Response data:', j);
+          const id = j?.data?.nextTicketId as string | undefined;
+          if (id) {
+            console.log('Setting preview ticket ID:', id);
+            setPreviewTicketId(id);
+          }
+        } else {
+          console.error('Failed to fetch next ticket ID:', res.status);
+          // Fallback: generate a basic preview ticket ID
+          const now = new Date();
+          const yyyy = String(now.getFullYear());
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const dd = String(now.getDate()).padStart(2, '0');
+          const fallbackId = `${yyyy}-${mm}-${dd}-001`;
+          console.log('Using fallback ticket ID:', fallbackId);
+          setPreviewTicketId(fallbackId);
+        }
+      } catch (error) {
+        console.error('Error fetching next ticket ID:', error);
+        // Fallback: generate a basic preview ticket ID
+        const now = new Date();
+        const yyyy = String(now.getFullYear());
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const fallbackId = `${yyyy}-${mm}-${dd}-001`;
+        console.log('Using fallback ticket ID:', fallbackId);
+        setPreviewTicketId(fallbackId);
+      }
+    };
+    if (open && !existing) fetchNext();
+  }, [open, existing]);
 
   const [form, setForm] = useState({
     requestType: ServiceRequestType.PREVENTIVE_MAINTENANCE,
@@ -171,9 +213,9 @@ const ServiceRequestDialog = ({
         });
         toast(t("toast.success"), { description: t("toast.serviceRequestCreated") });
         onCreated?.();
+        // Redirect to maintenance schedule preview instead of opening print dialog
         if (created?.id) {
-          const url = `/service-requests/${created.id}/print`;
-          window.open(url, "_blank", "noopener,noreferrer");
+          window.location.href = "/service-requests";
         }
       }
       setOpen(false);
@@ -228,6 +270,14 @@ const ServiceRequestDialog = ({
             ) : null}
           </DialogTitle>
           <DialogDescription>{t("serviceRequest.description")}</DialogDescription>
+          {!existing && previewTicketId && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-sm font-medium">{t("serviceRequest.ticketId")}:</span>
+              <Badge variant="outline" className="font-mono text-xs">
+                {previewTicketId}
+              </Badge>
+            </div>
+          )}
         </DialogHeader>
 
         {/* section switcher for editing */}

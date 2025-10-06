@@ -225,6 +225,7 @@ const translations = {
     "serviceRequest.spareParts.empty": "No spare parts added.",
     "serviceRequest.spareParts.total": "Total: {amount}",
     "serviceRequest.spareParts.validation": "Please enter part name and quantity",
+    "serviceRequest.ticketId": "Ticket ID",
 
     // Users
     "users.title": "Users",
@@ -481,6 +482,7 @@ const translations = {
     "serviceRequest.spareParts.empty": "لم تتم إضافة قطع غيار.",
     "serviceRequest.spareParts.total": "الإجمالي: {amount}",
     "serviceRequest.spareParts.validation": "يرجى إدخال اسم القطعة والكمية",
+    "serviceRequest.ticketId": "رقم التذكرة",
 
     // Users
     "users.title": "المستخدمين",

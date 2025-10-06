@@ -162,6 +162,10 @@ export function useEquipment(list = true) {
             lastMaintenance: updated.lastMaintenance,
             maintenanceInterval: updated.maintenanceInterval,
             inUse: updated.inUse,
+            status: updated.status,
+            model: updated.model,
+            manufacturer: updated.manufacturer,
+            serialNumber: updated.serialNumber,
           }),
         });
         if (!res.ok) throw new Error("Failed to update equipment");
