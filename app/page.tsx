@@ -114,7 +114,7 @@ const Page = () => {
               ),
             },
             {
-              title: "Raise a Service Request",
+              title: "Job Order",
               description: "Submit a new support or service request.",
               icon: <Headphones className="h-6 w-6 cursor-pointer text-orange-500" />,
               cta: (
