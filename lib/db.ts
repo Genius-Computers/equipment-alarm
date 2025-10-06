@@ -14,7 +14,6 @@ export const getDb = () => {
 
 // Ensure the equipment table exists (id as UUID, dates as text for now to match UI strings)
 export const ensureSchema = async () => {
-  return;
   const sql = getDb();
   await sql`create extension if not exists pgcrypto`;
   await sql`
@@ -73,7 +72,8 @@ export const ensureSchema = async () => {
 
   await sql`
     alter table service_request
-      add column if not exists ticket_id text
+      add column if not exists ticket_id text,
+      add column if not exists approval_note text
   `;
 };
 
@@ -283,14 +283,17 @@ export const listServiceRequestPaginated = async (
   const limit = Math.max(1, Number(pageSize));
 
   const scopeFilter = scope === 'pending'
-    ? sql`(sr.approval_status = 'pending' or sr.work_status = 'pending')`
+    ? sql`(sr.approval_status = 'pending' or (sr.approval_status = 'approved' and sr.work_status = 'pending'))`
     : scope === 'completed'
     ? sql`(sr.approval_status <> 'pending' and sr.work_status <> 'pending')`
     : sql`true`;
 
   const techFilter = assignedToTechnicianId ? sql`sr.assigned_technician_id = ${assignedToTechnicianId}` : sql`true`;
   const equipmentFilter = equipmentId ? sql`sr.equipment_id = ${equipmentId}` : sql`true`;
-  const priorityFilter = priority && priority !== 'all' ? sql`sr.priority = ${priority}` : sql`true`;
+  const priorityFilter = priority && priority !== 'all' && priority !== 'overdue' ? sql`sr.priority = ${priority}` : sql`true`;
+  const overdueFilter = priority === 'overdue'
+    ? sql`(sr.work_status = 'pending' and (sr.scheduled_at)::timestamptz < (now() - interval '5 days'))`
+    : sql`true`;
   const approvalFilter = approval && approval !== 'all' ? sql`sr.approval_status = ${approval}` : sql`true`;
 
   const countRows = await sql`
@@ -301,6 +304,7 @@ export const listServiceRequestPaginated = async (
       and ${equipmentFilter}
       and ${priorityFilter}
       and ${approvalFilter}
+      and ${overdueFilter}
   `;
   const total = (countRows?.[0]?.count as number) ?? 0;
 
@@ -313,7 +317,8 @@ export const listServiceRequestPaginated = async (
       and ${equipmentFilter}
       and ${priorityFilter}
       and ${approvalFilter}
-    order by sr.created_at desc
+      and ${overdueFilter}
+    order by sr.ticket_id desc nulls last
     limit ${limit} offset ${offset}
   `;
 
@@ -417,7 +422,8 @@ export const updateServiceRequest = async (
         problem_description = ${input.problem_description},
         technical_assessment = ${input.technical_assessment},
         recommendation = ${input.recommendation},
-        spare_parts_needed = ${toJsonbParam(input.spare_parts_needed)}::jsonb
+        spare_parts_needed = ${toJsonbParam(input.spare_parts_needed)}::jsonb,
+        approval_note = ${input.approval_note}
       where id = ${id}
       returning *
     )

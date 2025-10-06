@@ -102,6 +102,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       technical_assessment: body.technicalAssessment ?? current.technical_assessment,
       recommendation: body.recommendation ?? current.recommendation,
       spare_parts_needed: body.sparePartsNeeded ?? current.spare_parts_needed,
+      approval_note: body.approvalNote ?? current.approval_note,
     } as const;
 
     const row = await updateServiceRequest(id, payload as Parameters<typeof updateServiceRequest>[1], user.id);

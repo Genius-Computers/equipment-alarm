@@ -26,6 +26,7 @@ const Page = () => {
   } = useEquipment(false);
 
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>("");
+  const [localFilter, setLocalFilter] = useState<string>("");
   const [serviceRequestDialogOpen, setServiceRequestDialogOpen] = useState(false);
   const { profile } = useSelfProfile();
   const canCreateRequest = canApprove(profile?.role);
@@ -131,7 +132,24 @@ const Page = () => {
                           <SelectValue placeholder={isCaching ? "Loading..." : "Select Equipment"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {equipmentNameCache.map((eq) => (
+                          <div className="p-2">
+                            <Input
+                              value={localFilter}
+                              onChange={(e) => setLocalFilter(e.target.value)}
+                              placeholder="Type to filter by name or serial number..."
+                              className="h-8"
+                            />
+                          </div>
+                          {equipmentNameCache
+                            .filter((eq) => {
+                              const q = localFilter.trim().toLowerCase();
+                              if (!q) return true;
+                              const name = eq.name?.toLowerCase() || "";
+                              const serial = eq.serialNumber?.toLowerCase() || "";
+                              return name.includes(q) || serial.includes(q);
+                            })
+                            .slice(0, 200)
+                            .map((eq) => (
                             <SelectItem key={eq.id} value={eq.id}>
                               {eq.name} {eq.serialNumber ? `(${eq.serialNumber})` : ""}
                             </SelectItem>

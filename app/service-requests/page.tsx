@@ -23,6 +23,8 @@ const Page = () => {
 		setPage,
 		priorityFilter,
 		setPriorityFilter,
+		overdueOnly,
+		setOverdueOnly,
 		assignedToMe,
 		setAssignedToMe,
 		scope,
@@ -43,6 +45,8 @@ const Page = () => {
 					showAssignedToggle={role === "user"}
 					assignedToMe={assignedToMe}
 					onAssignedToMeChange={setAssignedToMe}
+					overdueOnly={overdueOnly}
+					onOverdueOnlyChange={setOverdueOnly}
 				/>
 
 				<div className="flex items-center gap-2">
@@ -61,37 +65,24 @@ const Page = () => {
 				</div>
 
 				{loading ? (
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						{[...Array(4)].map((_, i) => (
-							<Card key={i}>
-								<CardHeader>
-									<Skeleton className="h-5 w-40" />
-								</CardHeader>
-								<CardContent className="space-y-2">
-									<Skeleton className="h-4 w-64" />
-									<Skeleton className="h-4 w-52" />
-								</CardContent>
-							</Card>
-						))}
-					</div>
-				) : (
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-						{filteredRequests.map((r) => (
-							<ServiceRequestCard
-								key={r.id}
-								request={r}
-								canApprove={canApprove}
-								isUpdatingApproval={!!updatingById[r.id]?.approval}
-								isUpdatingWork={!!updatingById[r.id]?.work}
-								onApprove={(id) => changeApprovalStatus(id, ServiceRequestApprovalStatus.APPROVED)}
-								onReject={(id) => changeApprovalStatus(id, ServiceRequestApprovalStatus.REJECTED)}
-								onComplete={(id) => changeWorkStatus(id, ServiceRequestWorkStatus.COMPLETED)}
-								onCancel={(id) => changeWorkStatus(id, ServiceRequestWorkStatus.CANCELLED)}
-								onEdited={refresh}
-							/>
-						))}
-					</div>
-				)}
+					<div className="text-sm text-muted-foreground">Updating…</div>
+				) : null}
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					{filteredRequests.map((r) => (
+						<ServiceRequestCard
+							key={r.id}
+							request={r}
+							canApprove={canApprove}
+							isUpdatingApproval={!!updatingById[r.id]?.approval}
+							isUpdatingWork={!!updatingById[r.id]?.work}
+							onApprove={(id, note) => changeApprovalStatus(id, ServiceRequestApprovalStatus.APPROVED, note)}
+							onReject={(id, note) => changeApprovalStatus(id, ServiceRequestApprovalStatus.REJECTED, note)}
+							onComplete={(id) => changeWorkStatus(id, ServiceRequestWorkStatus.COMPLETED)}
+							onCancel={(id) => changeWorkStatus(id, ServiceRequestWorkStatus.CANCELLED)}
+							onEdited={refresh}
+						/>
+					))}
+				</div>
 				<CustomPagination
 					page={page}
 					pageSize={pageSize}

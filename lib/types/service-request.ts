@@ -50,6 +50,7 @@ export interface ServiceRequest {
     technicalAssessment?: string;
     recommendation?: string;
     sparePartsNeeded?: SparePartNeeded[];
+    approvalNote?: string;
 }
 
 export interface JServiceRequest extends ServiceRequest {
@@ -70,4 +71,5 @@ export interface DbServiceRequest extends DbBaseAudit {
     recommendation?: string;
     spare_parts_needed?: SparePartNeeded[];
     ticket_id?: string;
+    approval_note?: string;
 }

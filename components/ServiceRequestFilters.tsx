@@ -7,8 +7,8 @@ import { ServiceRequestPriority } from "@/lib/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
 interface ServiceRequestFiltersProps {
-	priority: "all" | ServiceRequestPriority;
-	onPriorityChange: (value: "all" | ServiceRequestPriority) => void;
+	priority: "all" | ServiceRequestPriority | "overdue";
+	onPriorityChange: (value: "all" | ServiceRequestPriority | "overdue") => void;
 	showAssignedToggle?: boolean;
 	assignedToMe?: boolean;
 	onAssignedToMeChange?: (value: boolean) => void;
@@ -26,7 +26,7 @@ export default function ServiceRequestFilters({
 		<div className="flex flex-col sm:flex-row gap-4">
 			<div className="flex items-center gap-2">
 				<Filter className="h-4 w-4 text-muted-foreground" />
-				<Select value={priority} onValueChange={(v) => onPriorityChange(v as "all" | ServiceRequestPriority)}>
+				<Select value={priority} onValueChange={(v) => onPriorityChange(v as "all" | ServiceRequestPriority | "overdue")}>
 					<SelectTrigger className="w-[160px]">
 						<SelectValue placeholder={t("serviceRequest.priority")} />
 					</SelectTrigger>
@@ -35,6 +35,7 @@ export default function ServiceRequestFilters({
 						<SelectItem value={ServiceRequestPriority.LOW}>{t("serviceRequest.priorities.low")}</SelectItem>
 						<SelectItem value={ServiceRequestPriority.MEDIUM}>{t("serviceRequest.priorities.medium")}</SelectItem>
 						<SelectItem value={ServiceRequestPriority.HIGH}>{t("serviceRequest.priorities.high")}</SelectItem>
+						<SelectItem value="overdue">{t("filter.overdue")}</SelectItem>
 					</SelectContent>
 				</Select>
 				{showAssignedToggle ? (

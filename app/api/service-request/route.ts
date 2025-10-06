@@ -36,17 +36,14 @@ export async function GET(req: NextRequest) {
     const approval = searchParams.get('approval') || undefined; // expected: 'pending' | 'approved' | 'rejected' | 'all'
     const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval);
 
-    // Fetch technicians for assigned_technician_id values
+    // Fetch only needed technicians, in parallel
     const techIds = Array.from(new Set((rows.map((r) => r.assigned_technician_id).filter(Boolean) as string[])));
     const techMap = new Map<string, unknown>();
-    const allUsers = await stackServerApp.listUsers({ limit: 100 });
     await Promise.all(
       techIds.map(async (id) => {
         try {
-          const technician = allUsers.find((u) => u.id === id);
-          if (technician) {
-            techMap.set(id, formatStackUserLight(technician));
-          }
+          const technician = await stackServerApp.getUser(id);
+          if (technician) techMap.set(id, formatStackUserLight(technician));
         } catch {
           // ignore individual fetch failures
         }

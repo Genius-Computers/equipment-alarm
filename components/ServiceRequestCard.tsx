@@ -6,18 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Wrench, Check, X, Loader2, Pencil, User, Ticket } from "lucide-react";
+import { Wrench, Check, X, Loader2, Pencil, User, Ticket, Flag } from "lucide-react";
 import ServiceRequestDialog from "@/components/ServiceRequestDialog";
 import ExpandableText from "@/components/ExpandableText";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 
 interface ServiceRequestCardProps {
   request: JServiceRequest;
   canApprove: boolean;
   isUpdatingApproval?: boolean;
   isUpdatingWork?: boolean;
-  onApprove?: (id: string) => void;
-  onReject?: (id: string) => void;
+  onApprove?: (id: string, note?: string) => void;
+  onReject?: (id: string, note?: string) => void;
   onComplete?: (id: string) => void;
   onCancel?: (id: string) => void;
   // onEdited kept for backward compat in parent; not used internally
@@ -37,11 +40,23 @@ export default function ServiceRequestCard({
   onEdited,
 }: ServiceRequestCardProps) {
   const { t } = useLanguage();
+  const [noteOpen, setNoteOpen] = useState<null | { id: string; action: 'approve' | 'reject' }>(null);
+  const [note, setNote] = useState("");
   const canEditDetails = true;
   // request.approvalStatus === ServiceRequestApprovalStatus.PENDING &&
   // request.workStatus === ServiceRequestWorkStatus.PENDING;
 
   const technicianLabel = request.technician?.displayName || request.technician?.email || request.assignedTechnicianId;
+
+  const isOverdue = (() => {
+    try {
+      const scheduled = new Date(request.scheduledAt).getTime();
+      const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
+      return request.workStatus === ServiceRequestWorkStatus.PENDING && Date.now() - scheduled > fiveDaysMs;
+    } catch {
+      return false;
+    }
+  })();
 
   // Consider details pending if any technician-side fields are empty while pending
   const detailsPending =
@@ -65,6 +80,11 @@ export default function ServiceRequestCard({
             <Wrench className="h-5 w-5" />
             <span className="capitalize">{request.requestType.replaceAll("_", " ")}</span>
             <Badge variant="secondary">{request.priority}</Badge>
+            {isOverdue ? (
+              <span title="Overdue">
+                <Flag className="h-4 w-4 text-red-600" />
+              </span>
+            ) : null}
           </div>
         </CardTitle>
         <div className="flex items-center gap-2 flex-wrap">
@@ -74,7 +94,10 @@ export default function ServiceRequestCard({
           <Badge className="bg-muted text-foreground/80 border border-border capitalize">
             {t("serviceRequest.workStatus")}: {request.workStatus}
           </Badge>
-          <span className="text-sm text-muted-foreground">{request.equipment?.name || request.equipmentId}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">Equipment/Device:</span>
+            <span className="text-sm font-medium">{request.equipment?.name || request.equipmentId}</span>
+          </div>
           {technicianLabel ? (
             <Badge variant="outline" title={t("serviceRequest.assignedTechnician")} className="capitalize">
               <User className="h-3 w-3" /> {technicianLabel}
@@ -159,8 +182,8 @@ export default function ServiceRequestCard({
                   size="sm"
                   className="gap-1"
                   disabled={isUpdatingApproval}
-                  onClick={() => onApprove?.(request.id)}>
-                  {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{" "}
+                  onClick={() => setNoteOpen({ id: request.id, action: 'approve' })}>
+                  {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {" "}
                   {t("serviceRequest.statuses.approved")}
                 </Button>
                 <Button
@@ -168,8 +191,8 @@ export default function ServiceRequestCard({
                   variant="destructive"
                   className="gap-1"
                   disabled={isUpdatingApproval}
-                  onClick={() => onReject?.(request.id)}>
-                  {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}{" "}
+                  onClick={() => setNoteOpen({ id: request.id, action: 'reject' })}>
+                  {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />} {" "}
                   {t("serviceRequest.statuses.rejected")}
                 </Button>
               </div>
@@ -216,6 +239,31 @@ export default function ServiceRequestCard({
           )}
         </div>
       </CardContent>
+      {request.approvalStatus !== ServiceRequestApprovalStatus.PENDING && request.approvalNote ? (
+        <div className="px-6 pb-4">
+          <Alert>
+            <AlertTitle>Supervisor note</AlertTitle>
+            <AlertDescription className="whitespace-pre-wrap break-words">{request.approvalNote}</AlertDescription>
+          </Alert>
+        </div>
+      ) : null}
+      <Dialog open={!!noteOpen} onOpenChange={(v) => { if (!v) { setNoteOpen(null); setNote(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supervisor note (optional)</DialogTitle>
+          </DialogHeader>
+          <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Supervisor note (optional)" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setNoteOpen(null); setNote(""); }}>{t('form.cancel')}</Button>
+            <Button onClick={() => {
+              if (!noteOpen) return;
+              if (noteOpen.action === 'approve') onApprove?.(noteOpen.id as string, note);
+              else onReject?.(noteOpen.id as string, note);
+              setNoteOpen(null); setNote("");
+            }}>{t('form.save')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
