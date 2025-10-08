@@ -77,6 +77,8 @@ export function formatStackUserLight(u: any): User | null {
                        (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).designation as string | undefined))
   const department = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).department as string | undefined) ||
                       (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).department as string | undefined))
+  const employeeId = ((u.clientReadOnlyMetadata && (u.clientReadOnlyMetadata as Record<string, unknown>).employeeId as string | undefined) ||
+                      (u.serverMetadata && (u.serverMetadata as Record<string, unknown>).employeeId as string | undefined))
   return {
     id: u.id,
     displayName: u.displayName,
@@ -86,6 +88,7 @@ export function formatStackUserLight(u: any): User | null {
     phone,
     designation,
     department,
+    employeeId,
   } as User
 }
 

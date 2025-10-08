@@ -8,29 +8,34 @@ import { Loader2, Plus, Pencil } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
-import { Equipment } from "@/lib/types";
+import { Equipment, SparePart } from "@/lib/types";
 
 interface EquipmentFormProps {
   onSubmitEquipment: (equipment: Omit<Equipment, "id"> | Equipment) => void;
+  onSubmitSparePart?: (sparePart: Omit<SparePart, "id"> | SparePart) => void;
   submitting?: boolean;
   mode?: "add" | "edit";
   equipment?: Equipment;
+  sparePart?: SparePart;
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 const EquipmentForm = ({ 
-  onSubmitEquipment, 
+  onSubmitEquipment,
+  onSubmitSparePart, 
   submitting = false, 
   mode = "add",
   equipment,
+  sparePart,
   trigger,
   open: controlledOpen,
   onOpenChange
 }: EquipmentFormProps) => {
   const { t } = useLanguage();
   const [internalOpen, setInternalOpen] = useState(false);
+  const [isSparePartsMode, setIsSparePartsMode] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
 
@@ -65,82 +70,157 @@ const EquipmentForm = ({
     };
   };
 
-  const [formData, setFormData] = useState(getInitialFormData());
+  const getInitialSparePartFormData = () => {
+    if (mode === "edit" && sparePart) {
+      return {
+        name: sparePart.name,
+        serialNumber: sparePart.serialNumber || "",
+        quantity: sparePart.quantity,
+        manufacturer: sparePart.manufacturer || "",
+        supplier: sparePart.supplier || "",
+      };
+    }
+    return {
+      name: "",
+      serialNumber: "",
+      quantity: 0,
+      manufacturer: "",
+      supplier: "",
+    };
+  };
 
-  // Update form data when equipment changes (for edit mode)
+  const [formData, setFormData] = useState(getInitialFormData());
+  const [sparePartFormData, setSparePartFormData] = useState(getInitialSparePartFormData());
+
+  // Update form data when equipment or spare part changes (for edit mode)
   useEffect(() => {
     if (mode === "edit" && equipment) {
       setFormData(getInitialFormData());
+      setIsSparePartsMode(false);
     }
   }, [equipment, mode]);
+
+  useEffect(() => {
+    if (mode === "edit" && sparePart) {
+      setSparePartFormData(getInitialSparePartFormData());
+      setIsSparePartsMode(true);
+    }
+  }, [sparePart, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.partNumber || !formData.location) {
-      toast(t("toast.error"), {
-        description: t("toast.fillRequired"),
-      });
-      return;
-    }
+    if (isSparePartsMode) {
+      // Spare parts mode
+      if (!sparePartFormData.name) {
+        toast(t("toast.error"), {
+          description: "Please fill in the required fields (Name).",
+        });
+        return;
+      }
 
-    const lastDate = formData.lastMaintenance ? new Date(formData.lastMaintenance).toISOString() : undefined;
-    
-    if (mode === "edit" && equipment) {
-      // Edit mode: preserve the equipment ID
-      onSubmitEquipment({
-        ...equipment,
-        name: formData.name,
-        partNumber: formData.partNumber,
-        location: formData.location,
-        subLocation: formData.subLocation,
-        maintenanceInterval: formData.maintenanceInterval || undefined,
-        lastMaintenance: lastDate,
-        inUse: formData.inUse,
-        model: formData.model,
-        manufacturer: formData.manufacturer,
-        serialNumber: formData.serialNumber,
-        status: formData.status,
+      if (onSubmitSparePart) {
+        if (mode === "edit" && sparePart) {
+          onSubmitSparePart({
+            ...sparePart,
+            name: sparePartFormData.name,
+            serialNumber: sparePartFormData.serialNumber,
+            quantity: sparePartFormData.quantity,
+            manufacturer: sparePartFormData.manufacturer,
+            supplier: sparePartFormData.supplier,
+          });
+        } else {
+          onSubmitSparePart({
+            name: sparePartFormData.name,
+            serialNumber: sparePartFormData.serialNumber,
+            quantity: sparePartFormData.quantity,
+            manufacturer: sparePartFormData.manufacturer,
+            supplier: sparePartFormData.supplier,
+          });
+        }
+
+        if (mode === "add") {
+          setSparePartFormData({
+            name: "",
+            serialNumber: "",
+            quantity: 0,
+            manufacturer: "",
+            supplier: "",
+          });
+        }
+      }
+
+      setOpen(false);
+      toast(t("toast.success"), {
+        description: mode === "edit" ? "Spare part updated successfully!" : "Spare part added successfully!",
       });
     } else {
-      // Add mode: create new equipment
-      onSubmitEquipment({
-        name: formData.name,
-        partNumber: formData.partNumber,
-        location: formData.location,
-        subLocation: formData.subLocation,
-        maintenanceInterval: formData.maintenanceInterval || undefined,
-        lastMaintenance: lastDate,
-        inUse: formData.inUse,
-        model: formData.model,
-        manufacturer: formData.manufacturer,
-        serialNumber: formData.serialNumber,
-        status: formData.status,
+      // Equipment mode
+      if (!formData.name || !formData.partNumber || !formData.location) {
+        toast(t("toast.error"), {
+          description: t("toast.fillRequired"),
+        });
+        return;
+      }
+
+      const lastDate = formData.lastMaintenance ? new Date(formData.lastMaintenance).toISOString() : undefined;
+      
+      if (mode === "edit" && equipment) {
+        // Edit mode: preserve the equipment ID
+        onSubmitEquipment({
+          ...equipment,
+          name: formData.name,
+          partNumber: formData.partNumber,
+          location: formData.location,
+          subLocation: formData.subLocation,
+          maintenanceInterval: formData.maintenanceInterval || undefined,
+          lastMaintenance: lastDate,
+          inUse: formData.inUse,
+          model: formData.model,
+          manufacturer: formData.manufacturer,
+          serialNumber: formData.serialNumber,
+          status: formData.status,
+        });
+      } else {
+        // Add mode: create new equipment
+        onSubmitEquipment({
+          name: formData.name,
+          partNumber: formData.partNumber,
+          location: formData.location,
+          subLocation: formData.subLocation,
+          maintenanceInterval: formData.maintenanceInterval || undefined,
+          lastMaintenance: lastDate,
+          inUse: formData.inUse,
+          model: formData.model,
+          manufacturer: formData.manufacturer,
+          serialNumber: formData.serialNumber,
+          status: formData.status,
+        });
+      }
+
+      if (mode === "add") {
+        // Reset form only in add mode
+        setFormData({
+          name: "",
+          partNumber: "",
+          location: "",
+          subLocation: "",
+          maintenanceInterval: "",
+          lastMaintenance: "",
+          model: "",
+          manufacturer: "",
+          serialNumber: "",
+          status: "",
+          inUse: true,
+        });
+      }
+      
+      setOpen(false);
+
+      toast(t("toast.success"), {
+        description: mode === "edit" ? t("toast.equipmentUpdated") : t("toast.equipmentAdded"),
       });
     }
-
-    if (mode === "add") {
-      // Reset form only in add mode
-      setFormData({
-        name: "",
-        partNumber: "",
-        location: "",
-        subLocation: "",
-        maintenanceInterval: "",
-        lastMaintenance: "",
-        model: "",
-        manufacturer: "",
-        serialNumber: "",
-        status: "",
-        inUse: true,
-      });
-    }
-    
-    setOpen(false);
-
-    toast(t("toast.success"), {
-      description: mode === "edit" ? t("toast.equipmentUpdated") : t("toast.equipmentAdded"),
-    });
   };
 
   const defaultTrigger = mode === "add" ? (
@@ -172,11 +252,90 @@ const EquipmentForm = ({
       <SheetTrigger asChild>
         {trigger || defaultTrigger}
       </SheetTrigger>
-      <SheetContent side="right" className="p-4">
+      <SheetContent side="right" className="p-4 overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{mode === "edit" ? t("equipment.edit") : t("form.addNewEquipment")}</SheetTitle>
+          <SheetTitle>
+            {mode === "edit" 
+              ? (isSparePartsMode ? "Edit Spare Part" : t("equipment.edit"))
+              : (isSparePartsMode ? "Add Spare Part" : t("form.addNewEquipment"))
+            }
+          </SheetTitle>
         </SheetHeader>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        
+        {mode === "add" && (
+          <div className="mt-4 flex items-center gap-2 p-3 bg-muted rounded-md">
+            <Switch
+              id="spare-parts-toggle"
+              checked={isSparePartsMode}
+              onCheckedChange={setIsSparePartsMode}
+            />
+            <label htmlFor="spare-parts-toggle" className="text-sm font-medium cursor-pointer">
+              {isSparePartsMode ? "Adding Spare Part" : "Adding Equipment"}
+            </label>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">{isSparePartsMode ? (
+          // Spare Parts Form
+          <>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="sp-name">
+                Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="sp-name"
+                value={sparePartFormData.name}
+                onChange={(e) => setSparePartFormData({ ...sparePartFormData, name: e.target.value })}
+                placeholder="e.g., Air Filter"
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="sp-serialNumber">Serial Number</Label>
+              <Input
+                id="sp-serialNumber"
+                value={sparePartFormData.serialNumber}
+                onChange={(e) => setSparePartFormData({ ...sparePartFormData, serialNumber: e.target.value })}
+                placeholder="e.g., SN-12345"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="sp-quantity">Quantity</Label>
+              <Input
+                id="sp-quantity"
+                type="number"
+                value={sparePartFormData.quantity}
+                onChange={(e) => setSparePartFormData({ ...sparePartFormData, quantity: parseInt(e.target.value) || 0 })}
+                placeholder="e.g., 10"
+                min="0"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="sp-manufacturer">Manufacturer</Label>
+              <Input
+                id="sp-manufacturer"
+                value={sparePartFormData.manufacturer}
+                onChange={(e) => setSparePartFormData({ ...sparePartFormData, manufacturer: e.target.value })}
+                placeholder="e.g., Acme Corp"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="sp-supplier">Supplier</Label>
+              <Input
+                id="sp-supplier"
+                value={sparePartFormData.supplier}
+                onChange={(e) => setSparePartFormData({ ...sparePartFormData, supplier: e.target.value })}
+                placeholder="e.g., Parts Warehouse Inc."
+              />
+            </div>
+          </>
+        ) : (
+          // Equipment Form
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <Label htmlFor="name">
@@ -313,6 +472,8 @@ const EquipmentForm = ({
               {formData.inUse ? t("equipment.inUse") : t("equipment.notInUse")}
             </label>
           </div>
+          </>
+        )}
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={submitting}>

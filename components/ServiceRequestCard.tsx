@@ -17,6 +17,7 @@ import { useState } from "react";
 interface ServiceRequestCardProps {
   request: JServiceRequest;
   canApprove: boolean;
+  canEdit?: boolean; // If false, user can only view (read-only mode)
   isUpdatingApproval?: boolean;
   isUpdatingWork?: boolean;
   onApprove?: (id: string, note?: string) => void;
@@ -30,6 +31,7 @@ interface ServiceRequestCardProps {
 export default function ServiceRequestCard({
   request,
   canApprove,
+  canEdit = true, // Default to true for backward compatibility
   isUpdatingApproval,
   isUpdatingWork,
   onApprove,
@@ -42,9 +44,7 @@ export default function ServiceRequestCard({
   const { t } = useLanguage();
   const [noteOpen, setNoteOpen] = useState<null | { id: string; action: 'approve' | 'reject' }>(null);
   const [note, setNote] = useState("");
-  const canEditDetails = true;
-  // request.approvalStatus === ServiceRequestApprovalStatus.PENDING &&
-  // request.workStatus === ServiceRequestWorkStatus.PENDING;
+  const canEditDetails = canEdit; // Only allow editing if user has edit permissions
 
   const technicianLabel = request.technician?.displayName || request.technician?.email || request.assignedTechnicianId;
 
@@ -173,57 +173,59 @@ export default function ServiceRequestCard({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-3">
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">{t("serviceRequest.approvalStatus")}</div>
-            {request.approvalStatus === ServiceRequestApprovalStatus.PENDING && canApprove ? (
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="gap-1"
-                  disabled={isUpdatingApproval}
-                  onClick={() => setNoteOpen({ id: request.id, action: 'approve' })}>
-                  {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {" "}
-                  {t("serviceRequest.statuses.approved")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="gap-1"
-                  disabled={isUpdatingApproval}
-                  onClick={() => setNoteOpen({ id: request.id, action: 'reject' })}>
-                  {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />} {" "}
-                  {t("serviceRequest.statuses.rejected")}
-                </Button>
-              </div>
-            ) : (
-              <Badge className="capitalize">{request.approvalStatus}</Badge>
-            )}
+        {canEdit && (
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">{t("serviceRequest.approvalStatus")}</div>
+              {request.approvalStatus === ServiceRequestApprovalStatus.PENDING && canApprove ? (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="gap-1"
+                    disabled={isUpdatingApproval}
+                    onClick={() => setNoteOpen({ id: request.id, action: 'approve' })}>
+                    {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {" "}
+                    {t("serviceRequest.statuses.approved")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="gap-1"
+                    disabled={isUpdatingApproval}
+                    onClick={() => setNoteOpen({ id: request.id, action: 'reject' })}>
+                    {isUpdatingApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />} {" "}
+                    {t("serviceRequest.statuses.rejected")}
+                  </Button>
+                </div>
+              ) : (
+                <Badge className="capitalize">{request.approvalStatus}</Badge>
+              )}
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">{t("serviceRequest.workStatus")}</div>
+              {request.workStatus === ServiceRequestWorkStatus.PENDING &&
+              request.approvalStatus === ServiceRequestApprovalStatus.APPROVED ? (
+                <div className="flex gap-2">
+                  <Button size="sm" className="gap-1" disabled={isUpdatingWork} onClick={() => onComplete?.(request.id)}>
+                    {isUpdatingWork ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{" "}
+                    {t("serviceRequest.statuses.completed")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                    disabled={isUpdatingWork}
+                    onClick={() => onCancel?.(request.id)}>
+                    {isUpdatingWork ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}{" "}
+                    {t("serviceRequest.statuses.cancelled")}
+                  </Button>
+                </div>
+              ) : (
+                <Badge className="capitalize">{request.workStatus}</Badge>
+              )}
+            </div>
           </div>
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">{t("serviceRequest.workStatus")}</div>
-            {request.workStatus === ServiceRequestWorkStatus.PENDING &&
-            request.approvalStatus === ServiceRequestApprovalStatus.APPROVED ? (
-              <div className="flex gap-2">
-                <Button size="sm" className="gap-1" disabled={isUpdatingWork} onClick={() => onComplete?.(request.id)}>
-                  {isUpdatingWork ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{" "}
-                  {t("serviceRequest.statuses.completed")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1"
-                  disabled={isUpdatingWork}
-                  onClick={() => onCancel?.(request.id)}>
-                  {isUpdatingWork ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}{" "}
-                  {t("serviceRequest.statuses.cancelled")}
-                </Button>
-              </div>
-            ) : (
-              <Badge className="capitalize">{request.workStatus}</Badge>
-            )}
-          </div>
-        </div>
+        )}
         <div className="flex gap-2">
           {canEditDetails && !detailsPending && (
             <ServiceRequestDialog

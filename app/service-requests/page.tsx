@@ -13,6 +13,7 @@ const Page = () => {
 	const user = useUser();
 	const role = user?.clientReadOnlyMetadata?.role as string | undefined;
 	const canApprove = role === "admin" || role === "supervisor";
+	const canEdit = role !== "end_user"; // End users can only view
 
 	const {
 		filteredRequests,
@@ -40,7 +41,7 @@ const Page = () => {
 				<ServiceRequestFilters
 					priority={priorityFilter}
 					onPriorityChange={setPriorityFilter}
-					showAssignedToggle={role === "user"}
+					showAssignedToggle={role === "technician" || role === "end_user"}
 					assignedToMe={assignedToMe}
 					onAssignedToMeChange={setAssignedToMe}
 				/>
@@ -69,6 +70,7 @@ const Page = () => {
 							key={r.id}
 							request={r}
 							canApprove={canApprove}
+							canEdit={canEdit}
 							isUpdatingApproval={!!updatingById[r.id]?.approval}
 							isUpdatingWork={!!updatingById[r.id]?.work}
 							onApprove={(id, note) => changeApprovalStatus(id, ServiceRequestApprovalStatus.APPROVED, note)}

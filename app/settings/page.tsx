@@ -13,11 +13,15 @@ import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Settings, User as UserIcon, Palette, LogOut } from "lucide-react";
+import { useUser } from "@stackframe/stack";
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const { profile, loading, saving, saveProfile } = useSelfProfile();
-  const [form, setForm] = useState({ displayName: "", phone: "", designation: "", department: "" });
+  const user = useUser();
+  const [form, setForm] = useState({ displayName: "", phone: "", designation: "", department: "", employeeId: "" });
+  const role = user?.clientReadOnlyMetadata?.role as string | undefined;
+  const isTechnician = role === "technician";
 
   useEffect(() => {
     setForm({
@@ -25,6 +29,7 @@ export default function SettingsPage() {
       phone: profile?.phone || "",
       designation: profile?.designation || "",
       department: profile?.department || "",
+      employeeId: profile?.employeeId || "",
     });
   }, [profile]);
 
@@ -61,8 +66,8 @@ export default function SettingsPage() {
                 <Separator />
                 <div className="flex items-center justify-between">
                   <span>{t("auth.signOut")}</span>
-                  <Button variant="outline" size="icon">
-                    <LogOut className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+                  <Button variant="outline" size="icon" onClick={() => user?.signOut()}>
+                    <LogOut className="h-[1.2rem] w-[1.2rem]" />
                   </Button>
                 </div>
               </CardContent>
@@ -109,7 +114,19 @@ export default function SettingsPage() {
                     disabled={loading || saving}
                   />
                 </div>
-                <div className="space-y-2 md:col-span-2">
+                {isTechnician && (
+                  <div className="space-y-2">
+                    <Label htmlFor="employeeId">Employee ID</Label>
+                    <Input
+                      id="employeeId"
+                      placeholder="e.g. EMP-12345"
+                      value={form.employeeId}
+                      onChange={(e) => setForm((s) => ({ ...s, employeeId: e.target.value }))}
+                      disabled={loading || saving}
+                    />
+                  </div>
+                )}
+                <div className={`space-y-2 ${isTechnician ? 'md:col-span-2' : 'md:col-span-2'}`}>
                   <Label htmlFor="phone">{t("settings.phone") || "Phone"}</Label>
                   <Input
                     id="phone"

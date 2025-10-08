@@ -13,7 +13,7 @@ import {
   SidebarSeparator,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Home, Box, Calendar, Settings as SettingsIcon, Users } from "lucide-react";
+import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -40,23 +40,47 @@ export default function AppSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/equipments")}>
-                <Link href="/equipments">
-                  <Box />
-                  <span>{t("sidebar.inventory")}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/service-requests")}>
-                <Link href="/service-requests">
-                  <Calendar />
-                  <span>{t("sidebar.serviceRequests")}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {role !== "end_user" && (
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/equipments")}>
+                    <Link href="/equipments">
+                      <Box />
+                      <span>{t("sidebar.inventory")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/spare-parts")}>
+                    <Link href="/spare-parts">
+                      <Package />
+                      <span>Spare Parts</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/service-requests")}>
+                    <Link href="/service-requests">
+                      <Calendar />
+                      <span>{t("sidebar.serviceRequests")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
+            )}
             <SidebarSeparator />
+            {role !== "end_user" && (
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/attendance")}>
+                    <Link href="/attendance">
+                      <ClipboardCheck />
+                      <span>Attendance</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
+            )}
             {role === "admin" && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/users")}>

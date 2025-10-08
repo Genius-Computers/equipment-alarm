@@ -25,8 +25,9 @@ export async function PATCH(req: NextRequest) {
     const phone = typeof body?.phone === 'string' ? body.phone : undefined;
     const designation = typeof body?.designation === 'string' ? body.designation : undefined;
     const department = typeof body?.department === 'string' ? body.department : undefined;
+    const employeeId = typeof body?.employeeId === 'string' ? body.employeeId : undefined;
 
-    if (displayName == null && phone == null && designation == null && department == null) {
+    if (displayName == null && phone == null && designation == null && department == null && employeeId == null) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
@@ -40,6 +41,7 @@ export async function PATCH(req: NextRequest) {
         ...(phone != null ? { phone } : {}),
         ...(designation != null ? { designation } : {}),
         ...(department != null ? { department } : {}),
+        ...(employeeId != null ? { employeeId } : {}),
       },
     });
 

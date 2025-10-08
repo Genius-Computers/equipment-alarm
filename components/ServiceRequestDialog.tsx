@@ -124,6 +124,10 @@ const ServiceRequestDialog = ({
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [techLoading, setTechLoading] = useState(false);
 
+  type AvailableSparePart = { id: string; name: string; serialNumber?: string; quantity: number };
+  const [availableSpareParts, setAvailableSpareParts] = useState<AvailableSparePart[]>([]);
+  const [sparePartsLoading, setSparePartsLoading] = useState(false);
+
   useEffect(() => {
     const loadTechnicians = async () => {
       try {
@@ -141,9 +145,27 @@ const ServiceRequestDialog = ({
     if (open && technicians.length === 0) loadTechnicians();
   }, [open, technicians.length]);
 
-  type SparePart = { part: string; description?: string; quantity: number; cost: number; source: string };
+  useEffect(() => {
+    const loadSpareParts = async () => {
+      try {
+        setSparePartsLoading(true);
+        const res = await fetch(`/api/spare-parts?all=true`);
+        if (!res.ok) return;
+        const j = (await res.json()) as { data?: AvailableSparePart[] };
+        if (Array.isArray(j.data)) setAvailableSpareParts(j.data);
+      } catch {
+        // ignore silently
+      } finally {
+        setSparePartsLoading(false);
+      }
+    };
+    if (open && availableSpareParts.length === 0) loadSpareParts();
+  }, [open, availableSpareParts.length]);
+
+  type SparePart = { sparePartId?: string; sparePartName?: string; part: string; description?: string; quantity: number; cost: number; source: string; manufacturer?: string };
   const [parts, setParts] = useState<SparePart[]>([]);
-  const [draft, setDraft] = useState<SparePart>({ part: "", description: "", quantity: 1, cost: 0, source: "" });
+  const [draft, setDraft] = useState<SparePart>({ sparePartId: "", sparePartName: "", part: "", description: "", quantity: 1, cost: 0, source: "", manufacturer: "" });
+  const [sparePartFilter, setSparePartFilter] = useState("");
 
   const isValid = useMemo(() => {
     return (
@@ -463,12 +485,53 @@ const ServiceRequestDialog = ({
                     <Label htmlFor="spare-part" className="text-xs text-muted-foreground">
                       {t("serviceRequest.spareParts.part")}
                     </Label>
-                    <Input
-                      id="spare-part"
-                      placeholder={t("serviceRequest.spareParts.part")}
-                      value={draft.part}
-                      onChange={(e) => setDraft((d) => ({ ...d, part: e.target.value }))}
-                    />
+                    <Select
+                      value={draft.sparePartId || ""}
+                      onValueChange={(value) => {
+                        if (value === "__custom__") {
+                          setDraft((d) => ({ ...d, sparePartId: "", sparePartName: "", part: "" }));
+                        } else {
+                          const selected = availableSpareParts.find(sp => sp.id === value);
+                          if (selected) {
+                            setDraft((d) => ({ 
+                              ...d, 
+                              sparePartId: selected.id,
+                              sparePartName: selected.name,
+                              part: selected.name 
+                            }));
+                          }
+                        }
+                      }}
+                      disabled={sparePartsLoading}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={sparePartsLoading ? "Loading spare parts..." : "Select spare part"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="p-2">
+                          <Input
+                            value={sparePartFilter}
+                            onChange={(e) => setSparePartFilter(e.target.value)}
+                            placeholder="Type to filter spare parts..."
+                            className="h-8"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <SelectItem value="__custom__">Custom (not from inventory)</SelectItem>
+                        {availableSpareParts
+                          .filter((sp) => {
+                            const q = sparePartFilter.trim().toLowerCase();
+                            if (!q) return true;
+                            const name = sp.name?.toLowerCase() || "";
+                            const serial = sp.serialNumber?.toLowerCase() || "";
+                            return name.includes(q) || serial.includes(q);
+                          })
+                          .map((sp) => (
+                            <SelectItem key={sp.id} value={sp.id}>
+                              {sp.name} {sp.serialNumber ? `(${sp.serialNumber})` : ""} - Qty: {sp.quantity}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex flex-col gap-1">
                     <Label htmlFor="spare-quantity" className="text-xs text-muted-foreground">
@@ -523,6 +586,29 @@ const ServiceRequestDialog = ({
                   </div>
                 </div>
 
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs text-muted-foreground">Manufacturer</Label>
+                  <Input
+                    value={draft.manufacturer}
+                    onChange={(e) => setDraft((d) => ({ ...d, manufacturer: e.target.value }))}
+                    placeholder="Enter manufacturer name"
+                  />
+                </div>
+
+                {!draft.sparePartId && (
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="custom-part-name" className="text-xs text-muted-foreground">
+                      Custom Part Name
+                    </Label>
+                    <Input
+                      id="custom-part-name"
+                      placeholder="Enter custom part name"
+                      value={draft.part}
+                      onChange={(e) => setDraft((d) => ({ ...d, part: e.target.value }))}
+                    />
+                  </div>
+                )}
+
                 <div className="flex justify-end">
                   <Button
                     type="button"
@@ -532,7 +618,8 @@ const ServiceRequestDialog = ({
                         return;
                       }
                       setParts((prev) => [...prev, { ...draft }]);
-                      setDraft({ part: "", description: "", quantity: 1, cost: 0, source: "" });
+                      setDraft({ sparePartId: "", sparePartName: "", part: "", description: "", quantity: 1, cost: 0, source: "", manufacturer: "" });
+                      setSparePartFilter("");
                     }}>
                     {t("serviceRequest.spareParts.add")}
                   </Button>
@@ -547,6 +634,9 @@ const ServiceRequestDialog = ({
                       <div className="flex items-center justify-between">
                         <div className="text-sm">
                           <span className="font-medium">{p.part}</span>
+                          {p.sparePartId && (
+                            <Badge variant="outline" className="ml-2 text-xs">From Inventory</Badge>
+                          )}
                           <span className="ml-2 text-muted-foreground">x{p.quantity}</span>
                           {p.cost ? (
                             <span className="ml-2 text-muted-foreground">{(p.cost * p.quantity).toFixed(2)}</span>

@@ -3,11 +3,14 @@ import { Equipment } from "./equipment";
 import { User } from "./user";
 
 export interface SparePartNeeded {
+    sparePartId?: string;
+    sparePartName?: string;
     part: string;
     description?: string;
     quantity: number;
     cost: number;
     source: string;
+    manufacturer?: string;
 }
 
 export enum ServiceRequestType {

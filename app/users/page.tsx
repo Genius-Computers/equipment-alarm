@@ -12,6 +12,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
 import { useUser } from "@stackframe/stack";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type UserRow = { id: string; email: string | null; displayName?: string | null; role?: string; signedUpAt?: string | null };
 
@@ -26,6 +36,8 @@ const UsersPage = () => {
 
   const [creating, setCreating] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", displayName: "", role: "" });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -58,7 +70,7 @@ const UsersPage = () => {
         throw new Error(j?.error || 'Failed to create user');
       }
       toast(t("toast.success"), { description: t("toast.created") });
-      setNewUser({ email: "", displayName: "", role: "user" });
+      setNewUser({ email: "", displayName: "", role: "technician" });
       const j = await (await fetch('/api/users', { cache: 'no-store' })).json();
       setRows(j.data || []);
     } catch (e: unknown) {
@@ -91,22 +103,31 @@ const UsersPage = () => {
     }
   };
 
-  const deleteUser = async (id: string) => {
+  const deleteUser = async () => {
+    if (!userToDelete) return;
+    
     try {
       setLoading(true);
-      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/users/${userToDelete.id}`, { method: 'DELETE' });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j?.error || 'Failed to delete');
       }
       toast(t("toast.success"), { description: t("toast.updated") });
-      setRows((prev) => prev.filter((u) => u.id !== id));
+      setRows((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to delete';
       toast(t("toast.error"), { description: message });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteClick = (id: string, name: string) => {
+    setUserToDelete({ id, name });
+    setDeleteDialogOpen(true);
   };
 
   if (!isAdmin) {
@@ -153,7 +174,8 @@ const UsersPage = () => {
                     <SelectValue placeholder={t("users.role")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="end_user">End User</SelectItem>
+                    <SelectItem value="technician">Technician</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
@@ -212,13 +234,14 @@ const UsersPage = () => {
                       <SelectValue placeholder={t("users.role")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="end_user">End User</SelectItem>
+                      <SelectItem value="technician">Technician</SelectItem>
                       <SelectItem value="supervisor">Supervisor</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => deleteUser(u.id)}>Delete</Button>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
                 </div>
               ))}
             </CardContent>
@@ -256,18 +279,36 @@ const UsersPage = () => {
                       <SelectValue placeholder={t("users.role")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="end_user">End User</SelectItem>
+                      <SelectItem value="technician">Technician</SelectItem>
                       <SelectItem value="supervisor">Supervisor</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />
-                  <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={() => deleteUser(u.id)}>Delete</Button>
+                  <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
                 </CardContent>
               </Card>
             ))
           )}
         </div>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the user <strong>{userToDelete?.name}</strong>. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

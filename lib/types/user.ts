@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "supervisor" | "user";
+export type UserRole = "admin" | "supervisor" | "technician" | "end_user";
 
 export const APPROVER_ROLES: ReadonlyArray<UserRole> = ["admin", "supervisor"] as const;
 
@@ -19,4 +19,5 @@ export interface User {
   phone?: string
   designation?: string
   department?: string
+  employeeId?: string
 }

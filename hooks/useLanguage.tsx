@@ -222,7 +222,7 @@ const translations = {
     "serviceRequest.spareParts.source": "Source/Supplier",
     "serviceRequest.spareParts.add": "Add",
     "serviceRequest.spareParts.remove": "Remove",
-    "serviceRequest.spareParts.empty": "No spare parts added.",
+    "serviceRequest.spareParts.empty": "No spare parts needed.",
     "serviceRequest.spareParts.total": "Total: {amount}",
     "serviceRequest.spareParts.validation": "Please enter part name and quantity",
     "serviceRequest.ticketId": "Ticket ID",

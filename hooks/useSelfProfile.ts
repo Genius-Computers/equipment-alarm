@@ -33,6 +33,7 @@ export function useSelfProfile(options: { autoLoad?: boolean } = { autoLoad: tru
           phone: next.phone,
           designation: next.designation,
           department: next.department,
+          employeeId: next.employeeId,
         };
         const res = await fetch("/api/users/me", {
           method: "PATCH",

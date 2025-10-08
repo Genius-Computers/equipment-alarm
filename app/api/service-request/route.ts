@@ -69,12 +69,7 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // Only supervisor/admin can create requests
-    try {
-      ensureRole(user, APPROVER_ROLES);
-    } catch {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    // All authenticated users can create service requests
     const body = await req.json();
 
     // Enforce defaults for new requests

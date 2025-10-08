@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServiceRequestById, updateServiceRequest } from '@/lib/db';
+import { getServiceRequestById, updateServiceRequest, findOrCreateSparePart } from '@/lib/db';
 import { snakeToCamelCase, formatStackUserLight } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
 import { ensureRole, getCurrentServerUser } from '@/lib/auth';
 import { APPROVER_ROLES } from '@/lib/types/user';
 import { stackServerApp } from '@/stack';
+import type { SparePartNeeded } from '@/lib/types/service-request';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -90,6 +91,31 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Work status can only change from pending' }, { status: 409 });
     }
 
+    // Process spare parts and auto-create custom ones in inventory
+    let processedSpareParts = body.sparePartsNeeded ?? current.spare_parts_needed;
+    if (body.sparePartsNeeded && Array.isArray(body.sparePartsNeeded)) {
+      processedSpareParts = await Promise.all(
+        body.sparePartsNeeded.map(async (part: SparePartNeeded) => {
+          // If it's a custom part (no sparePartId), create it in inventory
+          if (!part.sparePartId && part.part) {
+            try {
+              const sparePartId = await findOrCreateSparePart(
+                part.part,
+                part.manufacturer,
+                part.source, // source becomes supplier in inventory
+                user.id
+              );
+              return { ...part, sparePartId, sparePartName: part.part };
+            } catch (error) {
+              console.error('Failed to create spare part:', error);
+              return part; // Return original if creation fails
+            }
+          }
+          return part;
+        })
+      );
+    }
+
     const payload = {
       equipment_id: body.equipmentId ?? current.equipment_id,
       assigned_technician_id: body.assignedTechnicianId ?? current.assigned_technician_id,
@@ -101,7 +127,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       problem_description: body.problemDescription ?? current.problem_description,
       technical_assessment: body.technicalAssessment ?? current.technical_assessment,
       recommendation: body.recommendation ?? current.recommendation,
-      spare_parts_needed: body.sparePartsNeeded ?? current.spare_parts_needed,
+      spare_parts_needed: processedSpareParts,
       approval_note: body.approvalNote ?? current.approval_note,
     } as const;
 

@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { DbEquipment, DbServiceRequest } from './types';
+import { DbEquipment, DbServiceRequest, DbSparePart } from './types';
 import { toJsonbParam, generateTicketId } from './utils';
 import { randomUUID } from 'crypto';
 
@@ -12,8 +12,14 @@ export const getDb = () => {
   return neon(connectionString);
 };
 
+// Guard to ensure schema only runs once per boot
+let schemaInitialized = false;
+
 // Ensure the equipment table exists (id as UUID, dates as text for now to match UI strings)
 export const ensureSchema = async () => {
+  if (schemaInitialized) {
+    return;
+  }
   const sql = getDb();
   await sql`create extension if not exists pgcrypto`;
   await sql`
@@ -75,6 +81,44 @@ export const ensureSchema = async () => {
       add column if not exists ticket_id text,
       add column if not exists approval_note text
   `;
+
+  await sql`
+    create table if not exists spare_parts (
+      id uuid primary key default gen_random_uuid(),
+      created_at timestamp not null default now(),
+      updated_at timestamp,
+      deleted_at timestamp,
+      created_by text not null,
+      updated_by text,
+      deleted_by text,
+
+      name text not null,
+      serial_number text,
+      quantity int not null default 0,
+      manufacturer text,
+      supplier text
+    )`;
+
+  await sql`
+    create table if not exists attendance (
+      id uuid primary key default gen_random_uuid(),
+      user_id text not null,
+      date date not null,
+      log_in_time timestamp not null,
+      log_out_time timestamp,
+      employee_id text,
+      display_name text,
+      created_at timestamp not null default now(),
+      updated_at timestamp,
+      unique(user_id, date)
+    )`;
+  
+  await sql`
+    alter table spare_parts
+      add column if not exists supplier text
+  `;
+  
+  schemaInitialized = true;
 };
 
 export const listEquipmentCache = async () => {
@@ -431,4 +475,218 @@ export const updateServiceRequest = async (
     from updated u
     left join equipment e on e.id = u.equipment_id`;
   return row as unknown as (DbServiceRequest & { equipment: DbEquipment | null });
+};
+
+// Spare Parts CRUD Operations
+export const listSparePartsPaginated = async (
+  page: number = 1,
+  pageSize: number = 10,
+  q?: string
+): Promise<{ rows: DbSparePart[]; total: number }> => {
+  const sql = getDb();
+  await ensureSchema();
+  const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
+  const limit = Math.max(1, Number(pageSize));
+
+  const textFilter = q && q.trim().length > 0
+    ? sql`(
+        sp.name ilike ${'%' + q + '%'} or
+        sp.serial_number ilike ${'%' + q + '%'} or
+        sp.manufacturer ilike ${'%' + q + '%'}
+      )`
+    : sql`true`;
+
+  const countRows = await sql`
+    select count(*)::int as count
+    from spare_parts sp
+    where sp.deleted_at is null
+      and ${textFilter}
+  `;
+  const total = (countRows?.[0]?.count as number) ?? 0;
+
+  const rows = await sql`
+    select sp.*
+    from spare_parts sp
+    where sp.deleted_at is null
+      and ${textFilter}
+    order by sp.name asc
+    limit ${limit} offset ${offset}
+  `;
+
+  return { rows: rows as unknown as DbSparePart[], total };
+};
+
+export const insertSparePart = async (
+  input: Omit<DbSparePart, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>,
+  actorId: string,
+) => {
+  const sql = getDb();
+  await ensureSchema();
+  const [row] = await sql`
+    insert into spare_parts (
+      created_at, created_by,
+      name, serial_number, quantity, manufacturer, supplier
+    ) values (
+      now(), ${actorId},
+      ${input.name}, ${input.serial_number}, ${input.quantity}, ${input.manufacturer}, ${input.supplier}
+    ) returning *`;
+  return row as unknown as DbSparePart;
+};
+
+export const updateSparePart = async (
+  id: string,
+  input: Omit<DbSparePart, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>,
+  actorId: string,
+) => {
+  const sql = getDb();
+  await ensureSchema();
+  const [row] = await sql`
+    update spare_parts set
+      updated_by = ${actorId},
+      updated_at = now(),
+      name = ${input.name},
+      serial_number = ${input.serial_number},
+      quantity = ${input.quantity},
+      manufacturer = ${input.manufacturer},
+      supplier = ${input.supplier}
+    where id = ${id}
+    returning *`;
+  return row as unknown as DbSparePart;
+};
+
+export const softDeleteSparePart = async (
+  id: string,
+  actorId: string,
+) => {
+  const sql = getDb();
+  await ensureSchema();
+  const [row] = await sql`
+    update spare_parts set
+      deleted_by = ${actorId},
+      deleted_at = now()
+    where id = ${id} and deleted_at is null
+    returning *`;
+  return row as unknown as DbSparePart | undefined;
+};
+
+export const findOrCreateSparePart = async (
+  name: string,
+  manufacturer: string | undefined,
+  supplier: string | undefined,
+  actorId: string,
+): Promise<string> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  // Try to find existing spare part by name and manufacturer
+  const existing = await sql`
+    select id from spare_parts
+    where name = ${name}
+      and deleted_at is null
+      and (manufacturer = ${manufacturer || null} or (manufacturer is null and ${manufacturer || null} is null))
+    limit 1
+  `;
+  
+  if (existing && existing.length > 0) {
+    return (existing[0] as { id: string }).id;
+  }
+  
+  // Create new spare part if not found
+  const [newPart] = await sql`
+    insert into spare_parts (
+      created_at, created_by,
+      name, quantity, manufacturer, supplier
+    ) values (
+      now(), ${actorId},
+      ${name}, 0, ${manufacturer || null}, ${supplier || null}
+    ) returning id
+  `;
+  
+  return (newPart as { id: string }).id;
+};
+
+// Attendance functions
+export const logInAttendance = async (userId: string, employeeId?: string, displayName?: string) => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  
+  // Check if already logged in today
+  const existing = await sql`
+    select id, log_in_time, log_out_time
+    from attendance
+    where user_id = ${userId} and date = ${today}
+    limit 1
+  `;
+  
+  if (existing && existing.length > 0) {
+    // Already has a record for today, just update log_in_time if not already set
+    const record = existing[0] as { id: string; log_in_time: string; log_out_time: string | null };
+    if (!record.log_in_time) {
+      const [updated] = await sql`
+        update attendance
+        set log_in_time = now(), updated_at = now()
+        where id = ${record.id}
+        returning *
+      `;
+      return updated;
+    }
+    return record;
+  }
+  
+  // Create new attendance record
+  const [newRecord] = await sql`
+    insert into attendance (
+      user_id, date, log_in_time, employee_id, display_name, created_at
+    ) values (
+      ${userId}, ${today}, now(), ${employeeId || null}, ${displayName || null}, now()
+    ) returning *
+  `;
+  
+  return newRecord;
+};
+
+export const logOutAttendance = async (userId: string) => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  
+  const [updated] = await sql`
+    update attendance
+    set log_out_time = now(), updated_at = now()
+    where user_id = ${userId} and date = ${today}
+    returning *
+  `;
+  
+  return updated;
+};
+
+export const getTodayAttendance = async (userId: string) => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  
+  const result = await sql`
+    select * from attendance
+    where user_id = ${userId} and date = ${today}
+    limit 1
+  `;
+  
+  return result && result.length > 0 ? result[0] : null;
+};
+
+export const getAttendanceForDate = async (date: string) => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const result = await sql`
+    select * from attendance
+    where date = ${date}
+    order by log_in_time asc
+  `;
+  
+  return result;
 };

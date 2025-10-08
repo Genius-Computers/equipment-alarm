@@ -4,12 +4,30 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
 import Image from "next/image";
 import Link from "next/link";
+import { useSelfProfile } from "@/hooks/useSelfProfile";
 
 const Header = () => {
   const { language, setLanguage, t, isRTL } = useLanguage();
+  const { profile } = useSelfProfile();
   
   const toggleLanguage = () => {
     setLanguage(language === "en" ? "ar" : "en");
+  };
+
+  const getRoleDisplay = (role?: string) => {
+    if (!role) return "";
+    switch (role) {
+      case "admin":
+        return "Admin";
+      case "supervisor":
+        return "Supervisor";
+      case "technician":
+        return "Technician";
+      case "end_user":
+        return "End User";
+      default:
+        return role;
+    }
   };
 
   return (
@@ -44,8 +62,12 @@ const Header = () => {
               {t("language.switch")}
             </Button>
             <div className={`text-right ${isRTL ? "text-left" : "text-right"}`}>
-              <p className="text-sm font-medium text-foreground">{t("header.department")}</p>
-              <p className="text-xs text-muted-foreground">{t("header.facility")}</p>
+              <p className="text-sm font-medium text-foreground">
+                {profile?.displayName || profile?.email || "User"}
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                {getRoleDisplay(profile?.role)}
+              </p>
             </div>
           </div>
         </div>
