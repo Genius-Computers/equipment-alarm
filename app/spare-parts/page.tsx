@@ -12,6 +12,8 @@ import { Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SparePartsCSVImport from "@/components/SparePartsCSVImport";
+import SparePartsCSVExport from "@/components/SparePartsCSVExport";
 
 const Page = () => {
   const {
@@ -26,6 +28,7 @@ const Page = () => {
     searchTerm,
     setSearchTerm,
     setPage,
+    refresh,
     addSparePart,
     updateSparePart,
     deleteSparePart,
@@ -103,9 +106,10 @@ const Page = () => {
 
       <main className="container mx-auto px-6 py-8">
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Spare Parts</h1>
-            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold">Spare Parts</h1>
+              <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
               <SheetTrigger asChild>
                 <Button disabled={isInserting}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -184,6 +188,12 @@ const Page = () => {
                 </form>
               </SheetContent>
             </Sheet>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <SparePartsCSVExport items={filteredSpareParts} />
+              <SparePartsCSVImport onImported={refresh} />
+            </div>
           </div>
 
           <SparePartsFilters

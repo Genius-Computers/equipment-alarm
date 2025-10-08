@@ -149,3 +149,16 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Print-specific styles */
+@media print {
+  /* Ensure table borders are visible in print */
+  table, th, td {
+    border: 1px solid #000 !important;
+  }
+  
+  /* Prevent row breaks */
+  tr {
+    page-break-inside: avoid;
+  }
+}

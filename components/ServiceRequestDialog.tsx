@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -124,7 +125,7 @@ const ServiceRequestDialog = ({
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [techLoading, setTechLoading] = useState(false);
 
-  type AvailableSparePart = { id: string; name: string; serialNumber?: string; quantity: number };
+  type AvailableSparePart = { id: string; name: string; serialNumber?: string; quantity: number; manufacturer?: string; supplier?: string };
   const [availableSpareParts, setAvailableSpareParts] = useState<AvailableSparePart[]>([]);
   const [sparePartsLoading, setSparePartsLoading] = useState(false);
 
@@ -162,10 +163,20 @@ const ServiceRequestDialog = ({
     if (open && availableSpareParts.length === 0) loadSpareParts();
   }, [open, availableSpareParts.length]);
 
-  type SparePart = { sparePartId?: string; sparePartName?: string; part: string; description?: string; quantity: number; cost: number; source: string; manufacturer?: string };
+  type SparePart = { sparePartId?: string; sparePartName?: string; part: string; description?: string; quantity: number; cost: number; source: string; manufacturer?: string; serialNumber?: string };
   const [parts, setParts] = useState<SparePart[]>([]);
-  const [draft, setDraft] = useState<SparePart>({ sparePartId: "", sparePartName: "", part: "", description: "", quantity: 1, cost: 0, source: "", manufacturer: "" });
+  const [draft, setDraft] = useState<SparePart>({ sparePartId: "", sparePartName: "", part: "", description: "", quantity: 1, cost: 0, source: "", manufacturer: "", serialNumber: "" });
   const [sparePartFilter, setSparePartFilter] = useState("");
+  
+  // Track original values to detect changes
+  const [originalSparePartValues, setOriginalSparePartValues] = useState<{
+    manufacturer?: string;
+    serialNumber?: string;
+    source?: string;
+  }>({});
+  const [sparePartChanged, setSparePartChanged] = useState(false);
+  const [updatingSparePart, setUpdatingSparePart] = useState(false);
+  const [sparePartsNeeded, setSparePartsNeeded] = useState(true);
 
   const isValid = useMemo(() => {
     return (
@@ -193,7 +204,9 @@ const ServiceRequestDialog = ({
       technicalAssessment: existing.technicalAssessment || "",
       recommendation: existing.recommendation || "",
     });
-    setParts(existing.sparePartsNeeded || []);
+    const existingParts = existing.sparePartsNeeded || [];
+    setParts(existingParts);
+    setSparePartsNeeded(existingParts.length > 0);
   }, [existing, open]);
 
   const handleSubmit = async () => {
@@ -215,7 +228,7 @@ const ServiceRequestDialog = ({
               problemDescription: form.problemDescription,
               technicalAssessment: form.technicalAssessment,
               recommendation: form.recommendation,
-              sparePartsNeeded: parts,
+              sparePartsNeeded: sparePartsNeeded ? parts : [],
             };
         await updateDetails(existing.id, body);
         toast(t("toast.success"), { description: t("toast.serviceRequestUpdated") });
@@ -231,7 +244,7 @@ const ServiceRequestDialog = ({
           problemDescription: form.problemDescription,
           technicalAssessment: form.technicalAssessment,
           recommendation: form.recommendation,
-          sparePartsNeeded: parts,
+          sparePartsNeeded: sparePartsNeeded ? parts : [],
         });
         toast(t("toast.success"), { description: t("toast.serviceRequestCreated") });
         onCreated?.();
@@ -469,8 +482,30 @@ const ServiceRequestDialog = ({
               </div>
             )}
 
-            {/* Spare parts inline with details */}
+            {/* Spare Parts Needed Toggle */}
             {existing && section === "details" && (
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                <Switch
+                  id="spare-parts-needed"
+                  checked={sparePartsNeeded}
+                  onCheckedChange={(checked) => {
+                    setSparePartsNeeded(checked);
+                    if (!checked) {
+                      // Clear spare parts when toggled off
+                      setParts([]);
+                      setDraft({ sparePartId: "", sparePartName: "", part: "", description: "", quantity: 1, cost: 0, source: "", manufacturer: "", serialNumber: "" });
+                      setSparePartChanged(false);
+                    }
+                  }}
+                />
+                <label htmlFor="spare-parts-needed" className="text-sm font-medium cursor-pointer">
+                  Spare Parts Needed
+                </label>
+              </div>
+            )}
+
+            {/* Spare parts inline with details */}
+            {existing && section === "details" && sparePartsNeeded && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-medium">{t("serviceRequest.spareParts.title")}</Label>
@@ -489,16 +524,26 @@ const ServiceRequestDialog = ({
                       value={draft.sparePartId || ""}
                       onValueChange={(value) => {
                         if (value === "__custom__") {
-                          setDraft((d) => ({ ...d, sparePartId: "", sparePartName: "", part: "" }));
+                          setDraft((d) => ({ ...d, sparePartId: "", sparePartName: "", part: "", manufacturer: "", serialNumber: "", source: "" }));
+                          setOriginalSparePartValues({});
+                          setSparePartChanged(false);
                         } else {
                           const selected = availableSpareParts.find(sp => sp.id === value);
                           if (selected) {
+                            const values = {
+                              manufacturer: selected.manufacturer || "",
+                              serialNumber: selected.serialNumber || "",
+                              source: selected.supplier || ""
+                            };
                             setDraft((d) => ({ 
                               ...d, 
                               sparePartId: selected.id,
                               sparePartName: selected.name,
-                              part: selected.name 
+                              part: selected.name,
+                              ...values
                             }));
+                            setOriginalSparePartValues(values);
+                            setSparePartChanged(false);
                           }
                         }
                       }}
@@ -576,23 +621,75 @@ const ServiceRequestDialog = ({
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <Label className="text-xs text-muted-foreground">{t("serviceRequest.spareParts.source")}</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      {t("serviceRequest.spareParts.source")}
+                      {draft.sparePartId && (draft.source !== originalSparePartValues.source) && (
+                        <span className="ml-1 text-xs text-amber-600">*</span>
+                      )}
+                    </Label>
                     <Textarea
                       value={draft.source}
-                      onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))}
+                      onChange={(e) => {
+                        setDraft((d) => ({ ...d, source: e.target.value }));
+                        if (draft.sparePartId) {
+                          setSparePartChanged(
+                            draft.manufacturer !== originalSparePartValues.manufacturer ||
+                            draft.serialNumber !== originalSparePartValues.serialNumber ||
+                            e.target.value !== originalSparePartValues.source
+                          );
+                        }
+                      }}
                       className="min-h-20 resize-y whitespace-pre-wrap"
                       placeholder={t("serviceRequest.spareParts.source")}
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <Label className="text-xs text-muted-foreground">Manufacturer</Label>
-                  <Input
-                    value={draft.manufacturer}
-                    onChange={(e) => setDraft((d) => ({ ...d, manufacturer: e.target.value }))}
-                    placeholder="Enter manufacturer name"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Manufacturer
+                      {draft.sparePartId && (draft.manufacturer !== originalSparePartValues.manufacturer) && (
+                        <span className="ml-1 text-xs text-amber-600">*</span>
+                      )}
+                    </Label>
+                    <Input
+                      value={draft.manufacturer}
+                      onChange={(e) => {
+                        setDraft((d) => ({ ...d, manufacturer: e.target.value }));
+                        if (draft.sparePartId) {
+                          setSparePartChanged(
+                            e.target.value !== originalSparePartValues.manufacturer ||
+                            draft.serialNumber !== originalSparePartValues.serialNumber ||
+                            draft.source !== originalSparePartValues.source
+                          );
+                        }
+                      }}
+                      placeholder="Enter manufacturer name"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Serial Number
+                      {draft.sparePartId && (draft.serialNumber !== originalSparePartValues.serialNumber) && (
+                        <span className="ml-1 text-xs text-amber-600">*</span>
+                      )}
+                    </Label>
+                    <Input
+                      value={draft.serialNumber}
+                      onChange={(e) => {
+                        setDraft((d) => ({ ...d, serialNumber: e.target.value }));
+                        if (draft.sparePartId) {
+                          setSparePartChanged(
+                            draft.manufacturer !== originalSparePartValues.manufacturer ||
+                            e.target.value !== originalSparePartValues.serialNumber ||
+                            draft.source !== originalSparePartValues.source
+                          );
+                        }
+                      }}
+                      placeholder="Enter serial number"
+                    />
+                  </div>
                 </div>
 
                 {!draft.sparePartId && (
@@ -609,6 +706,66 @@ const ServiceRequestDialog = ({
                   </div>
                 )}
 
+                {draft.sparePartId && sparePartChanged && (
+                  <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+                    <span className="text-xs text-amber-900 dark:text-amber-100 flex-1">
+                      You&apos;ve modified spare part details. Update the inventory?
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="default"
+                      disabled={updatingSparePart}
+                      onClick={async () => {
+                        if (!draft.sparePartId) return;
+                        setUpdatingSparePart(true);
+                        try {
+                          const response = await fetch(`/api/spare-parts/${draft.sparePartId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              name: draft.part,
+                              manufacturer: draft.manufacturer,
+                              serialNumber: draft.serialNumber,
+                              supplier: draft.source,
+                            }),
+                          });
+                          if (response.ok) {
+                            toast(t("toast.success"), { description: "Spare part updated in inventory" });
+                            setOriginalSparePartValues({
+                              manufacturer: draft.manufacturer,
+                              serialNumber: draft.serialNumber,
+                              source: draft.source,
+                            });
+                            setSparePartChanged(false);
+                            // Refresh available spare parts list
+                            const res = await fetch(`/api/spare-parts?all=true`);
+                            if (res.ok) {
+                              const j = await res.json();
+                              if (Array.isArray(j.data)) setAvailableSpareParts(j.data);
+                            }
+                          } else {
+                            throw new Error('Failed to update spare part');
+                          }
+                        } catch (error) {
+                          toast(t("toast.error"), { description: "Failed to update spare part in inventory" });
+                        } finally {
+                          setUpdatingSparePart(false);
+                        }
+                      }}
+                    >
+                      {updatingSparePart ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Update Inventory"
+                      )}
+                    </Button>
+                  </div>
+                )}
+
                 <div className="flex justify-end">
                   <Button
                     type="button"
@@ -618,7 +775,7 @@ const ServiceRequestDialog = ({
                         return;
                       }
                       setParts((prev) => [...prev, { ...draft }]);
-                      setDraft({ sparePartId: "", sparePartName: "", part: "", description: "", quantity: 1, cost: 0, source: "", manufacturer: "" });
+                      setDraft({ sparePartId: "", sparePartName: "", part: "", description: "", quantity: 1, cost: 0, source: "", manufacturer: "", serialNumber: "" });
                       setSparePartFilter("");
                     }}>
                     {t("serviceRequest.spareParts.add")}

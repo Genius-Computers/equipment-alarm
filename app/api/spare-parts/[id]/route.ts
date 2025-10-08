@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateSparePart, softDeleteSparePart } from '@/lib/db';
+import { updateSparePart, softDeleteSparePart, getDb, ensureSchema } from '@/lib/db';
 import { snakeToCamelCase } from '@/lib/utils';
 import { getCurrentServerUser } from '@/lib/auth';
+import { DbSparePart } from '@/lib/types';
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -12,12 +13,27 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     }
     const body = await req.json();
 
+    // Fetch current spare part to merge partial updates
+    const sql = getDb();
+    await ensureSchema();
+    const [current] = await sql`
+      select * from spare_parts
+      where id = ${id} and deleted_at is null
+      limit 1
+    `;
+    
+    if (!current) {
+      return NextResponse.json({ error: 'Spare part not found' }, { status: 404 });
+    }
+
+    const currentPart = current as unknown as DbSparePart;
+
     const row = await updateSparePart(id, {
-      name: body.name,
-      serial_number: body.serialNumber,
-      quantity: body.quantity,
-      manufacturer: body.manufacturer,
-      supplier: body.supplier
+      name: body.name ?? currentPart.name,
+      serial_number: body.serialNumber !== undefined ? body.serialNumber : currentPart.serial_number,
+      quantity: body.quantity !== undefined ? body.quantity : currentPart.quantity,
+      manufacturer: body.manufacturer !== undefined ? body.manufacturer : currentPart.manufacturer,
+      supplier: body.supplier !== undefined ? body.supplier : currentPart.supplier,
     }, user.id);
     const camel = snakeToCamelCase(row);
     return NextResponse.json({ data: camel });

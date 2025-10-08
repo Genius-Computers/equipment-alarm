@@ -11,6 +11,7 @@ export interface SparePartNeeded {
     cost: number;
     source: string;
     manufacturer?: string;
+    serialNumber?: string;
 }
 
 export enum ServiceRequestType {

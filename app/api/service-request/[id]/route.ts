@@ -94,10 +94,19 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     // Process spare parts and auto-create custom ones in inventory
     let processedSpareParts = body.sparePartsNeeded ?? current.spare_parts_needed;
     if (body.sparePartsNeeded && Array.isArray(body.sparePartsNeeded)) {
+      console.log('[PATCH ServiceRequest] Processing spare parts:', body.sparePartsNeeded.length, 'parts');
       processedSpareParts = await Promise.all(
-        body.sparePartsNeeded.map(async (part: SparePartNeeded) => {
+        body.sparePartsNeeded.map(async (part: SparePartNeeded, index: number) => {
+          console.log(`[PATCH ServiceRequest] Part ${index}:`, { 
+            part: part.part, 
+            sparePartId: part.sparePartId,
+            manufacturer: part.manufacturer,
+            source: part.source 
+          });
+          
           // If it's a custom part (no sparePartId), create it in inventory
           if (!part.sparePartId && part.part) {
+            console.log('[PATCH ServiceRequest] Custom part detected, creating in inventory...');
             try {
               const sparePartId = await findOrCreateSparePart(
                 part.part,
@@ -105,15 +114,17 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                 part.source, // source becomes supplier in inventory
                 user.id
               );
+              console.log('[PATCH ServiceRequest] Successfully linked part to inventory ID:', sparePartId);
               return { ...part, sparePartId, sparePartName: part.part };
             } catch (error) {
-              console.error('Failed to create spare part:', error);
+              console.error('[PATCH ServiceRequest] Failed to create spare part:', error);
               return part; // Return original if creation fails
             }
           }
           return part;
         })
       );
+      console.log('[PATCH ServiceRequest] Finished processing spare parts');
     }
 
     const payload = {

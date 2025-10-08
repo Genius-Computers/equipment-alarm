@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insertServiceRequest, listServiceRequestPaginated, getNextTicketId } from '@/lib/db';
+import { insertServiceRequest, listServiceRequestPaginated, getNextTicketId, findOrCreateSparePart } from '@/lib/db';
 import { camelToSnakeCase, formatStackUserLight, snakeToCamelCase } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
 import { getCurrentServerUser } from '@/lib/auth';
 import { stackServerApp } from '@/stack';
+import type { SparePartNeeded } from '@/lib/types/service-request';
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,9 +72,46 @@ export async function POST(req: NextRequest) {
     // All authenticated users can create service requests
     const body = await req.json();
 
+    // Process spare parts and auto-create custom ones in inventory
+    let processedSpareParts = body.sparePartsNeeded;
+    if (body.sparePartsNeeded && Array.isArray(body.sparePartsNeeded)) {
+      console.log('[POST ServiceRequest] Processing spare parts:', body.sparePartsNeeded.length, 'parts');
+      processedSpareParts = await Promise.all(
+        body.sparePartsNeeded.map(async (part: SparePartNeeded, index: number) => {
+          console.log(`[POST ServiceRequest] Part ${index}:`, { 
+            part: part.part, 
+            sparePartId: part.sparePartId,
+            manufacturer: part.manufacturer,
+            source: part.source 
+          });
+          
+          // If it's a custom part (no sparePartId), create it in inventory
+          if (!part.sparePartId && part.part) {
+            console.log('[POST ServiceRequest] Custom part detected, creating in inventory...');
+            try {
+              const sparePartId = await findOrCreateSparePart(
+                part.part,
+                part.manufacturer,
+                part.source, // source becomes supplier in inventory
+                user.id
+              );
+              console.log('[POST ServiceRequest] Successfully linked part to inventory ID:', sparePartId);
+              return { ...part, sparePartId, sparePartName: part.part };
+            } catch (error) {
+              console.error('[POST ServiceRequest] Failed to create spare part:', error);
+              return part; // Return original if creation fails
+            }
+          }
+          return part;
+        })
+      );
+      console.log('[POST ServiceRequest] Finished processing spare parts');
+    }
+
     // Enforce defaults for new requests
     const input = {
       ...body,
+      sparePartsNeeded: processedSpareParts,
       // allow client to send assignedTechnicianId; defaults to undefined
       approvalStatus: body.approvalStatus ?? ServiceRequestApprovalStatus.PENDING,
       workStatus: body.workStatus ?? ServiceRequestWorkStatus.PENDING

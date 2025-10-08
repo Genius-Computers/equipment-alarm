@@ -47,7 +47,7 @@ const Header = () => {
               variant="outline"
               size="icon"
               onClick={toggleLanguage}
-              className="md:hidden"
+              className="md:hidden print:hidden"
               aria-label={t("language.switch")}
             >
               <Globe className="h-4 w-4" />
@@ -56,7 +56,7 @@ const Header = () => {
               variant="outline"
               size="sm"
               onClick={toggleLanguage}
-              className="hidden md:flex items-center gap-2"
+              className="hidden md:flex items-center gap-2 print:hidden"
             >
               <Globe className="h-4 w-4" />
               {t("language.switch")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { SparePart } from "@/lib/types";
 import { Pencil, Trash2, Package } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import EquipmentForm from "@/components/AddEquipmentForm";
+import SparePartUsageDialog from "@/components/SparePartUsageDialog";
 
 interface SparePartsTableProps {
   items: SparePart[];
@@ -22,6 +23,14 @@ const headerClass = "px-3 py-2 text-xs font-medium text-muted-foreground upperca
 const cellClass = "px-3 py-3 text-sm align-middle";
 
 const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = false }: SparePartsTableProps) => {
+  const [selectedSparePart, setSelectedSparePart] = useState<SparePart | null>(null);
+  const [usageDialogOpen, setUsageDialogOpen] = useState(false);
+
+  const handleRowClick = (sparePart: SparePart) => {
+    setSelectedSparePart(sparePart);
+    setUsageDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -54,7 +63,10 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
           {items.map((sparePart) => {
             return (
               <Fragment key={sparePart.id}>
-                <tr className="border-t hover:bg-muted/30">
+                <tr 
+                  className="border-t hover:bg-muted/30 cursor-pointer" 
+                  onClick={() => handleRowClick(sparePart)}
+                >
                   <td className={cellClass}>
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4 text-muted-foreground" />
@@ -68,7 +80,7 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
                   <td className={cellClass}>{sparePart.manufacturer || "—"}</td>
                   <td className={cellClass}>{sparePart.supplier || "—"}</td>
                   <td className={cellClass}>
-                    <div className="flex items-center gap-2 justify-end">
+                    <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
                       <EquipmentForm
                         mode="edit"
                         sparePart={sparePart}
@@ -118,6 +130,14 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
           })}
         </tbody>
       </table>
+      
+      {selectedSparePart && (
+        <SparePartUsageDialog
+          sparePart={selectedSparePart}
+          open={usageDialogOpen}
+          onOpenChange={setUsageDialogOpen}
+        />
+      )}
     </div>
   );
 };

@@ -586,20 +586,36 @@ export const findOrCreateSparePart = async (
   const sql = getDb();
   await ensureSchema();
   
-  // Try to find existing spare part by name and manufacturer
-  const existing = await sql`
-    select id from spare_parts
-    where name = ${name}
-      and deleted_at is null
-      and (manufacturer = ${manufacturer || null} or (manufacturer is null and ${manufacturer || null} is null))
-    limit 1
-  `;
+  console.log('[findOrCreateSparePart] Looking for spare part:', { name, manufacturer, supplier });
+  
+  // Try to find existing spare part by name (and manufacturer if provided)
+  let existing;
+  if (manufacturer) {
+    existing = await sql`
+      select id from spare_parts
+      where name = ${name}
+        and manufacturer = ${manufacturer}
+        and deleted_at is null
+      limit 1
+    `;
+  } else {
+    existing = await sql`
+      select id from spare_parts
+      where name = ${name}
+        and manufacturer is null
+        and deleted_at is null
+      limit 1
+    `;
+  }
   
   if (existing && existing.length > 0) {
-    return (existing[0] as { id: string }).id;
+    const id = (existing[0] as { id: string }).id;
+    console.log('[findOrCreateSparePart] Found existing spare part:', id);
+    return id;
   }
   
   // Create new spare part if not found
+  console.log('[findOrCreateSparePart] Creating new spare part in inventory');
   const [newPart] = await sql`
     insert into spare_parts (
       created_at, created_by,
@@ -610,7 +626,26 @@ export const findOrCreateSparePart = async (
     ) returning id
   `;
   
-  return (newPart as { id: string }).id;
+  const newId = (newPart as { id: string }).id;
+  console.log('[findOrCreateSparePart] Created new spare part with ID:', newId);
+  return newId;
+};
+
+export const getServiceRequestsBySparePartId = async (
+  sparePartId: string
+): Promise<(DbServiceRequest & { equipment: DbEquipment | null })[]> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const rows = await sql`
+    select sr.*, to_jsonb(e) as equipment
+    from service_request sr
+    left join equipment e on e.id = sr.equipment_id
+    where sr.spare_parts_needed::text like ${'%"sparePartId":"' + sparePartId + '"%'}
+    order by sr.created_at desc
+  `;
+  
+  return rows as unknown as (DbServiceRequest & { equipment: DbEquipment | null })[];
 };
 
 // Attendance functions

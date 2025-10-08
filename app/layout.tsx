@@ -42,7 +42,7 @@ export default function RootLayout({
                   <SidebarProvider>
                     <AppSidebar />
                     <SidebarInset>
-                      <div className="flex items-center gap-2 p-2 border-b">
+                      <div className="flex items-center gap-2 p-2 border-b print:hidden">
                         <SidebarTrigger />
                       </div>
                       <ApprovalGate>{children}</ApprovalGate>
