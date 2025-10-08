@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,34 +27,43 @@ export default function SparePartUsageDialog({
   open,
   onOpenChange,
 }: SparePartUsageDialogProps) {
+  console.log('[SparePartUsageDialog] Component rendered with sparePart:', sparePart.id, 'open:', open);
   const [serviceRequests, setServiceRequests] = useState<JServiceRequest[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchServiceRequests = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/spare-parts/${sparePart.id}/service-requests`);
-      if (response.ok) {
-        const { data } = await response.json();
-        setServiceRequests(data || []);
+  useEffect(() => {
+    console.log('[SparePartUsageDialog] useEffect triggered, open:', open);
+    const fetchServiceRequests = async () => {
+      if (!open) return;
+      
+      console.log('[SparePartUsageDialog] Dialog opened, fetching service requests for spare part:', sparePart.id, sparePart.name);
+      setLoading(true);
+      try {
+        const url = `/api/spare-parts/${sparePart.id}/service-requests`;
+        console.log('[SparePartUsageDialog] Fetching from URL:', url);
+        const response = await fetch(url, { cache: 'no-store' });
+        console.log('[SparePartUsageDialog] Response status:', response.status);
+        if (response.ok) {
+          const json = await response.json();
+          console.log('[SparePartUsageDialog] Response data:', json);
+          setServiceRequests(json.data || []);
+          console.log('[SparePartUsageDialog] Set', (json.data || []).length, 'service requests');
+        } else {
+          const errorText = await response.text();
+          console.error('[SparePartUsageDialog] Error response:', errorText);
+        }
+      } catch (error) {
+        console.error("[SparePartUsageDialog] Failed to fetch service requests:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch service requests:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  // Fetch when dialog opens
-  const handleOpenChange = (newOpen: boolean) => {
-    onOpenChange(newOpen);
-    if (newOpen) {
-      fetchServiceRequests();
-    }
-  };
+    fetchServiceRequests();
+  }, [open, sparePart.id, sparePart.name]);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

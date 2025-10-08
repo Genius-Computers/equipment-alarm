@@ -637,13 +637,36 @@ export const getServiceRequestsBySparePartId = async (
   const sql = getDb();
   await ensureSchema();
   
+  console.log('[getServiceRequestsBySparePartId] Searching for spare part ID:', sparePartId);
+  
+  // First, let's see all service requests with spare parts to debug
+  const allWithParts = await sql`
+    select id, ticket_id, spare_parts_needed
+    from service_request
+    where spare_parts_needed is not null
+      and jsonb_array_length(spare_parts_needed) > 0
+  `;
+  console.log('[getServiceRequestsBySparePartId] Total service requests with spare parts:', allWithParts.length);
+  if (allWithParts.length > 0) {
+    console.log('[getServiceRequestsBySparePartId] Sample spare_parts_needed:', allWithParts[0]);
+  }
+  
+  // Use PostgreSQL JSONB operators to search for sparePartId in the array
   const rows = await sql`
     select sr.*, to_jsonb(e) as equipment
     from service_request sr
     left join equipment e on e.id = sr.equipment_id
-    where sr.spare_parts_needed::text like ${'%"sparePartId":"' + sparePartId + '"%'}
+    where sr.spare_parts_needed is not null
+      and jsonb_array_length(sr.spare_parts_needed) > 0
+      and exists (
+        select 1
+        from jsonb_array_elements(sr.spare_parts_needed) as part
+        where part->>'sparePartId' = ${sparePartId}
+      )
     order by sr.created_at desc
   `;
+  
+  console.log('[getServiceRequestsBySparePartId] Found', rows.length, 'service requests matching spare part ID');
   
   return rows as unknown as (DbServiceRequest & { equipment: DbEquipment | null })[];
 };

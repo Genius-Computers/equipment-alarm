@@ -27,8 +27,10 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
   const [usageDialogOpen, setUsageDialogOpen] = useState(false);
 
   const handleRowClick = (sparePart: SparePart) => {
+    console.log('[SparePartsTable] Row clicked, spare part:', sparePart.id, sparePart.name);
     setSelectedSparePart(sparePart);
     setUsageDialogOpen(true);
+    console.log('[SparePartsTable] Set selectedSparePart and usageDialogOpen to true');
   };
 
   if (loading) {
@@ -47,89 +49,91 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
   }
 
   return (
-    <div className="rounded-lg border overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50">
-          <tr>
-            <th className={headerClass}>Name</th>
-            <th className={headerClass}>Serial Number</th>
-            <th className={headerClass}>Quantity</th>
-            <th className={headerClass}>Manufacturer</th>
-            <th className={headerClass}>Supplier</th>
-            <th className={headerClass}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((sparePart) => {
-            return (
-              <Fragment key={sparePart.id}>
-                <tr 
-                  className="border-t hover:bg-muted/30 cursor-pointer" 
-                  onClick={() => handleRowClick(sparePart)}
-                >
-                  <td className={cellClass}>
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <div className="font-medium">{sparePart.name}</div>
-                    </div>
-                  </td>
-                  <td className={cellClass}>{sparePart.serialNumber || "—"}</td>
-                  <td className={cellClass}>
-                    <Badge variant="secondary">{sparePart.quantity}</Badge>
-                  </td>
-                  <td className={cellClass}>{sparePart.manufacturer || "—"}</td>
-                  <td className={cellClass}>{sparePart.supplier || "—"}</td>
-                  <td className={cellClass}>
-                    <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
-                      <EquipmentForm
-                        mode="edit"
-                        sparePart={sparePart}
-                        onSubmitEquipment={() => {}}
-                        onSubmitSparePart={(updated) => onEdit(updated as SparePart)}
-                        submitting={updating}
-                        trigger={
-                          <Button size="sm" variant="outline" className="gap-1">
-                            <Pencil className="h-4 w-4" />
-                            Edit
-                          </Button>
-                        }
-                      />
-                      {onDelete && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              aria-label="Delete spare part"
-                              disabled={updating}
-                            >
-                              <Trash2 className="h-4 w-4" />
+    <>
+      <div className="rounded-lg border overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className={headerClass}>Name</th>
+              <th className={headerClass}>Serial Number</th>
+              <th className={headerClass}>Quantity</th>
+              <th className={headerClass}>Manufacturer</th>
+              <th className={headerClass}>Supplier</th>
+              <th className={headerClass}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((sparePart) => {
+              return (
+                <Fragment key={sparePart.id}>
+                  <tr 
+                    className="border-t hover:bg-muted/30 cursor-pointer" 
+                    onClick={() => handleRowClick(sparePart)}
+                  >
+                    <td className={cellClass}>
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <div className="font-medium">{sparePart.name}</div>
+                      </div>
+                    </td>
+                    <td className={cellClass}>{sparePart.serialNumber || "—"}</td>
+                    <td className={cellClass}>
+                      <Badge variant="secondary">{sparePart.quantity}</Badge>
+                    </td>
+                    <td className={cellClass}>{sparePart.manufacturer || "—"}</td>
+                    <td className={cellClass}>{sparePart.supplier || "—"}</td>
+                    <td className={cellClass}>
+                      <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
+                        <EquipmentForm
+                          mode="edit"
+                          sparePart={sparePart}
+                          onSubmitEquipment={() => {}}
+                          onSubmitSparePart={(updated) => onEdit(updated as SparePart)}
+                          submitting={updating}
+                          trigger={
+                            <Button size="sm" variant="outline" className="gap-1">
+                              <Pencil className="h-4 w-4" />
+                              Edit
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Spare Part</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete &quot;{sparePart.name}&quot;? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDelete(sparePart.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+                          }
+                        />
+                        {onDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                aria-label="Delete spare part"
+                                disabled={updating}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Spare Part</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete &quot;{sparePart.name}&quot;? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(sparePart.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       
       {selectedSparePart && (
         <SparePartUsageDialog
@@ -138,7 +142,7 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
           onOpenChange={setUsageDialogOpen}
         />
       )}
-    </div>
+    </>
   );
 };
 
