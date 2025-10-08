@@ -15,6 +15,7 @@ import EquipmentResultCard from "@/components/EquipmentResultCard";
 import { AttendanceDialog } from "@/components/AttendanceDialog";
 import { useAttendance } from "@/hooks/useAttendance";
 import { toast } from "sonner";
+import { canLogAttendance } from "@/lib/types/user";
 
 const Page = () => {
   const {
@@ -33,15 +34,27 @@ const Page = () => {
   const { profile, loading: profileLoading } = useSelfProfile();
   const isEndUser = profile?.role === "end_user";
   
-  const isTechnician = profile?.role === "technician";
-  const { showPrompt, setShowPrompt, logIn, logOut, isLoggedIn, isLoggedOut, loading: attendanceLoading } = useAttendance(isTechnician);
+  const canLog = canLogAttendance(profile?.role);
+  const { showPrompt, setShowPrompt, logIn, logOut, isLoggedIn, isLoggedOut, loading: attendanceLoading } = useAttendance(canLog, profile?.role);
   
+  const handleLogIn = async () => {
+    try {
+      await logIn();
+      toast("Success", { description: "Logged in successfully" });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to log in";
+      console.error('[HomePage] Log in error:', e);
+      toast("Error", { description: message });
+    }
+  };
+
   const handleLogOut = async () => {
     try {
       await logOut();
       toast("Success", { description: "Logged out successfully" });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to log out";
+      console.error('[HomePage] Log out error:', e);
       toast("Error", { description: message });
     }
   };
@@ -64,11 +77,11 @@ const Page = () => {
       <Header />
       <AttendanceDialog open={showPrompt} onOpenChange={setShowPrompt} onLogIn={logIn} />
       <div className="container mx-auto px-6 py-8">
-        {/* Attendance Log In/Out for Technicians */}
-        {isTechnician && !isLoggedOut && (
+        {/* Attendance Log In/Out for Technicians, Admins, and Admin X */}
+        {canLog && !isLoggedOut && (
           <div className="mb-6 flex justify-center">
             <Button
-              onClick={isLoggedIn ? handleLogOut : logIn}
+              onClick={isLoggedIn ? handleLogOut : handleLogIn}
               disabled={attendanceLoading}
               size="lg"
               className="gap-2"

@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { canApprove } from "@/lib/types/user";
+import { formatSaudiDate } from "@/lib/utils";
 
 interface EquipmentTableProps {
   items: JEquipment[];
@@ -91,7 +92,7 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                   </td>
                   <td className={cellClass}>{e.subLocation || "—"}</td>
                   <td className={cellClass}>
-                    {e.lastMaintenance ? new Date(e.lastMaintenance).toLocaleDateString() : "—"}
+                    {formatSaudiDate(e.lastMaintenance)}
                   </td>
                   <td className={cellClass}>
                     <Badge variant="secondary" className="capitalize">

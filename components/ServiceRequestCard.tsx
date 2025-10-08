@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import { formatSaudiDateTime } from "@/lib/utils";
 
 interface ServiceRequestCardProps {
   request: JServiceRequest;
@@ -128,7 +129,7 @@ export default function ServiceRequestCard({
           </Alert>
         )}
         <div className="text-sm text-muted-foreground">
-          {t("serviceRequest.scheduledAt")}: {new Date(request.scheduledAt).toLocaleString()}
+          {t("serviceRequest.scheduledAt")}: {formatSaudiDateTime(request.scheduledAt)}
         </div>
 
         {request.problemDescription ? (

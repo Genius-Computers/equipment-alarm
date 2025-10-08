@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@stackframe/stack";
 import { toast } from "sonner";
 import { Calendar, Printer } from "lucide-react";
+import { formatSaudiDate, formatSaudiTime, getTodaySaudiDate } from "@/lib/utils";
 
 type AttendanceRecord = {
   id: string;
@@ -25,7 +26,7 @@ export default function AttendancePage() {
   const role = user?.clientReadOnlyMetadata?.role as string | undefined;
   const canViewAttendance = role !== "end_user";
 
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getTodaySaudiDate());
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -55,11 +56,6 @@ export default function AttendancePage() {
     window.print();
   };
 
-  const formatTime = (timestamp: string | null) => {
-    if (!timestamp) return '-';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  };
 
   if (!canViewAttendance) {
     return (
@@ -112,7 +108,7 @@ export default function AttendancePage() {
             <div className="print:block hidden mb-4">
               <div className="text-center">
                 <h2 className="text-xl font-bold">Attendance Report</h2>
-                <p className="text-sm text-muted-foreground">Date: {new Date(selectedDate).toLocaleDateString()}</p>
+                <p className="text-sm text-muted-foreground">Date: {formatSaudiDate(selectedDate)}</p>
               </div>
             </div>
 
@@ -124,7 +120,7 @@ export default function AttendancePage() {
               </div>
             ) : records.length === 0 ? (
               <div className="text-sm text-muted-foreground text-center py-8">
-                No attendance records found for {new Date(selectedDate).toLocaleDateString()}
+                No attendance records found for {formatSaudiDate(selectedDate)}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -143,8 +139,8 @@ export default function AttendancePage() {
                       <tr key={record.id} className="border-b">
                         <td className="p-2">{record.display_name || record.user_id}</td>
                         <td className="p-2">{record.employee_id || '-'}</td>
-                        <td className="p-2">{formatTime(record.log_in_time)}</td>
-                        <td className="p-2">{formatTime(record.log_out_time)}</td>
+                        <td className="p-2">{formatSaudiTime(record.log_in_time)}</td>
+                        <td className="p-2">{formatSaudiTime(record.log_out_time)}</td>
                         <td className="p-2 hidden print:table-cell">
                           <div className="border-b border-gray-400 h-8"></div>
                         </td>

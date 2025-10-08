@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const user = useUser();
   const [form, setForm] = useState({ displayName: "", phone: "", designation: "", department: "", employeeId: "" });
   const role = user?.clientReadOnlyMetadata?.role as string | undefined;
-  const isTechnician = role === "technician";
+  const canHaveEmployeeId = role === "technician" || role === "admin" || role === "admin_x";
 
   useEffect(() => {
     setForm({
@@ -114,7 +114,7 @@ export default function SettingsPage() {
                     disabled={loading || saving}
                   />
                 </div>
-                {isTechnician && (
+                {canHaveEmployeeId && (
                   <div className="space-y-2">
                     <Label htmlFor="employeeId">Employee ID</Label>
                     <Input
@@ -126,7 +126,7 @@ export default function SettingsPage() {
                     />
                   </div>
                 )}
-                <div className={`space-y-2 ${isTechnician ? 'md:col-span-2' : 'md:col-span-2'}`}>
+                <div className={`space-y-2 ${canHaveEmployeeId ? 'md:col-span-2' : 'md:col-span-2'}`}>
                   <Label htmlFor="phone">{t("settings.phone") || "Phone"}</Label>
                   <Input
                     id="phone"

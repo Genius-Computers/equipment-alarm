@@ -10,7 +10,7 @@ export async function getCurrentServerUser(req: NextRequest) {
 export function getUserRole(user: CurrentServerUser | null): UserRole | null {
   if (!user) return null;
   const role = (user.serverMetadata?.role ?? user.clientReadOnlyMetadata?.role) as string | undefined;
-  if (role === 'admin' || role === 'supervisor' || role === 'technician' || role === 'end_user') return role;
+  if (role === 'admin' || role === 'admin_x' || role === 'supervisor' || role === 'technician' || role === 'end_user') return role;
   return null;
 }
 

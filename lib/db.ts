@@ -676,7 +676,8 @@ export const logInAttendance = async (userId: string, employeeId?: string, displ
   const sql = getDb();
   await ensureSchema();
   
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  // Get today's date in Saudi timezone
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }); // YYYY-MM-DD
   
   // Check if already logged in today
   const existing = await sql`
@@ -717,7 +718,8 @@ export const logOutAttendance = async (userId: string) => {
   const sql = getDb();
   await ensureSchema();
   
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  // Get today's date in Saudi timezone
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }); // YYYY-MM-DD
   
   const [updated] = await sql`
     update attendance
@@ -733,7 +735,8 @@ export const getTodayAttendance = async (userId: string) => {
   const sql = getDb();
   await ensureSchema();
   
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  // Get today's date in Saudi timezone
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }); // YYYY-MM-DD
   
   const result = await sql`
     select * from attendance

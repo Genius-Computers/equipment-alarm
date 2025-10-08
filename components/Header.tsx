@@ -19,6 +19,8 @@ const Header = () => {
     switch (role) {
       case "admin":
         return "Admin";
+      case "admin_x":
+        return "Admin X";
       case "supervisor":
         return "Supervisor";
       case "technician":

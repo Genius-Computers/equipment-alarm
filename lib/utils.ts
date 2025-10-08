@@ -129,3 +129,59 @@ export function deriveMaintenanceInfo(input: { lastMaintenance?: string; mainten
   const maintenanceStatus: 'good' | 'due' | 'overdue' = diffDays < 0 ? 'overdue' : diffDays <= 7 ? 'due' : 'good'
   return { maintenanceStatus, nextMaintenance: next.toISOString(), daysUntil: diffDays }
 }
+
+// Saudi Arabia timezone formatting utilities
+const SAUDI_TIMEZONE = 'Asia/Riyadh';
+
+export function formatSaudiDate(timestamp: string | Date | null | undefined): string {
+  if (!timestamp) return '—';
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', { 
+      timeZone: SAUDI_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch {
+    return '—';
+  }
+}
+
+export function formatSaudiTime(timestamp: string | Date | null | undefined): string {
+  if (!timestamp) return '—';
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      timeZone: SAUDI_TIMEZONE,
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    });
+  } catch {
+    return '—';
+  }
+}
+
+export function formatSaudiDateTime(timestamp: string | Date | null | undefined): string {
+  if (!timestamp) return '—';
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', { 
+      timeZone: SAUDI_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    });
+  } catch {
+    return '—';
+  }
+}
+
+export function getTodaySaudiDate(): string {
+  const now = new Date();
+  return now.toLocaleDateString('en-CA', { timeZone: SAUDI_TIMEZONE }); // YYYY-MM-DD format
+}

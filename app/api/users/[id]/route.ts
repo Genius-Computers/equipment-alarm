@@ -6,7 +6,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   try {
     const requester = await getCurrentServerUser(req);
     const role = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'admin_x' && role !== 'supervisor') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const body = await req.json();
     const nextRole = (body?.role as string | undefined) || undefined;
 
-    if (nextRole && !['admin', 'supervisor', 'technician', 'end_user'].includes(nextRole)) {
+    if (nextRole && !['admin', 'admin_x', 'supervisor', 'technician', 'end_user'].includes(nextRole)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
@@ -38,7 +38,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   try {
     const requester = await getCurrentServerUser(req);
     const role = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'admin_x' && role !== 'supervisor') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

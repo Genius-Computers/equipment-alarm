@@ -81,7 +81,7 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
               </>
             )}
-            {role === "admin" && (
+            {(role === "admin" || role === "admin_x" || role === "supervisor") && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/users")}>
                   <Link href="/users">

@@ -29,7 +29,7 @@ const UsersPage = () => {
   const { t } = useLanguage();
   const user = useUser();
   const myRole = (user?.clientReadOnlyMetadata?.role) as string | undefined;
-  const isAdmin = myRole === 'admin';
+  const canManage = myRole === 'admin' || myRole === 'supervisor';
 
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,7 @@ const UsersPage = () => {
     setDeleteDialogOpen(true);
   };
 
-  if (!isAdmin) {
+  if (!canManage) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -178,6 +178,7 @@ const UsersPage = () => {
                     <SelectItem value="technician">Technician</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="admin_x">Admin X</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button onClick={createUser} disabled={creating || !newUser.email || !newUser.role}>
@@ -238,6 +239,7 @@ const UsersPage = () => {
                       <SelectItem value="technician">Technician</SelectItem>
                       <SelectItem value="supervisor">Supervisor</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="admin_x">Admin X</SelectItem>
                     </SelectContent>
                   </Select>
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />
@@ -283,6 +285,7 @@ const UsersPage = () => {
                       <SelectItem value="technician">Technician</SelectItem>
                       <SelectItem value="supervisor">Supervisor</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="admin_x">Admin X</SelectItem>
                     </SelectContent>
                   </Select>
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />

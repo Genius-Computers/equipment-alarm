@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
-import { canCreateUsers } from '@/lib/types/user';
+import { canManageUsers } from '@/lib/types/user';
 import { getCurrentServerUser } from '@/lib/auth';
 import { formatStackUserLight } from '@/lib/utils';
 
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const requester = await getCurrentServerUser(req);
     const requesterRole = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
-    const isAdmin = canCreateUsers(requesterRole);
+    const canManage = canManageUsers(requesterRole);
 
     const body = await req.json();
     const { email, password, displayName, role: requestedRole } = body ?? {};
@@ -17,15 +17,15 @@ export async function POST(req: NextRequest) {
     }
 
     // For public sign-ups, enforce password strength if password provided
-    if (!isAdmin && password) {
+    if (!canManage && password) {
       const strong = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
       if (!strong.test(password)) {
         return NextResponse.json({ error: 'Password must be 8+ chars with letter, number, special char' }, { status: 400 });
       }
     }
 
-    // Public self-signup: no role assigned; Admins can assign role on creation
-    const assignedRole = isAdmin ? requestedRole : undefined;
+    // Public self-signup: no role assigned; Admins/Supervisors can assign role on creation
+    const assignedRole = canManage ? requestedRole : undefined;
 
     const user = await stackServerApp.createUser({
       primaryEmail: email,
@@ -65,17 +65,17 @@ export async function GET(req: NextRequest) {
 
     const role = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
 
-    // Allow any authenticated user to list technicians (role === 'technician')
+    // Allow any authenticated user to list technicians (role === 'technician' or 'admin')
     if (onlyTechnicians) {
       const users = await stackServerApp.listUsers({ limit: 100 });
       const data = users
         .map((u) => (formatStackUserLight(u)))
-        .filter((u) => u && u.role === 'technician');
+        .filter((u) => u && (u.role === 'technician' || u.role === 'admin'));
       return NextResponse.json({ data });
     }
 
-    // Otherwise, only admins can list all users
-    if (!canCreateUsers(role)) {
+    // Otherwise, only admins and supervisors can list all users
+    if (!canManageUsers(role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const users = await stackServerApp.listUsers({ limit: 100 });

@@ -6,6 +6,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import type { JServiceRequest, SparePartNeeded, ServiceRequestApprovalStatus, ServiceRequestPriority, ServiceRequestType, ServiceRequestWorkStatus } from "@/lib/types/service-request";
 import type { User } from "@/lib/types/user";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatSaudiDateTime } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -198,7 +199,7 @@ export default function PrintPage(props: PageProps) {
               </div>
               <div className="col-span-1 border p-2">
                 <div className="font-medium">{t("serviceRequest.scheduledAt")}</div>
-                <div className="text-xs text-neutral-700">{data?.scheduledAt ? new Date(data.scheduledAt).toLocaleString() : "-"}</div>
+                <div className="text-xs text-neutral-700">{formatSaudiDateTime(data?.scheduledAt)}</div>
               </div>
 
               <div className="col-span-1 border p-2">

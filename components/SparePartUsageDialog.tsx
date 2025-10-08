@@ -15,6 +15,7 @@ import type { JServiceRequest } from "@/lib/types/service-request";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { formatSaudiDate } from "@/lib/utils";
 
 interface SparePartUsageDialogProps {
   sparePart: SparePart;
@@ -125,7 +126,7 @@ export default function SparePartUsageDialog({
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          Scheduled: {new Date(sr.scheduledAt).toLocaleDateString()}
+                          Scheduled: {formatSaudiDate(sr.scheduledAt)}
                         </p>
                         
                         {/* Show spare part details from this service request */}

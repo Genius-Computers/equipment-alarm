@@ -7,7 +7,7 @@ import ServiceRequestDialog from "./ServiceRequestDialog";
 import EquipmentForm from "./AddEquipmentForm";
 
 import { Equipment, JEquipment } from "@/lib/types";
-import { MAINTENANCE_INTERVAL_DAYS_MAP } from "@/lib/utils";
+import { MAINTENANCE_INTERVAL_DAYS_MAP, formatSaudiDate } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -97,7 +97,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
               <div>
                 <p className="text-muted-foreground">{t("equipment.lastMaintenance")}</p>
                 <p className="font-medium">
-                  {equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toLocaleDateString() : "—"}
+                  {formatSaudiDate(equipment.lastMaintenance)}
                 </p>
               </div>
               <div>
