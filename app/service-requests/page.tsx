@@ -1,7 +1,5 @@
 "use client";
 import Header from "@/components/Header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@stackframe/stack";
 import CustomPagination from "@/components/CustomPagination";
 import ServiceRequestFilters from "@/components/ServiceRequestFilters";

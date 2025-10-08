@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { DbEquipment, DbServiceRequest, DbSparePart } from './types';
-import { toJsonbParam, generateTicketId } from './utils';
+import { toJsonbParam } from './utils';
 import { randomUUID } from 'crypto';
 
 // Simple Neon client factory. Uses DATABASE_URL from env.

@@ -26,13 +26,10 @@ const Page = () => {
     searchTerm,
     setSearchTerm,
     setPage,
-    refresh,
     addSparePart,
     updateSparePart,
     deleteSparePart,
   } = useSpareParts();
-
-  const [editingSparePart, setEditingSparePart] = useState<SparePart | undefined>(undefined);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -63,7 +60,7 @@ const Page = () => {
       toast("Success", {
         description: "Spare part added successfully!",
       });
-    } catch (err) {
+    } catch {
       toast("Error", {
         description: "Failed to add spare part",
       });
@@ -76,7 +73,7 @@ const Page = () => {
       toast("Success", {
         description: "Spare part updated successfully!",
       });
-    } catch (err) {
+    } catch {
       toast("Error", {
         description: "Failed to update spare part",
       });
@@ -92,7 +89,7 @@ const Page = () => {
       toast("Success", {
         description: "Spare part deleted successfully!",
       });
-    } catch (err) {
+    } catch {
       toast("Error", {
         description: "Failed to delete spare part",
       });

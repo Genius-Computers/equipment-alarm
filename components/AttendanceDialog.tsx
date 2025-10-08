@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ export function AttendanceDialog({ open, onOpenChange, onLogIn }: AttendanceDial
             Log In for Attendance
           </DialogTitle>
           <DialogDescription>
-            Would you like to log in for today's attendance? Your log in time will be recorded now.
+            Would you like to log in for today&apos;s attendance? Your log in time will be recorded now.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

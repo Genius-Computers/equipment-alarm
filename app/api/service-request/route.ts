@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { insertServiceRequest, listServiceRequestPaginated, getNextTicketId } from '@/lib/db';
 import { camelToSnakeCase, formatStackUserLight, snakeToCamelCase } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
-import { ensureRole, getCurrentServerUser } from '@/lib/auth';
-import { APPROVER_ROLES } from '@/lib/types/user';
+import { getCurrentServerUser } from '@/lib/auth';
 import { stackServerApp } from '@/stack';
 
 export async function GET(req: NextRequest) {

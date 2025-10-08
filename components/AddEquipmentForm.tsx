@@ -98,14 +98,14 @@ const EquipmentForm = ({
       setFormData(getInitialFormData());
       setIsSparePartsMode(false);
     }
-  }, [equipment, mode]);
+  }, [equipment, mode, getInitialFormData]);
 
   useEffect(() => {
     if (mode === "edit" && sparePart) {
       setSparePartFormData(getInitialSparePartFormData());
       setIsSparePartsMode(true);
     }
-  }, [sparePart, mode]);
+  }, [sparePart, mode, getInitialSparePartFormData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

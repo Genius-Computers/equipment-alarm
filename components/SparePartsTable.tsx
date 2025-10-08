@@ -85,7 +85,7 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false }: SparePar
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Spare Part</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{sparePart.name}"? This action cannot be undone.
+                                Are you sure you want to delete &quot;{sparePart.name}&quot;? This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
