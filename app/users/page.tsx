@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { canManageUsers } from "@/lib/types/user";
 
 type UserRow = { id: string; email: string | null; displayName?: string | null; role?: string; signedUpAt?: string | null };
 
@@ -29,7 +30,7 @@ const UsersPage = () => {
   const { t } = useLanguage();
   const user = useUser();
   const myRole = (user?.clientReadOnlyMetadata?.role) as string | undefined;
-  const canManage = myRole === 'admin' || myRole === 'supervisor';
+  const canManage = canManageUsers(myRole);
 
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
