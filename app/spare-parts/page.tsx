@@ -196,6 +196,7 @@ const Page = () => {
             onEdit={handleUpdateSparePart}
             onDelete={handleDeleteSparePart}
             updating={isUpdating}
+            loading={loading}
           />
 
           <CustomPagination
@@ -209,11 +210,6 @@ const Page = () => {
             }}
           />
 
-          {!loading && filteredSpareParts.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No spare parts found.</p>
-            </div>
-          )}
           {error && (
             <div className="text-center py-4">
               <p className="text-destructive text-sm">{error}</p>

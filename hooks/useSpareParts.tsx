@@ -24,7 +24,9 @@ export const useSpareParts = () => {
       if (searchTerm) {
         params.append("q", searchTerm);
       }
-      const response = await fetch(`/api/spare-parts?${params.toString()}`);
+      const response = await fetch(`/api/spare-parts?${params.toString()}`, {
+        cache: 'no-store', // Prevent caching issues
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch spare parts");
       }

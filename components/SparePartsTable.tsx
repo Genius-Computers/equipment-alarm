@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SparePart } from "@/lib/types";
 import { Pencil, Trash2, Package } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -14,12 +15,24 @@ interface SparePartsTableProps {
   onEdit: (updated: SparePart) => Promise<void> | void;
   onDelete?: (id: string) => Promise<void> | void;
   updating?: boolean;
+  loading?: boolean;
 }
 
 const headerClass = "px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide";
 const cellClass = "px-3 py-3 text-sm align-middle";
 
-const SparePartsTable = ({ items, onEdit, onDelete, updating = false }: SparePartsTableProps) => {
+const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = false }: SparePartsTableProps) => {
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
+
   if (!items || items.length === 0) {
     return <Card className="p-6 text-center text-sm text-muted-foreground">No spare parts found.</Card>;
   }

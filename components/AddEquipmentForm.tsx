@@ -95,17 +95,35 @@ const EquipmentForm = ({
   // Update form data when equipment or spare part changes (for edit mode)
   useEffect(() => {
     if (mode === "edit" && equipment) {
-      setFormData(getInitialFormData());
+      setFormData({
+        name: equipment.name,
+        partNumber: equipment.partNumber,
+        location: equipment.location,
+        subLocation: equipment.subLocation || "",
+        maintenanceInterval: equipment.maintenanceInterval,
+        lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
+        model: equipment.model || "",
+        manufacturer: equipment.manufacturer || "",
+        serialNumber: equipment.serialNumber || "",
+        status: equipment.status,
+        inUse: equipment.inUse ?? true,
+      });
       setIsSparePartsMode(false);
     }
-  }, [equipment, mode, getInitialFormData]);
+  }, [equipment, mode]);
 
   useEffect(() => {
     if (mode === "edit" && sparePart) {
-      setSparePartFormData(getInitialSparePartFormData());
+      setSparePartFormData({
+        name: sparePart.name,
+        serialNumber: sparePart.serialNumber || "",
+        quantity: sparePart.quantity,
+        manufacturer: sparePart.manufacturer || "",
+        supplier: sparePart.supplier || "",
+      });
       setIsSparePartsMode(true);
     }
-  }, [sparePart, mode, getInitialSparePartFormData]);
+  }, [sparePart, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -13,14 +13,22 @@ export const getDb = () => {
 };
 
 // Guard to ensure schema only runs once per boot
+// Use a timestamp-based check to avoid running schema checks too frequently
 let schemaInitialized = false;
+let lastSchemaCheck = 0;
+const SCHEMA_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 // Ensure the equipment table exists (id as UUID, dates as text for now to match UI strings)
 export const ensureSchema = async () => {
-  if (schemaInitialized) {
+  const now = Date.now();
+  
+  // Skip if we've checked recently (within 5 minutes)
+  if (schemaInitialized && (now - lastSchemaCheck) < SCHEMA_CHECK_INTERVAL) {
     return;
   }
+  
   const sql = getDb();
+  lastSchemaCheck = now;
   await sql`create extension if not exists pgcrypto`;
   await sql`
     create table if not exists equipment (
