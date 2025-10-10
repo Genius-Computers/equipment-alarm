@@ -8,8 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@stackframe/stack";
 import { toast } from "sonner";
-import { Calendar, Printer } from "lucide-react";
+import { Calendar, Printer, LogIn, LogOut, Clock } from "lucide-react";
 import { formatSaudiDate, formatSaudiTime, getTodaySaudiDate } from "@/lib/utils";
+import { useAttendance } from "@/hooks/useAttendance";
+import { canLogAttendance } from "@/lib/types/user";
+import { AttendanceDialog } from "@/components/AttendanceDialog";
 
 type AttendanceRecord = {
   id: string;
@@ -25,6 +28,18 @@ export default function AttendancePage() {
   const user = useUser();
   const role = user?.clientReadOnlyMetadata?.role as string | undefined;
   const canViewAttendance = role !== "end_user";
+  const canLog = canLogAttendance(role);
+  
+  const {
+    todayAttendance,
+    loading: attendanceLoading,
+    showPrompt,
+    setShowPrompt,
+    logIn,
+    logOut,
+    isLoggedIn,
+    isLoggedOut,
+  } = useAttendance(canLog, role);
 
   const [selectedDate, setSelectedDate] = useState(getTodaySaudiDate());
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -111,6 +126,76 @@ export default function AttendancePage() {
         <Header />
       </div>
       <main className="container mx-auto px-6 py-8 space-y-6 print:p-0 print:m-0">
+        {/* Personal Attendance Controls - Screen only */}
+        {canLog && (
+          <div className="print:hidden mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  My Attendance Today
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await logIn();
+                        toast("Success", { description: "Logged in successfully" });
+                        loadAttendance(); // Refresh the records
+                      } catch (e: unknown) {
+                        const message = e instanceof Error ? e.message : "Failed to log in";
+                        toast("Error", { description: message });
+                      }
+                    }}
+                    disabled={!!isLoggedIn || attendanceLoading}
+                    className="gap-2"
+                    variant={isLoggedIn ? "outline" : "default"}
+                  >
+                    <LogIn className="h-4 w-4" />
+                    {isLoggedIn ? (
+                      <>IN: {formatSaudiTime(todayAttendance?.log_in_time)}</>
+                    ) : (
+                      "Time In"
+                    )}
+                  </Button>
+                  
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await logOut();
+                        toast("Success", { description: "Logged out successfully" });
+                        loadAttendance(); // Refresh the records
+                      } catch (e: unknown) {
+                        const message = e instanceof Error ? e.message : "Failed to log out";
+                        toast("Error", { description: message });
+                      }
+                    }}
+                    disabled={!isLoggedIn || !!isLoggedOut || attendanceLoading}
+                    className="gap-2"
+                    variant={isLoggedOut ? "outline" : "default"}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {isLoggedOut ? (
+                      <>OUT: {formatSaudiTime(todayAttendance?.log_out_time)}</>
+                    ) : (
+                      "Time Out"
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Attendance Dialog */}
+        <AttendanceDialog
+          open={showPrompt}
+          onOpenChange={setShowPrompt}
+          onLogIn={logIn}
+        />
+
         {/* Screen-only controls */}
         <div className="print:hidden mb-6">
           <Card>
@@ -118,7 +203,7 @@ export default function AttendancePage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Attendance
+                  Attendance Records
                 </CardTitle>
                 <Button onClick={handlePrint} variant="outline" size="sm">
                   <Printer className="h-4 w-4 mr-2" />
@@ -148,9 +233,9 @@ export default function AttendancePage() {
               <div className="flex items-center justify-between mb-4">
                 {/* Left side - English */}
                 <div className="text-left flex-1">
-                  <div className="text-sm font-medium">Kingdom of Saudi Arabia</div>
-                  <div className="text-sm font-medium">Ministry of Education</div>
-                  <div className="text-sm font-medium">University of Hail</div>
+                  <div className="text-base font-semibold">Kingdom of Saudi Arabia</div>
+                  <div className="text-base font-semibold">Ministry of Education</div>
+                  <div className="text-base font-semibold">University of Hail</div>
                 </div>
                 
                 {/* Center - University Logo */}
@@ -164,17 +249,18 @@ export default function AttendancePage() {
                 
                 {/* Right side - Arabic */}
                 <div className="text-right flex-1">
-                  <div className="text-sm font-medium">المملكة العربية السعودية</div>
-                  <div className="text-sm font-medium">وزارة التعليم</div>
-                  <div className="text-sm font-medium">جامعة حائل</div>
-                  <div className="text-sm font-medium">الإدارة العامة للتجهيزات التعليمية والمعامل</div>
+                  <div className="text-base font-semibold">المملكة العربية السعودية</div>
+                  <div className="text-base font-semibold">وزارة التعليم</div>
+                  <div className="text-base font-semibold">جامعة حائل</div>
+                  <div className="text-base font-semibold">الإدارة العامة للتجهيزات التعليمية والمعامل</div>
                 </div>
               </div>
 
               {/* Sub header */}
               <div className="text-center mb-4">
-                <div className="text-sm font-medium">Daily Attendance - Medical Maintenance</div>
-                <div className="text-sm mt-1">
+                <div className="text-base font-bold mb-2">إدارة صيانة الأجهزة الطبية والعلمية</div>
+                <div className="text-lg font-bold bg-gray-100 py-2 px-4 border border-gray-300 inline-block">Daily Attendance - Medical Maintenance</div>
+                <div className="text-sm mt-2 font-medium">
                   {selectedDate}
                 </div>
               </div>
