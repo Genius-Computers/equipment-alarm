@@ -14,8 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SparePartsCSVImport from "@/components/SparePartsCSVImport";
 import SparePartsCSVExport from "@/components/SparePartsCSVExport";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const Page = () => {
+  const { t } = useLanguage();
   const {
     filteredSpareParts,
     loading,
@@ -45,8 +47,8 @@ const Page = () => {
   const handleAddSparePart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name) {
-      toast("Error", {
-        description: "Name is required",
+      toast(t("common.error"), {
+        description: t("spareParts.nameRequired"),
       });
       return;
     }
@@ -60,12 +62,12 @@ const Page = () => {
       });
       setFormData({ name: "", serialNumber: "", quantity: 0, manufacturer: "", supplier: "" });
       setIsFormOpen(false);
-      toast("Success", {
-        description: "Spare part added successfully!",
+      toast(t("common.success"), {
+        description: t("spareParts.addSuccess"),
       });
     } catch {
-      toast("Error", {
-        description: "Failed to add spare part",
+      toast(t("common.error"), {
+        description: t("spareParts.addError"),
       });
     }
   };
@@ -73,28 +75,28 @@ const Page = () => {
   const handleUpdateSparePart = async (sparePart: SparePart | Omit<SparePart, "id">) => {
     try {
       await updateSparePart(sparePart as SparePart);
-      toast("Success", {
-        description: "Spare part updated successfully!",
+      toast(t("common.success"), {
+        description: t("spareParts.updateSuccess"),
       });
     } catch {
-      toast("Error", {
-        description: "Failed to update spare part",
+      toast(t("common.error"), {
+        description: t("spareParts.updateError"),
       });
     }
   };
 
   const handleDeleteSparePart = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this spare part?")) {
+    if (!confirm(t("spareParts.deleteConfirm"))) {
       return;
     }
     try {
       await deleteSparePart(id);
-      toast("Success", {
-        description: "Spare part deleted successfully!",
+      toast(t("common.success"), {
+        description: t("spareParts.deleteSuccess"),
       });
     } catch {
-      toast("Error", {
-        description: "Failed to delete spare part",
+      toast(t("common.error"), {
+        description: t("spareParts.deleteError"),
       });
     }
   };
@@ -108,81 +110,81 @@ const Page = () => {
         <div className="space-y-6">
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">Spare Parts</h1>
+              <h1 className="text-3xl font-bold">{t("spareParts.title")}</h1>
               <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
               <SheetTrigger asChild>
                 <Button disabled={isInserting}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Spare Part
+                  <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                  {t("spareParts.addSparePart")}
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="p-4 overflow-y-auto">
                 <SheetHeader>
-                  <SheetTitle>Add Spare Part</SheetTitle>
+                  <SheetTitle>{t("spareParts.addSparePart")}</SheetTitle>
                 </SheetHeader>
                 <form onSubmit={handleAddSparePart} className="mt-4 space-y-4">
                   <div className="flex flex-col gap-1">
                     <Label htmlFor="sp-name">
-                      Name <span className="text-destructive">*</span>
+                      {t("spareParts.name")} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="sp-name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g., Air Filter"
+                      placeholder={t("spareParts.namePlaceholder")}
                       required
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="sp-serialNumber">Serial Number</Label>
+                    <Label htmlFor="sp-serialNumber">{t("spareParts.serialNumber")}</Label>
                     <Input
                       id="sp-serialNumber"
                       value={formData.serialNumber}
                       onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                      placeholder="e.g., SN-12345"
+                      placeholder={t("spareParts.serialNumberPlaceholder")}
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="sp-quantity">Quantity</Label>
+                    <Label htmlFor="sp-quantity">{t("spareParts.quantity")}</Label>
                     <Input
                       id="sp-quantity"
                       type="number"
                       value={formData.quantity}
                       onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                      placeholder="e.g., 10"
+                      placeholder={t("spareParts.quantityPlaceholder")}
                       min="0"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="sp-manufacturer">Manufacturer</Label>
+                    <Label htmlFor="sp-manufacturer">{t("spareParts.manufacturer")}</Label>
                     <Input
                       id="sp-manufacturer"
                       value={formData.manufacturer}
                       onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-                      placeholder="e.g., Acme Corp"
+                      placeholder={t("spareParts.manufacturerPlaceholder")}
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="sp-supplier">Supplier</Label>
+                    <Label htmlFor="sp-supplier">{t("spareParts.supplier")}</Label>
                     <Input
                       id="sp-supplier"
                       value={formData.supplier}
                       onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                      placeholder="e.g., Parts Warehouse Inc."
+                      placeholder={t("spareParts.supplierPlaceholder")}
                     />
                   </div>
 
                   <div className="flex gap-2 pt-4">
                     <Button type="submit" disabled={isInserting}>
-                      {isInserting && <span className="mr-2">Adding...</span>}
-                      Add Spare Part
+                      {isInserting && <span className="mr-2 rtl:mr-0 rtl:ml-2">{t("spareParts.adding")}</span>}
+                      {!isInserting && t("spareParts.addSparePart")}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </div>
                 </form>

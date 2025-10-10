@@ -31,7 +31,7 @@ export default function SignUpPage() {
       toast(t("toast.error"), { description: t("auth.error.passwordsNoMatch") });
       return;
     }
-    const strong = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    const strong = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
     if (!strong.test(password)) {
       toast(t("toast.error"), { description: t("auth.error.passwordWeak") });
       return;

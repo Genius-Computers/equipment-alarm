@@ -17,6 +17,7 @@ import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, Clipboar
 import { usePathname } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
+import { canManageUsers } from "@/lib/types/user";
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -54,7 +55,7 @@ export default function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isActive("/spare-parts")}>
                     <Link href="/spare-parts">
                       <Package />
-                      <span>Spare Parts</span>
+                      <span>{t("spareParts.title")}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -75,13 +76,13 @@ export default function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isActive("/attendance")}>
                     <Link href="/attendance">
                       <ClipboardCheck />
-                      <span>Attendance</span>
+                      <span>{t("attendance.title")}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </>
             )}
-            {(role === "admin" || role === "admin_x" || role === "supervisor") && (
+            {canManageUsers(role) && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/users")}>
                   <Link href="/users">

@@ -10,6 +10,7 @@ import { Pencil, Trash2, Package } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import EquipmentForm from "@/components/AddEquipmentForm";
 import SparePartUsageDialog from "@/components/SparePartUsageDialog";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface SparePartsTableProps {
   items: SparePart[];
@@ -23,6 +24,7 @@ const headerClass = "px-3 py-2 text-xs font-medium text-muted-foreground upperca
 const cellClass = "px-3 py-3 text-sm align-middle";
 
 const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = false }: SparePartsTableProps) => {
+  const { t } = useLanguage();
   const [selectedSparePart, setSelectedSparePart] = useState<SparePart | null>(null);
   const [usageDialogOpen, setUsageDialogOpen] = useState(false);
 
@@ -45,7 +47,7 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
   }
 
   if (!items || items.length === 0) {
-    return <Card className="p-6 text-center text-sm text-muted-foreground">No spare parts found.</Card>;
+    return <Card className="p-6 text-center text-sm text-muted-foreground">{t("spareParts.noResults")}</Card>;
   }
 
   return (
@@ -54,11 +56,11 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className={headerClass}>Name</th>
-              <th className={headerClass}>Serial Number</th>
-              <th className={headerClass}>Quantity</th>
-              <th className={headerClass}>Manufacturer</th>
-              <th className={headerClass}>Supplier</th>
+              <th className={headerClass}>{t("spareParts.name")}</th>
+              <th className={headerClass}>{t("spareParts.serialNumber")}</th>
+              <th className={headerClass}>{t("spareParts.quantity")}</th>
+              <th className={headerClass}>{t("spareParts.manufacturer")}</th>
+              <th className={headerClass}>{t("spareParts.supplier")}</th>
               <th className={headerClass}></th>
             </tr>
           </thead>
@@ -93,7 +95,7 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
                           trigger={
                             <Button size="sm" variant="outline" className="gap-1">
                               <Pencil className="h-4 w-4" />
-                              Edit
+                              {t("common.edit")}
                             </Button>
                           }
                         />
@@ -103,7 +105,7 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                aria-label="Delete spare part"
+                                aria-label={t("common.delete")}
                                 disabled={updating}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -111,15 +113,15 @@ const SparePartsTable = ({ items, onEdit, onDelete, updating = false, loading = 
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Spare Part</AlertDialogTitle>
+                                <AlertDialogTitle>{t("spareParts.deleteTitle")}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete &quot;{sparePart.name}&quot;? This action cannot be undone.
+                                  {t("spareParts.deleteDescription", { name: sparePart.name })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => onDelete(sparePart.id)}>
-                                  Delete
+                                  {t("common.delete")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>

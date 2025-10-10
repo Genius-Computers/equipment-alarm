@@ -4,20 +4,18 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/comp
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search as SearchIcon, Box, Calendar, AlertCircle, Headphones, PlusCircle, Package, LogIn, LogOut, Loader2 } from "lucide-react";
+import { Search as SearchIcon, Box, Calendar, AlertCircle, Headphones, PlusCircle, Package, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import AddEquipmentForm from "@/components/AddEquipmentForm";
 import ServiceRequestDialog from "@/components/ServiceRequestDialog";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { useEquipment } from "@/hooks/useEquipment";
+import { useLanguage } from "@/hooks/useLanguage";
 import Link from "next/link";
 import EquipmentResultCard from "@/components/EquipmentResultCard";
-import { AttendanceDialog } from "@/components/AttendanceDialog";
-import { useAttendance } from "@/hooks/useAttendance";
-import { toast } from "sonner";
-import { canLogAttendance } from "@/lib/types/user";
 
 const Page = () => {
+  const { t } = useLanguage();
   const {
     addEquipment,
     equipmentNameCache,
@@ -33,31 +31,6 @@ const Page = () => {
   const [serviceRequestDialogOpen, setServiceRequestDialogOpen] = useState(false);
   const { profile, loading: profileLoading } = useSelfProfile();
   const isEndUser = profile?.role === "end_user";
-  
-  const canLog = canLogAttendance(profile?.role);
-  const { showPrompt, setShowPrompt, logIn, logOut, isLoggedIn, isLoggedOut, loading: attendanceLoading } = useAttendance(canLog, profile?.role);
-  
-  const handleLogIn = async () => {
-    try {
-      await logIn();
-      toast("Success", { description: "Logged in successfully" });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to log in";
-      console.error('[HomePage] Log in error:', e);
-      toast("Error", { description: message });
-    }
-  };
-
-  const handleLogOut = async () => {
-    try {
-      await logOut();
-      toast("Success", { description: "Logged out successfully" });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to log out";
-      console.error('[HomePage] Log out error:', e);
-      toast("Error", { description: message });
-    }
-  };
   // Show loading state while profile is loading to prevent flash
   if (profileLoading) {
     return (
@@ -75,42 +48,14 @@ const Page = () => {
   return (
     <main>
       <Header />
-      <AttendanceDialog open={showPrompt} onOpenChange={setShowPrompt} onLogIn={logIn} />
       <div className="container mx-auto px-6 py-8">
-        {/* Attendance Log In/Out for Technicians, Admins, and Admin X */}
-        {canLog && !isLoggedOut && (
-          <div className="mb-6 flex justify-center">
-            <Button
-              onClick={isLoggedIn ? handleLogOut : handleLogIn}
-              disabled={attendanceLoading}
-              size="lg"
-              className="gap-2"
-              variant={isLoggedIn ? "outline" : "default"}
-            >
-              {attendanceLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : isLoggedIn ? (
-                <>
-                  <LogOut className="h-5 w-5" />
-                  Log Out
-                </>
-              ) : (
-                <>
-                  <LogIn className="h-5 w-5" />
-                  Log In
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-
         {/* Homepage Search - Hidden for end users */}
         {!isEndUser && (
           <div className="mb-10">
             <div className="relative">
               <SearchIcon className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search equipment by name, tag number, or location"
+                placeholder={t("common.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 rtl:pl-4 rtl:pr-10"
@@ -120,7 +65,7 @@ const Page = () => {
             {(searchTerm?.trim()?.length ?? 0) > 0 && (
               <div className="mt-4 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {isSearching ? "Searching..." : `${searchResults.length} result${searchResults.length === 1 ? "" : "s"}`}
+                  {isSearching ? t("common.searching") : `${searchResults.length} ${t("common.results", { count: searchResults.length })}`}
                 </p>
               </div>
             )}
@@ -134,7 +79,7 @@ const Page = () => {
                   ))}
                 </div>
                 {!isSearching && searchResults.length === 0 && (
-                  <div className="text-center py-10 text-muted-foreground text-sm">No equipment found.</div>
+                  <div className="text-center py-10 text-muted-foreground text-sm">{t("common.noEquipmentFound")}</div>
                 )}
               </div>
             )}
@@ -145,8 +90,8 @@ const Page = () => {
           {(isEndUser ? [
             // End users only see Job Order
             {
-              title: "Job Order",
-              description: "Submit a new support or service request.",
+              title: t("dashboard.jobOrder"),
+              description: t("dashboard.jobOrderDesc"),
               icon: <Headphones className="h-6 w-6 cursor-pointer text-orange-500" />,
               cta: (
                 <>
@@ -158,14 +103,14 @@ const Page = () => {
                     }}
                     disabled={isCaching || equipmentNameCache.length === 0}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder={isCaching ? "Loading..." : "Select Equipment"} />
+                      <SelectValue placeholder={isCaching ? t("common.loading") : t("common.selectEquipment")} />
                     </SelectTrigger>
                     <SelectContent>
                       <div className="p-2">
                         <Input
                           value={localFilter}
                           onChange={(e) => setLocalFilter(e.target.value)}
-                          placeholder="Type to filter by name or serial number..."
+                          placeholder={t("common.filterPlaceholder")}
                           className="h-8"
                         />
                       </div>
@@ -208,62 +153,62 @@ const Page = () => {
           ] : [
             // All other users see all cards
             {
-              title: "Add Equipment/Device",
-              description: "Register new devices into the system.",
+              title: t("dashboard.addEquipment"),
+              description: t("dashboard.addEquipmentDesc"),
               icon: <PlusCircle className="h-6 w-6 cursor-pointer text-primary" />,
               cta: <AddEquipmentForm onSubmitEquipment={addEquipment} />,
             },
             {
-              title: "Inventory",
-              description: "View and manage all available equipment.",
+              title: t("dashboard.inventory"),
+              description: t("dashboard.inventoryDesc"),
               icon: <Box className="h-6 w-6 cursor-pointer text-green-600" />,
               cta: (
                 <Link href={"/equipments"} className="w-full">
                   <Button variant="outline" className="w-full">
-                    Open
+                    {t("common.open")}
                   </Button>
                 </Link>
               ),
             },
             {
-              title: "Spare Parts",
-              description: "Manage inventory of spare parts.",
+              title: t("dashboard.spareParts"),
+              description: t("dashboard.sparePartsDesc"),
               icon: <Package className="h-6 w-6 cursor-pointer text-blue-600" />,
               cta: (
                 <Link href={"/spare-parts"} className="w-full">
                   <Button variant="outline" className="w-full">
-                    Open
+                    {t("common.open")}
                   </Button>
                 </Link>
               ),
             },
             {
-              title: "Maintenance Schedule Preview",
-              description: "Check upcoming maintenance tasks.",
+              title: t("dashboard.maintenanceSchedule"),
+              description: t("dashboard.maintenanceScheduleDesc"),
               icon: <Calendar className="h-6 w-6 cursor-pointer text-purple-600" />,
               cta: (
                 <Link href={"/service-requests"} className="w-full">
                   <Button variant="outline" className="w-full">
-                    Open
+                    {t("common.open")}
                   </Button>
                 </Link>
               ),
             },
             {
-              title: "Maintenance Overdue",
-              description: "See devices with overdue maintenance.",
+              title: t("dashboard.maintenanceOverdue"),
+              description: t("dashboard.maintenanceOverdueDesc"),
               icon: <AlertCircle className="h-6 w-6 cursor-pointer text-red-600" />,
               cta: (
                 <Link href={"/equipments?status=overdue"} className="w-full">
                   <Button variant="outline" className="w-full">
-                    Open
+                    {t("common.open")}
                   </Button>
                 </Link>
               ),
             },
             {
-              title: "Job Order",
-              description: "Submit a new support or service request.",
+              title: t("dashboard.jobOrder"),
+              description: t("dashboard.jobOrderDesc"),
               icon: <Headphones className="h-6 w-6 cursor-pointer text-orange-500" />,
               cta: (
                 <>
@@ -275,14 +220,14 @@ const Page = () => {
                     }}
                     disabled={isCaching || equipmentNameCache.length === 0}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder={isCaching ? "Loading..." : "Select Equipment"} />
+                      <SelectValue placeholder={isCaching ? t("common.loading") : t("common.selectEquipment")} />
                     </SelectTrigger>
                     <SelectContent>
                       <div className="p-2">
                         <Input
                           value={localFilter}
                           onChange={(e) => setLocalFilter(e.target.value)}
-                          placeholder="Type to filter by name or serial number..."
+                          placeholder={t("common.filterPlaceholder")}
                           className="h-8"
                         />
                       </div>

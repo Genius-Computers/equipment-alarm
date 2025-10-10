@@ -78,37 +78,105 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-6 py-8 space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Attendance
-              </CardTitle>
-              <Button onClick={handlePrint} variant="outline" size="sm" className="print:hidden">
-                <Printer className="h-4 w-4 mr-2" />
-                Print
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2 print:hidden">
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="max-w-xs"
-              />
-              <Button onClick={loadAttendance}>Load</Button>
-            </div>
+    <div className="min-h-screen bg-background print:bg-white print:min-h-0">
+      <style jsx global>{`
+        @media print {
+          @page { 
+            size: A4 portrait; 
+            margin: 15mm;
+          }
+          body { 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact;
+            font-family: Arial, sans-serif;
+            background: white !important;
+          }
+          header, nav, .print\\:hidden { 
+            display: none !important; 
+          }
+          .print\\:block { 
+            display: block !important; 
+          }
+          .print\\:table-cell { 
+            display: table-cell !important; 
+          }
+          main, .container {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+          }
+        }
+      `}</style>
+      <div className="print:hidden">
+        <Header />
+      </div>
+      <main className="container mx-auto px-6 py-8 space-y-6 print:p-0 print:m-0">
+        {/* Screen-only controls */}
+        <div className="print:hidden mb-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Attendance
+                </CardTitle>
+                <Button onClick={handlePrint} variant="outline" size="sm">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="max-w-xs"
+                />
+                <Button onClick={loadAttendance}>Load</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="print:block hidden mb-4">
-              <div className="text-center">
-                <h2 className="text-xl font-bold">Attendance Report</h2>
-                <p className="text-sm text-muted-foreground">Date: {formatSaudiDate(selectedDate)}</p>
+        <div className="space-y-4">
+
+            {/* Print-only formal header */}
+            <div className="print:block hidden mb-6 border border-gray-300 p-4 bg-white">
+              {/* Header with logo in center */}
+              <div className="flex items-center justify-between mb-4">
+                {/* Left side - English */}
+                <div className="text-left flex-1">
+                  <div className="text-sm font-medium">Kingdom of Saudi Arabia</div>
+                  <div className="text-sm font-medium">Ministry of Education</div>
+                  <div className="text-sm font-medium">University of Hail</div>
+                </div>
+                
+                {/* Center - University Logo */}
+                <div className="flex-shrink-0 mx-8 flex items-center">
+                  <img 
+                    src={`/universty-logo.png?t=${Date.now()}`} 
+                    alt="University of Hail Logo" 
+                    className="w-24 h-28 object-contain"
+                  />
+                </div>
+                
+                {/* Right side - Arabic */}
+                <div className="text-right flex-1">
+                  <div className="text-sm font-medium">المملكة العربية السعودية</div>
+                  <div className="text-sm font-medium">وزارة التعليم</div>
+                  <div className="text-sm font-medium">جامعة حائل</div>
+                  <div className="text-sm font-medium">الإدارة العامة للتجهيزات التعليمية والمعامل</div>
+                </div>
+              </div>
+
+              {/* Sub header */}
+              <div className="text-center mb-4">
+                <div className="text-sm font-medium">Daily Attendance - Medical Maintenance</div>
+                <div className="text-sm mt-1">
+                  {selectedDate}
+                </div>
               </div>
             </div>
 
@@ -123,35 +191,94 @@ export default function AttendancePage() {
                 No attendance records found for {formatSaudiDate(selectedDate)}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2 font-medium">Name</th>
-                      <th className="text-left p-2 font-medium">Employee ID</th>
-                      <th className="text-left p-2 font-medium">Log In Time</th>
-                      <th className="text-left p-2 font-medium">Log Out Time</th>
-                      <th className="text-left p-2 font-medium hidden print:table-cell">Signature</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {records.map((record) => (
-                      <tr key={record.id} className="border-b">
-                        <td className="p-2">{record.display_name || record.user_id}</td>
-                        <td className="p-2">{record.employee_id || '-'}</td>
-                        <td className="p-2">{formatSaudiTime(record.log_in_time)}</td>
-                        <td className="p-2">{formatSaudiTime(record.log_out_time)}</td>
-                        <td className="p-2 hidden print:table-cell">
-                          <div className="border-b border-gray-400 h-8"></div>
-                        </td>
+              <>
+                {/* Screen view - simple table */}
+                <div className="overflow-x-auto print:hidden">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2 font-medium">Name</th>
+                        <th className="text-left p-2 font-medium">Emp. ID</th>
+                        <th className="text-left p-2 font-medium">IN Time</th>
+                        <th className="text-left p-2 font-medium">OUT Time</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {records.map((record) => (
+                        <tr key={record.id} className="border-b">
+                          <td className="p-2">{record.display_name || record.user_id}</td>
+                          <td className="p-2">{record.employee_id || '-'}</td>
+                          <td className="p-2">{formatSaudiTime(record.log_in_time)}</td>
+                          <td className="p-2">{formatSaudiTime(record.log_out_time)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Print view - formal table */}
+                <div className="overflow-x-auto hidden print:block">
+                  <table className="w-full border-collapse border-2 border-gray-800">
+                    <thead>
+                      <tr>
+                        <th className="border border-gray-800 text-left p-2 font-bold text-sm">Name</th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Emp. ID</th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm" colSpan={2}>IN</th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm" colSpan={2}>OUT</th>
+                      </tr>
+                      <tr>
+                        <th className="border border-gray-800 text-left p-2 font-bold text-sm"></th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm"></th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Time</th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Sign</th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Time</th>
+                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Sign</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.map((record, index) => (
+                        <tr key={record.id}>
+                          <td className="border border-gray-800 text-left p-2 text-sm">{record.display_name || record.user_id}</td>
+                          <td className="border border-gray-800 text-center p-2 text-sm">{record.employee_id || '-'}</td>
+                          <td className="border border-gray-800 text-center p-2 text-sm">{formatSaudiTime(record.log_in_time)}</td>
+                          <td className="border border-gray-800 text-center p-2">
+                            <div className="border-b border-gray-400 h-6"></div>
+                          </td>
+                          <td className="border border-gray-800 text-center p-2 text-sm">{formatSaudiTime(record.log_out_time)}</td>
+                          <td className="border border-gray-800 text-center p-2">
+                            <div className="border-b border-gray-400 h-6"></div>
+                          </td>
+                        </tr>
+                      ))}
+                      {/* Add empty rows to fill up to 13 rows like in the image */}
+                      {Array.from({ length: Math.max(0, 13 - records.length) }).map((_, index) => (
+                        <tr key={`empty-${index}`}>
+                          <td className="border border-gray-800 text-left p-2 text-sm"></td>
+                          <td className="border border-gray-800 text-center p-2 text-sm"></td>
+                          <td className="border border-gray-800 text-center p-2 text-sm"></td>
+                          <td className="border border-gray-800 text-center p-2">
+                            <div className="border-b border-gray-400 h-6"></div>
+                          </td>
+                          <td className="border border-gray-800 text-center p-2 text-sm"></td>
+                          <td className="border border-gray-800 text-center p-2">
+                            <div className="border-b border-gray-400 h-6"></div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
-          </CardContent>
-        </Card>
+
+            {/* Print-only footer */}
+            <div className="print:block hidden mt-8 border border-gray-300 p-4 bg-white">
+              <div className="text-center space-y-2">
+                <div className="text-sm font-medium">المدير العام للإدارة العامة للتجهيزات التعليمية والمعامل</div>
+                <div className="text-sm font-medium">خالد بن عبد الرحمن المطير</div>
+              </div>
+            </div>
+        </div>
       </main>
     </div>
   );

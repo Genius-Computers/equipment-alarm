@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
 
     // For public sign-ups, enforce password strength if password provided
     if (!canManage && password) {
-      const strong = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+      const strong = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
       if (!strong.test(password)) {
-        return NextResponse.json({ error: 'Password must be 8+ chars with letter, number, special char' }, { status: 400 });
+        return NextResponse.json({ error: 'Password must be 8+ chars with letter and number' }, { status: 400 });
       }
     }
 
