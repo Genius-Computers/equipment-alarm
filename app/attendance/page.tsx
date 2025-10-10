@@ -307,47 +307,30 @@ export default function AttendancePage() {
                   <table className="w-full border-collapse border-2 border-gray-800">
                     <thead>
                       <tr>
-                        <th className="border border-gray-800 text-left p-2 font-bold text-sm">Name</th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Emp. ID</th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm" colSpan={2}>IN</th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm" colSpan={2}>OUT</th>
+                        <th className="border border-gray-800 text-left p-1 font-bold text-sm" rowSpan={2}>Name</th>
+                        <th className="border border-gray-800 text-center p-1 font-bold text-sm" rowSpan={2}>Emp. ID</th>
+                        <th className="border border-gray-800 text-center p-1 font-bold text-sm" colSpan={2}>IN</th>
+                        <th className="border border-gray-800 text-center p-1 font-bold text-sm" colSpan={2}>OUT</th>
                       </tr>
                       <tr>
-                        <th className="border border-gray-800 text-left p-2 font-bold text-sm"></th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm"></th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Time</th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Sign</th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Time</th>
-                        <th className="border border-gray-800 text-center p-2 font-bold text-sm">Sign</th>
+                        <th className="border border-gray-800 text-center p-1 font-bold text-sm">Time</th>
+                        <th className="border border-gray-800 text-center p-1 font-bold text-sm">Sign</th>
+                        <th className="border border-gray-800 text-center p-1 font-bold text-sm">Time</th>
+                        <th className="border border-gray-800 text-center p-1 font-bold text-sm">Sign</th>
                       </tr>
                     </thead>
                     <tbody>
                       {records.map((record, index) => (
                         <tr key={record.id}>
-                          <td className="border border-gray-800 text-left p-2 text-sm">{record.display_name || record.user_id}</td>
-                          <td className="border border-gray-800 text-center p-2 text-sm">{record.employee_id || '-'}</td>
-                          <td className="border border-gray-800 text-center p-2 text-sm">{formatSaudiTime(record.log_in_time)}</td>
-                          <td className="border border-gray-800 text-center p-2">
-                            <div className="border-b border-gray-400 h-6"></div>
+                          <td className="border border-gray-800 text-left p-1 text-sm">{record.display_name || record.user_id}</td>
+                          <td className="border border-gray-800 text-center p-1 text-sm">{record.employee_id || '-'}</td>
+                          <td className="border border-gray-800 text-center p-1 text-sm">{formatSaudiTime(record.log_in_time)}</td>
+                          <td className="border border-gray-800 text-center p-1">
+                            <div className="border-b border-gray-400 h-4"></div>
                           </td>
-                          <td className="border border-gray-800 text-center p-2 text-sm">{formatSaudiTime(record.log_out_time)}</td>
-                          <td className="border border-gray-800 text-center p-2">
-                            <div className="border-b border-gray-400 h-6"></div>
-                          </td>
-                        </tr>
-                      ))}
-                      {/* Add empty rows to fill up to 13 rows like in the image */}
-                      {Array.from({ length: Math.max(0, 13 - records.length) }).map((_, index) => (
-                        <tr key={`empty-${index}`}>
-                          <td className="border border-gray-800 text-left p-2 text-sm"></td>
-                          <td className="border border-gray-800 text-center p-2 text-sm"></td>
-                          <td className="border border-gray-800 text-center p-2 text-sm"></td>
-                          <td className="border border-gray-800 text-center p-2">
-                            <div className="border-b border-gray-400 h-6"></div>
-                          </td>
-                          <td className="border border-gray-800 text-center p-2 text-sm"></td>
-                          <td className="border border-gray-800 text-center p-2">
-                            <div className="border-b border-gray-400 h-6"></div>
+                          <td className="border border-gray-800 text-center p-1 text-sm">{formatSaudiTime(record.log_out_time)}</td>
+                          <td className="border border-gray-800 text-center p-1">
+                            <div className="border-b border-gray-400 h-4"></div>
                           </td>
                         </tr>
                       ))}

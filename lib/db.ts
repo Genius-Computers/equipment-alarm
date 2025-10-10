@@ -112,7 +112,7 @@ export const ensureSchema = async () => {
       id uuid primary key default gen_random_uuid(),
       user_id text not null,
       date date not null,
-      log_in_time timestamp not null,
+      log_in_time timestamp,
       log_out_time timestamp,
       employee_id text,
       display_name text,
@@ -120,6 +120,17 @@ export const ensureSchema = async () => {
       updated_at timestamp,
       unique(user_id, date)
     )`;
+  
+  // Alter existing attendance table to make log_in_time nullable (if not already)
+  try {
+    await sql`
+      alter table attendance
+        alter column log_in_time drop not null
+    `;
+  } catch (e) {
+    // Ignore error if column is already nullable
+    console.log('[DB] log_in_time column already nullable or error:', e);
+  }
   
   await sql`
     alter table spare_parts
