@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { 
-  Download, 
   Calendar, 
   Wrench, 
   Package, 
@@ -22,7 +21,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatSaudiDate } from "@/lib/utils";
-import { exportMonthlyReportToPDF } from "@/lib/pdf-export";
 
 interface MonthlyReportData {
   period: {
@@ -204,7 +202,7 @@ const MaintenancePieChart = ({ data }: { data: MonthlyReportData['maintenanceTyp
           
           return (
             <path
-              key={segment.key}
+              key={`segment-${segment.key}`}
               d={pathData}
               fill={segment.color}
               stroke="white"
@@ -290,11 +288,11 @@ const LocationChart = ({
                   { key: 'install', value: location.install, label: t("reports.maintenanceType.install") },
                   { key: 'assess', value: location.assess, label: t("reports.maintenanceType.assess") },
                   { key: 'other', value: location.other, label: t("reports.maintenanceType.other") },
-                ].filter(item => item.value > 0).map((item, index) => {
+                ].filter(item => item.value > 0).map((item) => {
                   const width = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
                   return (
                     <div
-                      key={item.key}
+                      key={`${location.location}-${item.key}`}
                       className="h-full flex items-center justify-center text-xs text-white font-medium"
                       style={{ 
                         width: `${width}%`,
@@ -337,7 +335,6 @@ const MonthlyReportsPage = () => {
   const [reportData, setReportData] = useState<MonthlyReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
   // Check if user has permission to view reports (restricted to Admin X only - dev feature)
   const canViewReports = profile?.role === 'admin_x';
@@ -370,27 +367,11 @@ const MonthlyReportsPage = () => {
     }
   }, [canViewReports, fetchReportData]);
 
-  const handleDownloadPDF = async () => {
-    try {
-      const monthNames = [
-        t("reports.january"), t("reports.february"), t("reports.march"), t("reports.april"),
-        t("reports.may"), t("reports.june"), t("reports.july"), t("reports.august"),
-        t("reports.september"), t("reports.october"), t("reports.november"), t("reports.december")
-      ];
-      
-      const monthName = monthNames[selectedMonth - 1];
-      await exportMonthlyReportToPDF('monthly-report-content', monthName, selectedYear);
-      toast.success(t("reports.pdfDownloaded"));
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error(t("reports.pdfExportError"));
-    }
-  };
-
   const handleLocationClick = (location: string) => {
-    setSelectedLocation(location);
     // TODO: Open modal with location details
-    toast.info(t("reports.locationDetailsComingSoon"));
+    toast.info(t("reports.locationDetailsComingSoon"), {
+      description: location
+    });
   };
 
   // Show loading state while profile is loading to prevent flash

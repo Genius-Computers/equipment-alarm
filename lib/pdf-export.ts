@@ -84,7 +84,7 @@ export const exportToPDF = async (
     const pdf = new jsPDF({
       orientation,
       unit: 'mm',
-      format: pageSize.toLowerCase() as any,
+      format: pageSize.toLowerCase() as 'a4' | 'letter',
     });
 
     const imgWidth = pdf.internal.pageSize.getWidth();

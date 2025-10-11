@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentServerUser, getUserRole } from '@/lib/auth';
+import type { JServiceRequest, SparePartNeeded } from '@/lib/types/service-request';
+import type { Equipment } from '@/lib/types/equipment';
 
 export async function GET(req: NextRequest) {
   try {
@@ -44,11 +46,11 @@ export async function GET(req: NextRequest) {
       throw new Error('Failed to fetch service requests');
     }
     
-    const serviceRequestsData = await serviceRequestsRes.json();
+    const serviceRequestsData = await serviceRequestsRes.json() as { data?: JServiceRequest[] };
     const allServiceRequests = serviceRequestsData.data || [];
 
     // Filter service requests by the selected month
-    const monthlyServiceRequests = allServiceRequests.filter((sr: any) => {
+    const monthlyServiceRequests = allServiceRequests.filter((sr) => {
       const scheduledDate = new Date(sr.scheduledAt);
       return scheduledDate >= startDate && scheduledDate <= endDate && sr.workStatus === 'completed';
     });
@@ -66,17 +68,17 @@ export async function GET(req: NextRequest) {
       throw new Error('Failed to fetch equipment');
     }
     
-    const equipmentData = await equipmentRes.json();
+    const equipmentData = await equipmentRes.json() as { data?: Equipment[] };
     const allEquipment = equipmentData.data || [];
 
     // Create equipment lookup map
-    const equipmentMap = new Map(allEquipment.map((eq: any) => [eq.id, eq]));
+    const equipmentMap = new Map(allEquipment.map((eq) => [eq.id, eq]));
 
     // Calculate key metrics
-    const uniqueDevicesMaintained = new Set(monthlyServiceRequests.map((sr: any) => sr.equipmentId)).size;
+    const uniqueDevicesMaintained = new Set(monthlyServiceRequests.map((sr) => sr.equipmentId)).size;
     
-    const totalSparePartsUsed = monthlyServiceRequests.reduce((total: number, sr: any) => {
-      return total + (sr.sparePartsNeeded?.reduce((sum: number, part: any) => sum + (part.quantity || 0), 0) || 0);
+    const totalSparePartsUsed = monthlyServiceRequests.reduce((total: number, sr) => {
+      return total + (sr.sparePartsNeeded?.reduce((sum: number, part: SparePartNeeded) => sum + (part.quantity || 0), 0) || 0);
     }, 0);
 
     const totalTicketsRaised = monthlyServiceRequests.length;
@@ -90,7 +92,7 @@ export async function GET(req: NextRequest) {
       other: 0,
     };
 
-    monthlyServiceRequests.forEach((sr: any) => {
+    monthlyServiceRequests.forEach((sr) => {
       const type = sr.requestType;
       if (type in maintenanceTypes) {
         maintenanceTypes[type as keyof typeof maintenanceTypes]++;
@@ -106,7 +108,7 @@ export async function GET(req: NextRequest) {
       other: number;
     }>();
 
-    monthlyServiceRequests.forEach((sr: any) => {
+    monthlyServiceRequests.forEach((sr) => {
       const equipment = equipmentMap.get(sr.equipmentId);
       if (equipment) {
         const location = equipment.location || 'Unknown';
@@ -131,15 +133,15 @@ export async function GET(req: NextRequest) {
     });
 
     // Prepare devices maintained data
-    const devicesMaintained = Array.from(new Set(monthlyServiceRequests.map((sr: any) => sr.equipmentId)))
+    const devicesMaintained = Array.from(new Set(monthlyServiceRequests.map((sr) => sr.equipmentId)))
       .map((equipmentId: string) => {
         const equipment = equipmentMap.get(equipmentId);
         if (!equipment) return null;
         
         // Find the latest maintenance for this equipment in the month
         const latestMaintenance = monthlyServiceRequests
-          .filter((sr: any) => sr.equipmentId === equipmentId)
-          .sort((a: any, b: any) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())[0];
+          .filter((sr) => sr.equipmentId === equipmentId)
+          .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())[0];
 
         return {
           id: equipment.id,
@@ -157,12 +159,12 @@ export async function GET(req: NextRequest) {
     // Prepare spare parts used data
     const sparePartsUsed = new Map<string, { name: string; quantity: number; devices: string[] }>();
 
-    monthlyServiceRequests.forEach((sr: any) => {
+    monthlyServiceRequests.forEach((sr) => {
       const equipment = equipmentMap.get(sr.equipmentId);
       const equipmentName = equipment?.name || 'Unknown Device';
       
       if (sr.sparePartsNeeded && Array.isArray(sr.sparePartsNeeded)) {
-        sr.sparePartsNeeded.forEach((part: any) => {
+        sr.sparePartsNeeded.forEach((part: SparePartNeeded) => {
           const partName = part.part || part.sparePartName || 'Unknown Part';
           const quantity = part.quantity || 0;
           
