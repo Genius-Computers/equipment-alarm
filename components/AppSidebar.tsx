@@ -13,7 +13,7 @@ import {
   SidebarSeparator,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck } from "lucide-react";
+import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck, BarChart3 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -71,16 +71,24 @@ export default function AppSidebar() {
             )}
             <SidebarSeparator />
             {role !== "end_user" && (
-              <>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/attendance")}>
-                    <Link href="/attendance">
-                      <ClipboardCheck />
-                      <span>{t("attendance.title")}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/attendance")}>
+                  <Link href="/attendance">
+                    <ClipboardCheck />
+                    <span>{t("attendance.title")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {role === "admin_x" && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/reports")}>
+                  <Link href="/reports/monthly">
+                    <BarChart3 />
+                    <span>{t("sidebar.reports")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             )}
             {canManageUsers(role) && (
               <SidebarMenuItem>

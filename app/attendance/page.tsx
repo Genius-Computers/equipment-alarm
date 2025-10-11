@@ -228,37 +228,43 @@ export default function AttendancePage() {
         <div className="space-y-4">
 
             {/* Print-only formal header */}
-            <div className="print:block hidden mb-6 border border-gray-300 p-4 bg-white">
-              {/* Header with logo in center */}
-              <div className="flex items-center justify-between mb-4">
-                {/* Left side - English */}
-                <div className="text-left flex-1">
-                  <div className="text-base font-semibold">Kingdom of Saudi Arabia</div>
-                  <div className="text-base font-semibold">Ministry of Education</div>
-                  <div className="text-base font-semibold">University of Hail</div>
+            <div className="print:block hidden mb-3">
+              {/* Header with logo in center - inside rectangle */}
+              <div className="border border-gray-300 p-3 bg-white mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  {/* Left side - English */}
+                  <div className="text-left flex-1">
+                    <div className="text-base font-semibold">Kingdom of Saudi Arabia</div>
+                    <div className="text-base font-semibold">Ministry of Education</div>
+                    <div className="text-base font-semibold">University of Hail</div>
+                  </div>
+                  
+                  {/* Center - University Logo */}
+                  <div className="flex-shrink-0 mx-8 flex items-center">
+                    <img 
+                      src={`/universty-logo.png?t=${Date.now()}`} 
+                      alt="University of Hail Logo" 
+                      className="w-24 h-28 object-contain"
+                    />
+                  </div>
+                  
+                  {/* Right side - Arabic */}
+                  <div className="text-right flex-1">
+                    <div className="text-base font-semibold">المملكة العربية السعودية</div>
+                    <div className="text-base font-semibold">وزارة التعليم</div>
+                    <div className="text-base font-semibold">جامعة حائل</div>
+                    <div className="text-base font-semibold">الإدارة العامة للتجهيزات التعليمية والمعامل</div>
+                  </div>
                 </div>
-                
-                {/* Center - University Logo */}
-                <div className="flex-shrink-0 mx-8 flex items-center">
-                  <img 
-                    src={`/universty-logo.png?t=${Date.now()}`} 
-                    alt="University of Hail Logo" 
-                    className="w-24 h-28 object-contain"
-                  />
-                </div>
-                
-                {/* Right side - Arabic */}
-                <div className="text-right flex-1">
-                  <div className="text-base font-semibold">المملكة العربية السعودية</div>
-                  <div className="text-base font-semibold">وزارة التعليم</div>
-                  <div className="text-base font-semibold">جامعة حائل</div>
-                  <div className="text-base font-semibold">الإدارة العامة للتجهيزات التعليمية والمعامل</div>
+
+                {/* Arabic department title - inside rectangle */}
+                <div className="text-center">
+                  <div className="text-base font-bold">إدارة صيانة الأجهزة الطبية والعلمية</div>
                 </div>
               </div>
 
-              {/* Sub header */}
-              <div className="text-center mb-4">
-                <div className="text-base font-bold mb-2">إدارة صيانة الأجهزة الطبية والعلمية</div>
+              {/* Title and date - outside rectangle */}
+              <div className="text-center mb-3">
                 <div className="text-lg font-bold bg-gray-100 py-2 px-4 border border-gray-300 inline-block">Daily Attendance - Medical Maintenance</div>
                 <div className="text-sm mt-2 font-medium">
                   {selectedDate}
