@@ -220,6 +220,11 @@ const Page = () => {
               const totalPages = Math.max(1, Math.ceil(total / pageSize));
               setPage((p) => Math.min(totalPages, p + 1));
             }}
+            onPageChange={(newPage) => setPage(newPage)}
+            onPageSizeChange={(newPageSize) => {
+              setPageSize(newPageSize);
+              setPage(1);
+            }}
           />
 
           {error && (

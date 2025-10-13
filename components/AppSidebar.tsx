@@ -13,7 +13,7 @@ import {
   SidebarSeparator,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck, BarChart3 } from "lucide-react";
+import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck, BarChart3, MapPin, ClipboardList } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -56,6 +56,22 @@ export default function AppSidebar() {
                     <Link href="/spare-parts">
                       <Package />
                       <span>{t("spareParts.title")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/locations")}>
+                    <Link href="/locations">
+                      <MapPin />
+                      <span>Locations</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/job-orders")}>
+                    <Link href="/job-orders">
+                      <ClipboardList />
+                      <span>Job Orders</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

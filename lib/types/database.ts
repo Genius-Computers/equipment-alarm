@@ -19,3 +19,26 @@ export interface DbBaseAudit {
     updated_at: string;
     deleted_at: string;
 }
+
+export interface DbLocation extends DbBaseAudit {
+    campus: string;
+    name: string;
+}
+
+export interface Location {
+    id: string;
+    campus: string;
+    name: string;
+    createdAt: string;
+    createdBy: string;
+}
+
+export interface DbJobOrder extends DbBaseAudit {
+    order_number: string;
+    campus: string;
+    sublocation: string;
+    items: string;
+    status: string;
+    submitted_by?: string;
+    submitted_at?: string;
+}

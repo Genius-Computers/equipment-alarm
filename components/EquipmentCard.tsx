@@ -64,19 +64,11 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold">{equipment.name}</CardTitle>
-            <div className="flex items-center gap-2">
-              {!equipment.inUse && (
-                <Badge variant="destructive">
-                  <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
-                  {t("equipment.notInUse")}
-                </Badge>
-              )}
-            </div>
           </div>
           {equipment.partNumber && (
-            <p className="text-sm text-muted-foreground">
-              {t("equipment.part")}: {equipment.partNumber}
-            </p>
+            <div className="text-sm text-muted-foreground">
+              Tag: {equipment.partNumber}
+            </div>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
@@ -145,9 +137,6 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
             ) : (
               <div className="text-muted-foreground text-xs">{t("equipment.noMaintenanceSchedule")}</div>
             )}
-            <div className="text-muted-foreground text-xs">
-              {t("equipment.inUse")}: {equipment.inUse ? t("equipment.inUse") : t("equipment.notInUse")}
-            </div>
           </div>
 
           <div className="flex gap-2 pt-2">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
 import { getCurrentServerUser } from '@/lib/auth';
+import { canAssignRole } from '@/lib/types/user';
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -19,6 +20,13 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     if (nextRole && !['admin', 'admin_x', 'supervisor', 'technician', 'end_user'].includes(nextRole)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+    }
+
+    // Check if requester can assign the target role
+    if (nextRole && !canAssignRole(role, nextRole)) {
+      return NextResponse.json({ 
+        error: 'Insufficient permissions to assign this role. Only Admin X and Supervisors can assign Supervisor role.' 
+      }, { status: 403 });
     }
 
     await target.update({

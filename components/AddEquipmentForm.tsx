@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
 import { Equipment, SparePart } from "@/lib/types";
+import { VALID_CAMPUSES } from "@/lib/config";
 
 interface EquipmentFormProps {
   onSubmitEquipment: (equipment: Omit<Equipment, "id"> | Equipment) => void;
@@ -36,6 +37,11 @@ const EquipmentForm = ({
   const { t } = useLanguage();
   const [internalOpen, setInternalOpen] = useState(false);
   const [isSparePartsMode, setIsSparePartsMode] = useState(false);
+  const [subLocationFilter, setSubLocationFilter] = useState("");
+  const [isCustomSubLocation, setIsCustomSubLocation] = useState(false);
+  const [customSubLocation, setCustomSubLocation] = useState("");
+  const [customSubLocations, setCustomSubLocations] = useState<string[]>([]);
+  const [loadingSubLocations, setLoadingSubLocations] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
 
@@ -43,30 +49,28 @@ const EquipmentForm = ({
     if (mode === "edit" && equipment) {
       return {
         name: equipment.name,
-        partNumber: equipment.partNumber,
-        location: equipment.location,
-        subLocation: equipment.subLocation || "",
-        maintenanceInterval: equipment.maintenanceInterval,
-        lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
+        partNumber: equipment.partNumber || "",
         model: equipment.model || "",
         manufacturer: equipment.manufacturer || "",
         serialNumber: equipment.serialNumber || "",
+        location: equipment.location,
+        subLocation: equipment.subLocation || "",
         status: equipment.status,
-        inUse: equipment.inUse ?? true,
+        lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
+        maintenanceInterval: equipment.maintenanceInterval,
       };
     }
     return {
       name: "",
       partNumber: "",
-      location: "",
-      subLocation: "",
-      maintenanceInterval: "",
-      lastMaintenance: "",
       model: "",
       manufacturer: "",
       serialNumber: "",
+      location: "",
+      subLocation: "",
       status: "",
-      inUse: true,
+      lastMaintenance: "",
+      maintenanceInterval: "",
     };
   };
 
@@ -97,17 +101,22 @@ const EquipmentForm = ({
     if (mode === "edit" && equipment) {
       setFormData({
         name: equipment.name,
-        partNumber: equipment.partNumber,
-        location: equipment.location,
-        subLocation: equipment.subLocation || "",
-        maintenanceInterval: equipment.maintenanceInterval,
-        lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
+        partNumber: equipment.partNumber || "",
         model: equipment.model || "",
         manufacturer: equipment.manufacturer || "",
         serialNumber: equipment.serialNumber || "",
+        location: equipment.location,
+        subLocation: equipment.subLocation || "",
         status: equipment.status,
-        inUse: equipment.inUse ?? true,
+        lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
+        maintenanceInterval: equipment.maintenanceInterval,
       });
+      
+      // In edit mode, check if the current sublocation is in the fetched list
+      // For now, just set the sublocation value
+      setIsCustomSubLocation(false);
+      setCustomSubLocation("");
+      
       setIsSparePartsMode(false);
     }
   }, [equipment, mode]);
@@ -125,7 +134,48 @@ const EquipmentForm = ({
     }
   }, [sparePart, mode]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch sublocations from the locations table when location changes
+  useEffect(() => {
+    const fetchCustomSubLocations = async () => {
+      if (!formData.location) {
+        setCustomSubLocations([]);
+        return;
+      }
+
+      setLoadingSubLocations(true);
+      try {
+        // Fetch from locations API instead of equipment sublocations
+        const response = await fetch(`/api/locations?campus=${encodeURIComponent(formData.location)}`);
+        if (response.ok) {
+          const data = await response.json();
+          const locations = data.data || [];
+          const fetchedLocations = locations.map((loc: { name: string }) => loc.name);
+          setCustomSubLocations(fetchedLocations);
+          
+          // In edit mode, check if current sublocation is in the fetched list
+          if (mode === "edit" && equipment && equipment.subLocation) {
+            const isInList = fetchedLocations.includes(equipment.subLocation);
+            if (!isInList) {
+              setIsCustomSubLocation(true);
+              setCustomSubLocation(equipment.subLocation);
+            }
+          }
+        } else {
+          // If API fails (e.g., invalid campus), clear the list
+          setCustomSubLocations([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch sublocations:', error);
+        setCustomSubLocations([]);
+      } finally {
+        setLoadingSubLocations(false);
+      }
+    };
+
+    void fetchCustomSubLocations();
+  }, [formData.location, mode, equipment]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isSparePartsMode) {
@@ -174,7 +224,7 @@ const EquipmentForm = ({
       });
     } else {
       // Equipment mode
-      if (!formData.name || !formData.partNumber || !formData.location) {
+      if (!formData.name || !formData.location) {
         toast(t("toast.error"), {
           description: t("toast.fillRequired"),
         });
@@ -183,36 +233,54 @@ const EquipmentForm = ({
 
       const lastDate = formData.lastMaintenance ? new Date(formData.lastMaintenance).toISOString() : undefined;
       
+      // Use custom sublocation if custom is selected, otherwise use the selected value
+      const finalSubLocation = isCustomSubLocation ? customSubLocation : formData.subLocation;
+      
+      // If sublocation was entered (custom or selected), ensure it exists in locations table
+      if (finalSubLocation && finalSubLocation.trim() && formData.location) {
+        try {
+          await fetch('/api/locations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              campus: formData.location,
+              name: finalSubLocation.trim(),
+            }),
+          });
+          // Ignore errors - location might already exist (409) which is fine
+        } catch (error) {
+          console.log('Location might already exist:', error);
+        }
+      }
+      
       if (mode === "edit" && equipment) {
         // Edit mode: preserve the equipment ID
         onSubmitEquipment({
           ...equipment,
           name: formData.name,
           partNumber: formData.partNumber,
-          location: formData.location,
-          subLocation: formData.subLocation,
-          maintenanceInterval: formData.maintenanceInterval || undefined,
-          lastMaintenance: lastDate,
-          inUse: formData.inUse,
           model: formData.model,
           manufacturer: formData.manufacturer,
           serialNumber: formData.serialNumber,
+          location: formData.location,
+          subLocation: finalSubLocation,
           status: formData.status,
+          lastMaintenance: lastDate,
+          maintenanceInterval: formData.maintenanceInterval || undefined,
         });
       } else {
         // Add mode: create new equipment
         onSubmitEquipment({
           name: formData.name,
           partNumber: formData.partNumber,
-          location: formData.location,
-          subLocation: formData.subLocation,
-          maintenanceInterval: formData.maintenanceInterval || undefined,
-          lastMaintenance: lastDate,
-          inUse: formData.inUse,
           model: formData.model,
           manufacturer: formData.manufacturer,
           serialNumber: formData.serialNumber,
+          location: formData.location,
+          subLocation: finalSubLocation,
           status: formData.status,
+          lastMaintenance: lastDate,
+          maintenanceInterval: formData.maintenanceInterval || undefined,
         });
       }
 
@@ -221,16 +289,18 @@ const EquipmentForm = ({
         setFormData({
           name: "",
           partNumber: "",
-          location: "",
-          subLocation: "",
-          maintenanceInterval: "",
-          lastMaintenance: "",
           model: "",
           manufacturer: "",
           serialNumber: "",
+          location: "",
+          subLocation: "",
           status: "",
-          inUse: true,
+          lastMaintenance: "",
+          maintenanceInterval: "",
         });
+        setIsCustomSubLocation(false);
+        setCustomSubLocation("");
+        setSubLocationFilter("");
       }
       
       setOpen(false);
@@ -354,57 +424,158 @@ const EquipmentForm = ({
         ) : (
           // Equipment Form
           <>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="name">
+              {t("form.machineName")} {t("form.required")}
+            </Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., HVAC Unit A1"
+              required
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="partNumber">Tag Number</Label>
+            <Input
+              id="partNumber"
+              value={formData.partNumber}
+              onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
+              placeholder="e.g., TAG-001"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="name">
-                {t("form.machineName")} {t("form.required")}
-              </Label>
+              <Label htmlFor="model">{t("form.model")}</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., HVAC Unit A1"
-                required
+                id="model"
+                value={formData.model}
+                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                placeholder="e.g., Model X100"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="partNumber">
-                {t("form.partNumber")} {t("form.required")}
-              </Label>
+              <Label htmlFor="manufacturer">{t("form.manufacturer")}</Label>
               <Input
-                id="partNumber"
-                value={formData.partNumber}
-                onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
-                placeholder="e.g., AC-2024-001"
-                required
+                id="manufacturer"
+                value={formData.manufacturer}
+                onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                placeholder="e.g., Acme Corp"
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="serialNumber">{t("form.serialNumber")}</Label>
+            <Input
+              id="serialNumber"
+              value={formData.serialNumber}
+              onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+              placeholder="e.g., SN-00012345"
+            />
           </div>
 
           <div className="flex flex-col gap-1">
             <Label htmlFor="location">
               {t("form.location")} {t("form.required")}
             </Label>
-            <Input
-              id="location"
+            <Select 
+              onValueChange={(value) => {
+                setFormData({ ...formData, location: value, subLocation: "" });
+                // Reset sublocation related state when location changes
+                setIsCustomSubLocation(false);
+                setCustomSubLocation("");
+                setSubLocationFilter("");
+              }} 
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="e.g., Engineering Building - Floor 2"
               required
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Campus" />
+              </SelectTrigger>
+              <SelectContent>
+                {VALID_CAMPUSES.map((campus) => (
+                  <SelectItem key={campus} value={campus}>
+                    {campus}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col gap-1">
             <Label htmlFor="subLocation">
               {t("form.subLocation") || "Sub-location"}
             </Label>
-            <Input
-              id="subLocation"
-              value={formData.subLocation}
-              onChange={(e) => setFormData({ ...formData, subLocation: e.target.value })}
-              placeholder="e.g., Room 204 (North Wing)"
-            />
+            <Select 
+              onValueChange={(value) => {
+                if (value === "__custom__") {
+                  setIsCustomSubLocation(true);
+                  setFormData({ ...formData, subLocation: "" });
+                } else {
+                  setIsCustomSubLocation(false);
+                  setCustomSubLocation("");
+                  setFormData({ ...formData, subLocation: value });
+                }
+              }} 
+              value={isCustomSubLocation ? "__custom__" : formData.subLocation}
+              disabled={!formData.location || loadingSubLocations}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={
+                  !formData.location 
+                    ? "Select location first" 
+                    : loadingSubLocations 
+                    ? "Loading sub-locations..." 
+                    : "Select sub-location"
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2">
+                  <Input
+                    value={subLocationFilter}
+                    onChange={(e) => setSubLocationFilter(e.target.value)}
+                    placeholder="Type to filter sub-locations..."
+                    className="h-8"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                <SelectItem value="__custom__">Custom sub-location</SelectItem>
+                {(() => {
+                  // Use only sublocations from locations table
+                  return customSubLocations
+                    .filter((subLoc) => {
+                      const q = subLocationFilter.trim().toLowerCase();
+                      if (!q) return true;
+                      return subLoc.toLowerCase().includes(q);
+                    })
+                    .sort()
+                    .map((subLoc) => (
+                      <SelectItem key={subLoc} value={subLoc}>
+                        {subLoc}
+                      </SelectItem>
+                    ));
+                })()}
+              </SelectContent>
+            </Select>
           </div>
+
+          {isCustomSubLocation && (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="customSubLocation">
+                Custom Sub-location
+              </Label>
+              <Input
+                id="customSubLocation"
+                value={customSubLocation}
+                onChange={(e) => setCustomSubLocation(e.target.value)}
+                placeholder="Enter custom sub-location"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
@@ -436,60 +607,18 @@ const EquipmentForm = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="model">{t("form.model")}</Label>
-              <Input
-                id="model"
-                value={formData.model}
-                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                placeholder="e.g., Model X100"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="manufacturer">{t("form.manufacturer")}</Label>
-              <Input
-                id="manufacturer"
-                value={formData.manufacturer}
-                onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-                placeholder="e.g., Acme Corp"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="serialNumber">{t("form.serialNumber")}</Label>
-              <Input
-                id="serialNumber"
-                value={formData.serialNumber}
-                onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                placeholder="e.g., SN-00012345"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="status">{t("form.status")}</Label>
-              <Input
-                id="serialNumber"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                placeholder="e.g., New Installation/Working"
-              />
-            </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="status">{t("form.status")}</Label>
+            <Input
+              id="status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              placeholder="e.g., New Installation/Working"
+            />
           </div>
 
           {/* Spare parts fields removed as status is derived and not stored */}
 
-          <div className="flex items-center gap-2">
-            <Switch
-              id="inUse"
-              checked={formData.inUse}
-              onCheckedChange={(checked) => setFormData({ ...formData, inUse: checked })}
-            />
-            <label htmlFor="inUse" className="text-sm">
-              {formData.inUse ? t("equipment.inUse") : t("equipment.notInUse")}
-            </label>
-          </div>
           </>
         )}
 

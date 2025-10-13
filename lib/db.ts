@@ -1,11 +1,18 @@
 import { neon } from '@neondatabase/serverless';
-import { DbEquipment, DbServiceRequest, DbSparePart } from './types';
+import { DbEquipment, DbServiceRequest, DbSparePart, DbLocation, DbJobOrder } from './types';
 import { toJsonbParam } from './utils';
 import { randomUUID } from 'crypto';
 
 // Simple Neon client factory. Uses DATABASE_URL from env.
+// In development, uses DEV_DATABASE_URL if available, otherwise falls back to DATABASE_URL
 export const getDb = () => {
-  const connectionString = process.env.DATABASE_URL;
+  let connectionString = process.env.DATABASE_URL;
+  
+  // Use development database if in development mode and DEV_DATABASE_URL is set
+  if (process.env.NODE_ENV === 'development' && process.env.DEV_DATABASE_URL) {
+    connectionString = process.env.DEV_DATABASE_URL;
+  }
+  
   if (!connectionString) {
     throw new Error('DATABASE_URL is not set. Add it to your environment.');
   }
@@ -42,15 +49,14 @@ export const ensureSchema = async () => {
 
       name text not null,
       part_number text,
-      location text,
-      sub_location text,
-      last_maintenance text,
-      maintenance_interval text,
-      in_use boolean not null default true,
       model text,
       manufacturer text,
       serial_number text,
-      status text not null default 'Working'
+      location text,
+      sub_location text,
+      status text not null default 'Working',
+      last_maintenance text,
+      maintenance_interval text
     )`;
   await sql`
     create table if not exists service_request (
@@ -89,6 +95,22 @@ export const ensureSchema = async () => {
       add column if not exists ticket_id text,
       add column if not exists approval_note text
   `;
+
+  await sql`
+    create table if not exists locations (
+      id uuid primary key default gen_random_uuid(),
+      created_at timestamp not null default now(),
+      updated_at timestamp,
+      deleted_at timestamp,
+      created_by text not null,
+      updated_by text,
+      deleted_by text,
+
+      campus text not null,
+      name text not null,
+      
+      unique(campus, name)
+    )`;
 
   await sql`
     create table if not exists spare_parts (
@@ -136,6 +158,25 @@ export const ensureSchema = async () => {
     alter table spare_parts
       add column if not exists supplier text
   `;
+
+  await sql`
+    create table if not exists job_orders (
+      id uuid primary key default gen_random_uuid(),
+      created_at timestamp not null default now(),
+      updated_at timestamp,
+      deleted_at timestamp,
+      created_by text not null,
+      updated_by text,
+      deleted_by text,
+
+      order_number text not null unique,
+      campus text not null,
+      sublocation text not null,
+      items jsonb not null,
+      status text not null default 'draft',
+      submitted_by text,
+      submitted_at timestamp
+    )`;
   
   schemaInitialized = true;
 };
@@ -144,12 +185,12 @@ export const listEquipmentCache = async () => {
   const sql = getDb();
   await ensureSchema();
   const rows = await sql`
-    select id, name, part_number, location, sub_location, model, manufacturer, serial_number, status
+    select id, name, part_number, model, manufacturer, serial_number, location, sub_location, status
     from equipment
     where deleted_at is null;
   `;
 
-  return { rows: rows as Pick<DbEquipment, 'id' | 'name' | 'part_number' | 'location' | 'sub_location' | 'model' | 'manufacturer' | 'serial_number' | 'status'>[] };
+  return { rows: rows as Pick<DbEquipment, 'id' | 'name' | 'part_number' | 'model' | 'manufacturer' | 'serial_number' | 'location' | 'sub_location' | 'status'>[] };
 }
 
 export const listEquipmentPaginated = async (
@@ -166,11 +207,11 @@ export const listEquipmentPaginated = async (
     ? sql`(
         e.name ilike ${'%' + q + '%'} or
         e.part_number ilike ${'%' + q + '%'} or
-        e.location ilike ${'%' + q + '%'} or
-        e.sub_location ilike ${'%' + q + '%'} or
         e.model ilike ${'%' + q + '%'} or
         e.manufacturer ilike ${'%' + q + '%'} or
-        e.serial_number ilike ${'%' + q + '%'}
+        e.serial_number ilike ${'%' + q + '%'} or
+        e.location ilike ${'%' + q + '%'} or
+        e.sub_location ilike ${'%' + q + '%'}
       )`
     : sql`true`;
 
@@ -213,14 +254,14 @@ export const insertEquipment = async (
   const [row] = await sql`
     insert into equipment (
       created_at, created_by,
-      name, part_number, location, sub_location,
-      last_maintenance, maintenance_interval, in_use,
-      model, manufacturer, serial_number, status
+      name, part_number, model, manufacturer, serial_number,
+      location, sub_location, status,
+      last_maintenance, maintenance_interval
     ) values (
       now(), ${actorId},
-      ${input.name}, ${input.part_number}, ${input.location}, ${input.sub_location},
-      ${input.last_maintenance}, ${input.maintenance_interval}, ${input.in_use ?? true},
-      ${input.model}, ${input.manufacturer}, ${input.serial_number}, ${input.status}
+      ${input.name}, ${input.part_number}, ${input.model}, ${input.manufacturer}, ${input.serial_number},
+      ${input.location}, ${input.sub_location}, ${input.status},
+      ${input.last_maintenance}, ${input.maintenance_interval}
     ) returning *`;
   return row;
 };
@@ -239,15 +280,14 @@ export const updateEquipment = async (
 
       name = ${input.name},
       part_number = ${input.part_number},
-      location = ${input.location},
-      sub_location = ${input.sub_location},
-      last_maintenance = ${input.last_maintenance},
-      maintenance_interval = ${input.maintenance_interval},
-      in_use = ${input.in_use ?? true},
       model = ${input.model},
       manufacturer = ${input.manufacturer},
       serial_number = ${input.serial_number},
-      status = ${input.status}
+      location = ${input.location},
+      sub_location = ${input.sub_location},
+      status = ${input.status},
+      last_maintenance = ${input.last_maintenance},
+      maintenance_interval = ${input.maintenance_interval}
     where id = ${id}
     returning *`;
   return row as unknown as DbEquipment;
@@ -277,44 +317,42 @@ export const bulkInsertEquipment = async (
   if (!inputs || inputs.length === 0) return [];
   const names = inputs.map((i) => i.name ?? null);
   const partNumbers = inputs.map((i) => i.part_number ?? null);
-  const locations = inputs.map((i) => i.location ?? null);
-  const subLocations = inputs.map((i) => i.sub_location ?? null);
-  const lastMaintenance = inputs.map((i) => i.last_maintenance ?? null);
-  const maintenanceIntervals = inputs.map((i) => i.maintenance_interval ?? null);
-  const inUse = inputs.map((i) => (i.in_use ?? true));
   const models = inputs.map((i) => i.model ?? null);
   const manufacturers = inputs.map((i) => i.manufacturer ?? null);
   const serialNumbers = inputs.map((i) => i.serial_number ?? null);
+  const locations = inputs.map((i) => i.location ?? null);
+  const subLocations = inputs.map((i) => i.sub_location ?? null);
   const statuses = inputs.map((i) => i.status ?? 'Working');
+  const lastMaintenance = inputs.map((i) => i.last_maintenance ?? null);
+  const maintenanceIntervals = inputs.map((i) => i.maintenance_interval ?? null);
 
   const rows = await sql`
     insert into equipment (
       created_at, created_by,
-      name, part_number, location, sub_location,
-      last_maintenance, maintenance_interval, in_use,
-      model, manufacturer, serial_number, status
+      name, part_number, model, manufacturer, serial_number,
+      location, sub_location, status,
+      last_maintenance, maintenance_interval
     )
     select
       now(), ${actorId},
-      t.name, t.part_number, t.location, t.sub_location,
-      t.last_maintenance, t.maintenance_interval, t.in_use,
-      t.model, t.manufacturer, t.serial_number, t.status
+      t.name, t.part_number, t.model, t.manufacturer, t.serial_number,
+      t.location, t.sub_location, t.status,
+      t.last_maintenance, t.maintenance_interval
     from unnest(
       ${names}::text[],
       ${partNumbers}::text[],
-      ${locations}::text[],
-      ${subLocations}::text[],
-      ${lastMaintenance}::text[],
-      ${maintenanceIntervals}::text[],
-      ${inUse}::boolean[],
       ${models}::text[],
       ${manufacturers}::text[],
       ${serialNumbers}::text[],
-      ${statuses}::text[]
+      ${locations}::text[],
+      ${subLocations}::text[],
+      ${statuses}::text[],
+      ${lastMaintenance}::text[],
+      ${maintenanceIntervals}::text[]
     ) as t(
-      name, part_number, location, sub_location,
-      last_maintenance, maintenance_interval, in_use,
-      model, manufacturer, serial_number, status
+      name, part_number, model, manufacturer, serial_number,
+      location, sub_location, status,
+      last_maintenance, maintenance_interval
     )
     returning *`;
   return rows as unknown as DbEquipment[];
@@ -330,6 +368,37 @@ export const getEquipmentById = async (id: string): Promise<DbEquipment | null> 
   `;
   return (rows && rows.length > 0 ? (rows[0] as unknown as DbEquipment) : null);
 }
+
+export const getUniqueSubLocationsByLocation = async (location: string): Promise<string[]> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  // Fetch from locations table
+  const locationsRows = await sql`
+    select name
+    from locations
+    where campus = ${location}
+      and deleted_at is null
+    order by name asc
+  `;
+  
+  // Also fetch from equipment for backward compatibility
+  const equipmentRows = await sql`
+    select distinct sub_location
+    from equipment
+    where location = ${location}
+      and sub_location is not null
+      and sub_location != ''
+      and deleted_at is null
+  `;
+  
+  // Combine and deduplicate
+  const locationNames = locationsRows.map((r) => (r as { name: string }).name);
+  const equipmentLocations = equipmentRows.map((r) => (r as { sub_location: string }).sub_location);
+  const combined = [...new Set([...locationNames, ...equipmentLocations])];
+  
+  return combined.sort();
+};
 
 export const listServiceRequestPaginated = async (
   page: number = 1,
@@ -400,23 +469,21 @@ export const getServiceRequestById = async (id: string): Promise<(DbServiceReque
   return (rows && rows.length > 0 ? (rows[0] as unknown as (DbServiceRequest & { equipment: DbEquipment | null })) : null);
 };
 
-// Compute next daily sequential ticket id in format YYYY-MM-DD-XXX (e.g., 2025-10-06-001)
+// Compute next yearly sequential ticket id in format YY-XXXX (e.g., 25-0001, 25-0002)
 export const getNextTicketId = async (at: Date = new Date()): Promise<string> => {
   try {
     const sql = getDb();
     await ensureSchema();
-    const yyyy = String(at.getFullYear());
-    const mm = String(at.getMonth() + 1).padStart(2, '0');
-    const dd = String(at.getDate()).padStart(2, '0');
-    const datePrefix = `${yyyy}-${mm}-${dd}`;
+    const yy = String(at.getFullYear()).slice(-2); // Last 2 digits of year
+    const yearPrefix = yy;
 
-    // Select max numeric suffix for tickets that match today's prefix
+    // Select max numeric suffix for tickets that match this year's prefix (yy-xxxx format)
     // Handle case where ticket_id might be null or table is empty
     const rows = await sql`
       select coalesce(max(
         case 
-          when ticket_id is not null and ticket_id like ${datePrefix + '-%'}
-          then (split_part(ticket_id, '-', 4))::int
+          when ticket_id is not null and ticket_id like ${yearPrefix + '-%'}
+          then (split_part(ticket_id, '-', 2))::int
           else 0
         end
       ), 0) as max_suffix
@@ -424,15 +491,13 @@ export const getNextTicketId = async (at: Date = new Date()): Promise<string> =>
     ` as unknown as Array<{ max_suffix: number }>; 
 
     const maxSuffix = (rows?.[0]?.max_suffix ?? 0) as number;
-    const next = String((Number.isFinite(maxSuffix) ? maxSuffix : 0) + 1).padStart(3, '0');
-    return `${datePrefix}-${next}`;
+    const next = String((Number.isFinite(maxSuffix) ? maxSuffix : 0) + 1).padStart(4, '0');
+    return `${yearPrefix}-${next}`;
   } catch (error) {
     console.error('Error in getNextTicketId:', error);
     // Fallback: return a basic ticket ID if database query fails
-    const yyyy = String(at.getFullYear());
-    const mm = String(at.getMonth() + 1).padStart(2, '0');
-    const dd = String(at.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}-001`;
+    const yy = String(at.getFullYear()).slice(-2);
+    return `${yy}-0001`;
   }
 };
 
@@ -769,4 +834,284 @@ export const getAttendanceForDate = async (date: string) => {
   `;
   
   return result;
+};
+
+// ==================== Locations ====================
+
+export const listLocationsByCampus = async (campus: string): Promise<DbLocation[]> => {
+  const sql = getDb();
+  await ensureSchema();
+  const rows = await sql`
+    select * from locations
+    where campus = ${campus}
+      and deleted_at is null
+    order by name asc
+  `;
+  return rows as unknown as DbLocation[];
+};
+
+export const findOrCreateLocation = async (
+  campus: string,
+  name: string,
+  actorId: string,
+): Promise<string> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  // Try to find existing location
+  const existing = await sql`
+    select id from locations
+    where campus = ${campus}
+      and name = ${name}
+      and deleted_at is null
+    limit 1
+  `;
+  
+  if (existing && existing.length > 0) {
+    return (existing[0] as { id: string }).id;
+  }
+  
+  // Create new location
+  try {
+    const [newLocation] = await sql`
+      insert into locations (
+        created_at, created_by,
+        campus, name
+      ) values (
+        now(), ${actorId},
+        ${campus}, ${name}
+      ) returning id
+    `;
+    
+    return (newLocation as { id: string }).id;
+  } catch (error) {
+    // If there's a unique constraint violation, try to find it again
+    // (race condition handling)
+    const retry = await sql`
+      select id from locations
+      where campus = ${campus}
+        and name = ${name}
+        and deleted_at is null
+      limit 1
+    `;
+    
+    if (retry && retry.length > 0) {
+      return (retry[0] as { id: string }).id;
+    }
+    
+    throw error;
+  }
+};
+
+export const insertLocation = async (
+  campus: string,
+  name: string,
+  actorId: string,
+): Promise<DbLocation> => {
+  const sql = getDb();
+  await ensureSchema();
+  const [row] = await sql`
+    insert into locations (
+      created_at, created_by,
+      campus, name
+    ) values (
+      now(), ${actorId},
+      ${campus}, ${name}
+    ) returning *
+  `;
+  return row as unknown as DbLocation;
+};
+
+export const softDeleteLocation = async (
+  id: string,
+  actorId: string,
+): Promise<DbLocation | undefined> => {
+  const sql = getDb();
+  await ensureSchema();
+  const [row] = await sql`
+    update locations set
+      deleted_at = now(),
+      deleted_by = ${actorId}
+    where id = ${id} and deleted_at is null
+    returning *
+  `;
+  return row as unknown as DbLocation | undefined;
+};
+
+export const getLocationById = async (id: string): Promise<DbLocation | null> => {
+  const sql = getDb();
+  await ensureSchema();
+  const rows = await sql`
+    select * from locations
+    where id = ${id} and deleted_at is null
+    limit 1
+  `;
+  return (rows && rows.length > 0 ? (rows[0] as unknown as DbLocation) : null);
+};
+
+// ==================== Job Orders ====================
+
+export const generateOrderNumber = async (firstTicketNumber: string): Promise<string> => {
+  // Job order number is "JO" + first ticket number
+  // e.g., if first ticket is "25-0001", job order is "JO25-0001"
+  return `JO${firstTicketNumber}`;
+};
+
+export const createJobOrder = async (
+  campus: string,
+  sublocation: string,
+  items: string,
+  actorId: string,
+  firstTicketNumber: string
+): Promise<DbJobOrder> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const orderNumber = await generateOrderNumber(firstTicketNumber);
+  
+  const [row] = await sql`
+    insert into job_orders (
+      created_at, created_by,
+      order_number, campus, sublocation, items, status
+    ) values (
+      now(), ${actorId},
+      ${orderNumber}, ${campus}, ${sublocation}, ${items}::jsonb, 'submitted'
+    ) returning *
+  `;
+  
+  return row as unknown as DbJobOrder;
+};
+
+export const getJobOrderById = async (id: string): Promise<DbJobOrder | null> => {
+  const sql = getDb();
+  await ensureSchema();
+  const rows = await sql`
+    select * from job_orders
+    where id = ${id} and deleted_at is null
+    limit 1
+  `;
+  return (rows && rows.length > 0 ? (rows[0] as unknown as DbJobOrder) : null);
+};
+
+export const submitJobOrder = async (
+  id: string,
+  actorId: string,
+  serviceRequestData?: {
+    requestType: string;
+    priority: string;
+    scheduledAt: string;
+    assignedTechnicianId?: string;
+    notes?: string;
+  }
+): Promise<DbJobOrder | null> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  // First, get the job order to access its items
+  const jobOrder = await getJobOrderById(id);
+  if (!jobOrder) return null;
+  
+  // Parse items
+  const items = typeof jobOrder.items === 'string' 
+    ? JSON.parse(jobOrder.items) 
+    : jobOrder.items;
+  
+  // Update the job order status
+  const [row] = await sql`
+    update job_orders set
+      status = 'submitted',
+      submitted_by = ${actorId},
+      submitted_at = now(),
+      updated_at = now(),
+      updated_by = ${actorId}
+    where id = ${id} and deleted_at is null
+    returning *
+  `;
+  
+  // Create service requests for each equipment item
+  if (row && Array.isArray(items)) {
+    const orderNumber = (row as any).order_number;
+    const requestType = serviceRequestData?.requestType || 'preventive_maintenance';
+    const priority = serviceRequestData?.priority || 'medium';
+    const scheduledAt = serviceRequestData?.scheduledAt || new Date().toISOString();
+    const assignedTechnicianId = serviceRequestData?.assignedTechnicianId || null;
+    const additionalNotes = serviceRequestData?.notes ? `\n\nNotes: ${serviceRequestData.notes}` : '';
+    
+    for (const item of items) {
+      try {
+        const problemDescription = `Job Order ${orderNumber} - ${item.equipmentName}${additionalNotes}`;
+        
+        console.log('[DB] Creating service request for:', item.equipmentName, 'Ticket:', item.ticketNumber);
+        
+        await sql`
+          insert into service_request (
+            id, created_at, created_by,
+            equipment_id, assigned_technician_id, request_type, scheduled_at,
+            priority, approval_status, work_status,
+            problem_description, ticket_id
+          ) values (
+            gen_random_uuid(), now(), ${actorId},
+            ${item.equipmentId}, ${assignedTechnicianId}, ${requestType}, ${scheduledAt},
+            ${priority}, 'pending', 'pending',
+            ${problemDescription}, ${item.ticketNumber}
+          )
+        `;
+        
+        console.log('[DB] Service request created successfully for:', item.equipmentName);
+      } catch (error) {
+        console.error('[DB] Error creating service request for equipment:', item.equipmentId, error);
+        console.error('[DB] Error details:', error instanceof Error ? error.message : 'Unknown error');
+        // Continue with other items even if one fails
+      }
+    }
+  }
+  
+  return row ? (row as unknown as DbJobOrder) : null;
+};
+
+export const listJobOrdersPaginated = async (
+  page: number = 1,
+  pageSize: number = 10,
+  status?: string
+): Promise<{ data: DbJobOrder[]; total: number; page: number; pageSize: number }> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const offset = (page - 1) * pageSize;
+  
+  let rows;
+  let countResult;
+  
+  if (status) {
+    rows = await sql`
+      select * from job_orders
+      where deleted_at is null and status = ${status}
+      order by created_at desc
+      limit ${pageSize} offset ${offset}
+    `;
+    countResult = await sql`
+      select count(*) as count from job_orders
+      where deleted_at is null and status = ${status}
+    `;
+  } else {
+    rows = await sql`
+      select * from job_orders
+      where deleted_at is null
+      order by created_at desc
+      limit ${pageSize} offset ${offset}
+    `;
+    countResult = await sql`
+      select count(*) as count from job_orders
+      where deleted_at is null
+    `;
+  }
+  
+  const total = Number((countResult[0] as { count: number }).count);
+  
+  return {
+    data: rows as unknown as DbJobOrder[],
+    total,
+    page,
+    pageSize,
+  };
 };

@@ -88,6 +88,11 @@ const Page = () => {
 						const totalPages = Math.max(1, Math.ceil(total / pageSize));
 						setPage(Math.min(totalPages, page + 1));
 					}}
+					onPageChange={(newPage) => setPage(newPage)}
+					onPageSizeChange={(newPageSize) => {
+						setPageSize(newPageSize);
+						setPage(1);
+					}}
 				/>
 			</main>
 		</div>

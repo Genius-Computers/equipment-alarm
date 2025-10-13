@@ -92,17 +92,15 @@ export function formatStackUserLight(u: any): User | null {
   } as User
 }
 
-// Ticket ID generator: YYYYMMDD-<six-digit-unique>
+// Ticket ID generator: YY-XXXX (e.g., 25-0001)
+// Note: This is a fallback/legacy function. New tickets use sequential IDs from the database.
 export function generateTicketId(createdAt: string | Date | undefined, id: string): string {
   const dateObj = createdAt ? new Date(createdAt) : new Date()
-  const yyyy = String(dateObj.getFullYear())
-  const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
-  const dd = String(dateObj.getDate()).padStart(2, '0')
-  const datePrefix = `${yyyy}${mm}${dd}`
-  const hex = (id || '').replace(/-/g, '').slice(0, 6) || '000000'
+  const yy = String(dateObj.getFullYear()).slice(-2)
+  const hex = (id || '').replace(/-/g, '').slice(0, 4) || '0000'
   const numeric = Number.parseInt(hex, 16)
-  const suffix = String(Number.isFinite(numeric) ? numeric : 0).padStart(6, '0').slice(-6)
-  return `${datePrefix}-${suffix}`
+  const suffix = String(Number.isFinite(numeric) ? numeric : 0).padStart(4, '0').slice(-4)
+  return `${yy}-${suffix}`
 }
 
 // Maintenance derivation helpers

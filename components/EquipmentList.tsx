@@ -72,26 +72,41 @@ const EquipmentList = ({
             )}
           </p>
         )}
-        <div className="inline-flex gap-2" role="tablist" aria-label="View mode">
-          <Button
-            variant={view === "table" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setView("table")}
-            aria-pressed={view === "table"}
-            aria-label="Table view">
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={view === "grid" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setView("grid")}
-            aria-pressed={view === "grid"}
-            aria-label="Grid view">
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <div className="w-px h-6 bg-border mx-2" />
-          <EquipmentCSVExport items={items} />
-          <EquipmentCSVImport onImported={onRefresh} />
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2" role="tablist" aria-label="View mode">
+          {/* View Mode Buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant={view === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setView("table")}
+              aria-pressed={view === "table"}
+              aria-label="Table view">
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={view === "grid" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setView("grid")}
+              aria-pressed={view === "grid"}
+              aria-label="Grid view">
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Separator - hidden on mobile */}
+          <div className="hidden sm:block w-px h-6 bg-border mx-2" />
+          
+          {/* CSV Actions */}
+          <div className="flex gap-2 flex-wrap">
+            <EquipmentCSVExport 
+              items={items} 
+              filters={{
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                // Note: searchTerm is not a direct filter but could be used for filtering
+              }}
+            />
+            <EquipmentCSVImport onImported={onRefresh} />
+          </div>
         </div>
       </div>
 

@@ -22,15 +22,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { canManageUsers } from "@/lib/types/user";
+import { canManageUsers, canAssignSupervisorRole } from "@/lib/types/user";
 
 type UserRow = { id: string; email: string | null; displayName?: string | null; role?: string; signedUpAt?: string | null };
+
+// Helper component for role selection with restrictions
+const RoleSelect = ({ value, onValueChange, canAssignSupervisor }: { 
+  value?: string; 
+  onValueChange: (value: string) => void; 
+  canAssignSupervisor: boolean;
+}) => (
+  <Select value={value} onValueChange={onValueChange}>
+    <SelectTrigger className="w-full sm:w-[160px]">
+      <SelectValue placeholder="Select role" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="end_user">End User</SelectItem>
+      <SelectItem value="technician">Technician</SelectItem>
+      {canAssignSupervisor && <SelectItem value="supervisor">Supervisor</SelectItem>}
+      <SelectItem value="admin">Admin</SelectItem>
+      <SelectItem value="admin_x">Admin X</SelectItem>
+    </SelectContent>
+  </Select>
+);
 
 const UsersPage = () => {
   const { t } = useLanguage();
   const user = useUser();
   const myRole = (user?.clientReadOnlyMetadata?.role) as string | undefined;
   const canManage = canManageUsers(myRole);
+  const canAssignSupervisor = canAssignSupervisorRole(myRole);
 
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,18 +191,11 @@ const UsersPage = () => {
                 onChange={(e) => setNewUser((s) => ({ ...s, displayName: e.target.value }))}
               />
               <div className="flex gap-2">
-                <Select value={newUser.role || undefined} onValueChange={(v) => setNewUser((s) => ({ ...s, role: v }))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("users.role")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="end_user">End User</SelectItem>
-                    <SelectItem value="technician">Technician</SelectItem>
-                    <SelectItem value="supervisor">Supervisor</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="admin_x">Admin X</SelectItem>
-                  </SelectContent>
-                </Select>
+                <RoleSelect 
+                  value={newUser.role || undefined} 
+                  onValueChange={(v) => setNewUser((s) => ({ ...s, role: v }))} 
+                  canAssignSupervisor={canAssignSupervisor}
+                />
                 <Button onClick={createUser} disabled={creating || !newUser.email || !newUser.role}>
                   {t("users.create")}
                 </Button>
@@ -231,18 +245,11 @@ const UsersPage = () => {
                     <div className="text-xs text-muted-foreground truncate">{u.email}</div>
                   </div>
                   <Badge variant="secondary" className="capitalize">Pending</Badge>
-                  <Select value={undefined} onValueChange={(v) => changeRole(u.id, v)}>
-                    <SelectTrigger className="w-full sm:w-[160px]">
-                      <SelectValue placeholder={t("users.role")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="end_user">End User</SelectItem>
-                      <SelectItem value="technician">Technician</SelectItem>
-                      <SelectItem value="supervisor">Supervisor</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="admin_x">Admin X</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <RoleSelect 
+                    value={undefined} 
+                    onValueChange={(v) => changeRole(u.id, v)} 
+                    canAssignSupervisor={canAssignSupervisor}
+                  />
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />
                   <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
                 </div>
@@ -277,18 +284,11 @@ const UsersPage = () => {
                   <div className="text-sm text-muted-foreground sm:flex-1 min-w-0">
                     <span className="block truncate">{u.email}</span>
                   </div>
-                  <Select value={u.role!} onValueChange={(v) => changeRole(u.id, v)}>
-                    <SelectTrigger className="w-full sm:w-[160px]">
-                      <SelectValue placeholder={t("users.role")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="end_user">End User</SelectItem>
-                      <SelectItem value="technician">Technician</SelectItem>
-                      <SelectItem value="supervisor">Supervisor</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="admin_x">Admin X</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <RoleSelect 
+                    value={u.role!} 
+                    onValueChange={(v) => changeRole(u.id, v)} 
+                    canAssignSupervisor={canAssignSupervisor}
+                  />
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />
                   <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
                 </CardContent>

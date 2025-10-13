@@ -34,7 +34,9 @@ const SparePartsCSVExport = ({ items }: SparePartsCSVExportProps) => {
       [USER_FRIENDLY_NAMES.manufacturer]: sp.manufacturer ?? "",
       [USER_FRIENDLY_NAMES.supplier]: sp.supplier ?? "",
     }));
-    const csv = stringifyCSV(headers, rows);
+    const csvContent = stringifyCSV(headers, rows);
+    const BOM = '\uFEFF'; // UTF-8 BOM for Excel compatibility
+    const csv = BOM + csvContent;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

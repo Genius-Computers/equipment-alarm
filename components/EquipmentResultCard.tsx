@@ -35,7 +35,7 @@ export default function EquipmentResultCard({ equipment }: EquipmentResultCardPr
         <ChevronRight className="h-4 w-4 opacity-50 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {e.partNumber ? <Badge variant="secondary">{e.partNumber}</Badge> : null}
+        {e.partNumber ? <Badge variant="outline">Tag: {e.partNumber}</Badge> : null}
         {e.model ? <Badge variant="secondary">{e.model}</Badge> : null}
         {e.manufacturer ? <Badge variant="secondary">{e.manufacturer}</Badge> : null}
       </div>

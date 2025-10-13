@@ -14,26 +14,30 @@ interface EquipmentCSVImportProps {
 // Mapping of user-friendly names to database field names
 const FIELD_MAPPINGS: Record<string, string> = {
   // English user-friendly names
-  "Equipment/Device name": "name",
+  "Equipment Name": "name",
   "Tag Number": "partNumber",
-  "Location": "location",
-  "Sub-location": "subLocation",
   "Model": "model",
   "Manufacturer": "manufacturer",
   "Serial Number": "serialNumber",
+  "Location": "location",
+  "Sub Location": "subLocation",
   "Status": "status",
+  "Last Maintenance": "lastMaintenance",
+  "Maintenance Interval": "maintenanceInterval",
 };
 
-const REQUIRED_FIELDS = ["name", "partNumber", "location"];
+const REQUIRED_FIELDS = ["name", "location"];
 const USER_FRIENDLY_NAMES = {
-  name: "Equipment/Device name",
+  name: "Equipment Name",
   partNumber: "Tag Number",
-  location: "Location",
-  subLocation: "Sub-location",
   model: "Model",
   manufacturer: "Manufacturer",
   serialNumber: "Serial Number",
+  location: "Location",
+  subLocation: "Sub Location",
   status: "Status",
+  lastMaintenance: "Last Maintenance",
+  maintenanceInterval: "Maintenance Interval",
 };
 
 const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
@@ -47,39 +51,49 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
     const headers = [
       USER_FRIENDLY_NAMES.name,
       USER_FRIENDLY_NAMES.partNumber,
-      USER_FRIENDLY_NAMES.location,
-      USER_FRIENDLY_NAMES.subLocation,
       USER_FRIENDLY_NAMES.model,
       USER_FRIENDLY_NAMES.manufacturer,
       USER_FRIENDLY_NAMES.serialNumber,
+      USER_FRIENDLY_NAMES.location,
+      USER_FRIENDLY_NAMES.subLocation,
       USER_FRIENDLY_NAMES.status,
+      USER_FRIENDLY_NAMES.lastMaintenance,
+      USER_FRIENDLY_NAMES.maintenanceInterval,
     ];
 
     const exampleRows = [
       {
         [USER_FRIENDLY_NAMES.name]: "HVAC Unit A1",
-        [USER_FRIENDLY_NAMES.partNumber]: "AC-2024-001",
-        [USER_FRIENDLY_NAMES.location]: "Engineering Building - Floor 2",
-        [USER_FRIENDLY_NAMES.subLocation]: "Room 204 (North Wing)",
+        [USER_FRIENDLY_NAMES.partNumber]: "TAG-001",
         [USER_FRIENDLY_NAMES.model]: "Model X100",
         [USER_FRIENDLY_NAMES.manufacturer]: "Acme Corp",
         [USER_FRIENDLY_NAMES.serialNumber]: "SN-00012345",
+        [USER_FRIENDLY_NAMES.location]: "Main Campus",
+        [USER_FRIENDLY_NAMES.subLocation]: "Engineering Building - Floor 2",
         [USER_FRIENDLY_NAMES.status]: "Working",
+        [USER_FRIENDLY_NAMES.lastMaintenance]: "2024-01-15",
+        [USER_FRIENDLY_NAMES.maintenanceInterval]: "6 months",
       },
       {
         [USER_FRIENDLY_NAMES.name]: "Ventilator B2",
-        [USER_FRIENDLY_NAMES.partNumber]: "VT-2024-002",
-        [USER_FRIENDLY_NAMES.location]: "Medical Center - ICU",
-        [USER_FRIENDLY_NAMES.subLocation]: "Ward 3",
+        [USER_FRIENDLY_NAMES.partNumber]: "TAG-002",
         [USER_FRIENDLY_NAMES.model]: "V-500",
         [USER_FRIENDLY_NAMES.manufacturer]: "MedTech Inc",
         [USER_FRIENDLY_NAMES.serialNumber]: "SN-98765432",
+        [USER_FRIENDLY_NAMES.location]: "AJA Complex",
+        [USER_FRIENDLY_NAMES.subLocation]: "Medical Center - ICU",
         [USER_FRIENDLY_NAMES.status]: "Maintenance",
+        [USER_FRIENDLY_NAMES.lastMaintenance]: "2024-02-01",
+        [USER_FRIENDLY_NAMES.maintenanceInterval]: "3 months",
       },
     ];
 
+    // Generate CSV with BOM (Byte Order Mark) for better Excel compatibility
     const csvContent = stringifyCSV(headers, exampleRows);
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const BOM = '\uFEFF'; // UTF-8 BOM for Excel compatibility
+    const csvWithBOM = BOM + csvContent;
+    
+    const blob = new Blob([csvWithBOM], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -123,12 +137,14 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
       const payload = normalizedRows.map((r) => ({
         name: r.name ?? "",
         partNumber: r.partNumber ?? "",
-        location: r.location ?? "",
-        subLocation: r.subLocation ?? "",
         model: r.model ?? "",
         manufacturer: r.manufacturer ?? "",
         serialNumber: r.serialNumber ?? "",
+        location: r.location ?? "",
+        subLocation: r.subLocation ?? "",
         status: r.status ?? "Working",
+        lastMaintenance: r.lastMaintenance ?? "",
+        maintenanceInterval: r.maintenanceInterval ?? "",
       }));
 
       const res = await fetch("/api/equipment/bulk", {
@@ -138,7 +154,18 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "Failed to import CSV");
+        const errorMsg = data?.error || "Failed to import CSV";
+        
+        // Show more detailed error for missing locations
+        if (data?.missingLocations && Array.isArray(data.missingLocations)) {
+          toast(t("toast.error"), { 
+            description: errorMsg,
+            duration: 10000, // Show longer for important validation errors
+          });
+        } else {
+          toast(t("toast.error"), { description: errorMsg });
+        }
+        return;
       }
       toast(t("toast.success"), { description: t("csv.imported") });
       onImported?.();
@@ -152,29 +179,34 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
   };
 
   return (
-    <div className="flex gap-2">
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".csv,text/csv"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleFile(file);
-        }}
-      />
-      <Button size="sm" variant="outline" onClick={handleDownloadTemplate} aria-label={t("csv.downloadTemplate")}>
-        <Download className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
-        {t("csv.downloadTemplate")}
-      </Button>
-      <Button size="sm" variant="outline" onClick={handleClick} disabled={uploading} aria-label={t("csv.import")}>
-        {uploading ? (
-          <Loader2 className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 animate-spin" />
-        ) : (
-          <Upload className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
-        )}
-        {uploading ? t("csv.importing") : t("csv.import")}
-      </Button>
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleFile(file);
+          }}
+        />
+        <Button size="sm" variant="outline" onClick={handleDownloadTemplate} aria-label={t("csv.downloadTemplate")}>
+          <Download className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+          {t("csv.downloadTemplate")}
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleClick} disabled={uploading} aria-label={t("csv.import")}>
+          {uploading ? (
+            <Loader2 className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+          )}
+          {uploading ? t("csv.importing") : t("csv.import")}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Note: All sublocations must exist in the Locations module before importing.
+      </p>
     </div>
   );
 };

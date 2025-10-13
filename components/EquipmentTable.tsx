@@ -44,14 +44,14 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
         <thead className="bg-muted/50">
           <tr>
             <th className={headerClass}>{t("equipment.name")}</th>
+            <th className={headerClass}>Tag Number</th>
             <th className={headerClass}>{t("form.model")}</th>
             <th className={headerClass}>{t("form.manufacturer")}</th>
             <th className={headerClass}>{t("form.serialNumber")}</th>
-            <th className={headerClass}>{t("equipment.part")}</th>
             <th className={headerClass}>{t("equipment.location")}</th>
             <th className={headerClass}>{t("form.subLocation")}</th>
-            <th className={headerClass}>{t("equipment.lastMaintenance")}</th>
             <th className={headerClass}>{t("equipment.status")}</th>
+            <th className={headerClass}>{t("equipment.lastMaintenance")}</th>
             <th className={headerClass}>{t("equipment.nextMaintenance")}</th>
             <th className={headerClass}>{t("form.maintenanceInterval")}</th>
             <th className={headerClass}></th>
@@ -72,19 +72,13 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                 <tr onClick={() => router.push(`/equipments/${e.id}`)} className="border-t hover:bg-muted/30">
                   <td className={cellClass}>
                     <div className="flex items-center gap-2">
-                      {!e.inUse && (
-                        <Badge variant="destructive" className="whitespace-nowrap">
-                          <XCircle className="h-3 w-3 mr-1 rtl:mr-0 rtl:ml-1" />
-                          {t("equipment.notInUse")}
-                        </Badge>
-                      )}
                       <div className="font-medium">{e.name}</div>
                     </div>
                   </td>
+                  <td className={cellClass}>{e.partNumber || "—"}</td>
                   <td className={cellClass}>{e.model || "—"}</td>
                   <td className={cellClass}>{e.manufacturer || "—"}</td>
                   <td className={cellClass}>{e.serialNumber || "—"}</td>
-                  <td className={cellClass}>{e.partNumber}</td>
                   <td className={cellClass}>
                     <div className="inline-flex items-center gap-1 text-muted-foreground">
                       <span>{e.location}</span>
@@ -92,12 +86,12 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                   </td>
                   <td className={cellClass}>{e.subLocation || "—"}</td>
                   <td className={cellClass}>
-                    {formatSaudiDate(e.lastMaintenance)}
-                  </td>
-                  <td className={cellClass}>
                     <Badge variant="secondary" className="capitalize">
                       {e.status}
                     </Badge>
+                  </td>
+                  <td className={cellClass}>
+                    {formatSaudiDate(e.lastMaintenance)}
                   </td>
                   <td className={cellClass}>
                     {nextMaintenanceLabel ? (

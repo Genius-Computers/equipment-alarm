@@ -22,6 +22,7 @@ const Page = () => {
     setSearchTerm,
     setStatusFilter,
     setPage,
+    setPageSize,
     refresh,
     updateEquipment,
     deleteEquipment,
@@ -64,6 +65,11 @@ const Page = () => {
               onNext={() => {
                 const totalPages = Math.max(1, Math.ceil(total / pageSize));
                 setPage((p) => Math.min(totalPages, p + 1));
+              }}
+              onPageChange={(newPage) => setPage(newPage)}
+              onPageSizeChange={(newPageSize) => {
+                setPageSize(newPageSize);
+                setPage(1); // Reset to first page when changing page size
               }}
             />
 

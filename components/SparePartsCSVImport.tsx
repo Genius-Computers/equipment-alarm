@@ -61,7 +61,9 @@ const SparePartsCSVImport = ({ onImported }: SparePartsCSVImportProps) => {
     ];
 
     const csvContent = stringifyCSV(headers, exampleRows);
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const BOM = '\uFEFF'; // UTF-8 BOM for Excel compatibility
+    const csvWithBOM = BOM + csvContent;
+    const blob = new Blob([csvWithBOM], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

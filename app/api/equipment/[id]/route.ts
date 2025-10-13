@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEquipmentById, updateEquipment, softDeleteEquipment } from '@/lib/db';
+import { getEquipmentById, updateEquipment, softDeleteEquipment, findOrCreateLocation } from '@/lib/db';
 import { snakeToCamelCase, deriveMaintenanceInfo } from '@/lib/utils';
 import { getCurrentServerUser } from '@/lib/auth';
+import { VALID_CAMPUSES } from '@/lib/config';
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -11,6 +12,23 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const body = await req.json();
+
+    // Validate location
+    if (body.location && !VALID_CAMPUSES.includes(body.location)) {
+      return NextResponse.json({ 
+        error: `Invalid location. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
+      }, { status: 400 });
+    }
+
+    // Create location entry if sublocation is provided
+    if (body.location && body.subLocation && body.subLocation.trim()) {
+      try {
+        await findOrCreateLocation(body.location, body.subLocation.trim(), user.id);
+      } catch (error) {
+        console.error('Failed to create location:', error);
+        // Continue anyway - equipment can still be updated
+      }
+    }
 
     const row = await updateEquipment(id, {
       name: body.name,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
-import { canManageUsers } from '@/lib/types/user';
+import { canManageUsers, canAssignRole } from '@/lib/types/user';
 import { getCurrentServerUser } from '@/lib/auth';
 import { formatStackUserLight } from '@/lib/utils';
 
@@ -25,7 +25,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Public self-signup: no role assigned; Admins/Supervisors can assign role on creation
-    const assignedRole = canManage ? requestedRole : undefined;
+    let assignedRole = canManage ? requestedRole : undefined;
+    
+    // Check if requester can assign the requested role
+    if (assignedRole && !canAssignRole(requesterRole, assignedRole)) {
+      return NextResponse.json({ 
+        error: 'Insufficient permissions to assign this role. Only Admin X and Supervisors can assign Supervisor role.' 
+      }, { status: 403 });
+    }
 
     const user = await stackServerApp.createUser({
       primaryEmail: email,
