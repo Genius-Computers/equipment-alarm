@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Campus parameter is required' }, { status: 400 });
     }
 
-    if (!VALID_CAMPUSES.includes(campus)) {
+    if (!VALID_CAMPUSES.includes(campus as typeof VALID_CAMPUSES[number])) {
       return NextResponse.json({ 
         error: `Invalid campus. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
       }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!VALID_CAMPUSES.includes(campus)) {
+    if (!VALID_CAMPUSES.includes(campus as typeof VALID_CAMPUSES[number])) {
       return NextResponse.json({ 
         error: `Invalid campus. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
       }, { status: 400 });

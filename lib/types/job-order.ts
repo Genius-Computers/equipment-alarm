@@ -1,4 +1,3 @@
-import { DbBaseAudit } from "./database";
 
 export interface JobOrderItem {
     equipmentId: string;
@@ -20,15 +19,6 @@ export interface JobOrder {
     createdAt: string;
 }
 
-export interface DbJobOrder extends DbBaseAudit {
-    order_number: string;
-    campus: string;
-    sublocation: string;
-    items: string; // JSON string
-    status: string;
-    submitted_by?: string;
-    submitted_at?: string;
-}
 
 export interface CreateJobOrderRequest {
     campus: string;

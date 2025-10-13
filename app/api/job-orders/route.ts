@@ -189,8 +189,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('[Job Order API] Error creating job order:', error);
-    console.error('[Job Order API] Campus:', campus, 'Sublocation:', sublocation);
-    console.error('[Job Order API] Equipment IDs:', equipmentIds);
     console.error('[Job Order API] Stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json(
       { 

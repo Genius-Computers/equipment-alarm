@@ -1030,7 +1030,7 @@ export const submitJobOrder = async (
   
   // Create service requests for each equipment item
   if (row && Array.isArray(items)) {
-    const orderNumber = (row as any).order_number;
+    const orderNumber = (row as { order_number: string }).order_number;
     const requestType = serviceRequestData?.requestType || 'preventive_maintenance';
     const priority = serviceRequestData?.priority || 'medium';
     const scheduledAt = serviceRequestData?.scheduledAt || new Date().toISOString();

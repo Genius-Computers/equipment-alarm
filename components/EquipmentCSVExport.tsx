@@ -127,7 +127,7 @@ const EquipmentCSVExport = ({ items, filters }: EquipmentCSVExportProps) => {
       }
     } catch (error) {
       console.error('Export error:', error);
-      toast.error(`Failed to export equipment data: ${error.message}`);
+      toast.error(`Failed to export equipment data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setExporting(false);
     }

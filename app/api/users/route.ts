@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Public self-signup: no role assigned; Admins/Supervisors can assign role on creation
-    let assignedRole = canManage ? requestedRole : undefined;
+    const assignedRole = canManage ? requestedRole : undefined;
     
     // Check if requester can assign the requested role
     if (assignedRole && !canAssignRole(requesterRole, assignedRole)) {

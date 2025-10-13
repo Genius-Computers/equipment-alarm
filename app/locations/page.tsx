@@ -3,11 +3,9 @@
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, MapPin } from "lucide-react";
-import { useLanguage } from "@/hooks/useLanguage";
 
 export default function LocationsPage() {
   const router = useRouter();
-  const { t } = useLanguage();
 
   const campuses = [
     {

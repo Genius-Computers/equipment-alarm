@@ -37,7 +37,6 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       sub_location: body.subLocation,
       last_maintenance: body.lastMaintenance,
       maintenance_interval: body.maintenanceInterval,
-      in_use: Boolean(body.inUse),
       status: body.status,
       model: body.model,
       manufacturer: body.manufacturer,

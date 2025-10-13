@@ -20,6 +20,7 @@ const Page = () => {
 		pageSize,
 		total,
 		setPage,
+		setPageSize,
 		priorityFilter,
 		setPriorityFilter,
 		assignedToMe,

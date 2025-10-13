@@ -161,7 +161,6 @@ export function useEquipment(list = true) {
             subLocation: updated.subLocation,
             lastMaintenance: updated.lastMaintenance,
             maintenanceInterval: updated.maintenanceInterval,
-            inUse: updated.inUse,
             status: updated.status,
             model: updated.model,
             manufacturer: updated.manufacturer,

@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
     console.log('[Migration] Found', rows.length, 'unique location pairs');
 
     // Filter to only valid campuses
-    const validPairs = rows.filter((row: any) => 
-      VALID_CAMPUSES.includes(row.location as any)
+    const validPairs = (rows as Array<{ location: string; sub_location: string }>).filter((row) => 
+      VALID_CAMPUSES.includes(row.location as typeof VALID_CAMPUSES[number])
     );
 
     console.log('[Migration] Filtered to', validPairs.length, 'valid campus pairs');
@@ -53,8 +53,8 @@ export async function POST(req: NextRequest) {
 
     // Create location entries for each unique pair
     for (const row of validPairs) {
-      const campus = (row as any).location;
-      const sublocation = (row as any).sub_location;
+      const campus = row.location;
+      const sublocation = row.sub_location;
 
       try {
         console.log('[Migration] Processing:', campus, '→', sublocation);

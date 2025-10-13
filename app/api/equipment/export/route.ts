@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Transform data to match the expected format
-    const exportData = equipment.map((eq: any) => ({
+    const exportData = (equipment as Array<{ id: string; name: string; part_number?: string; model?: string; manufacturer?: string; serial_number?: string; location: string; sub_location?: string; status: string; last_maintenance?: string; maintenance_interval?: string; created_at: string; updated_at: string }>).map((eq) => ({
       id: eq.id,
       name: eq.name,
       partNumber: eq.part_number || '',

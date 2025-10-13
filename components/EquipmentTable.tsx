@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Equipment, JEquipment } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
-import { Wrench, Pencil, XCircle, Trash2 } from "lucide-react";
+import { Wrench, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useSelfProfile } from "@/hooks/useSelfProfile";

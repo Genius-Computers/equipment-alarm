@@ -82,8 +82,8 @@ export default function ReviewJobOrderPage() {
       const allEquipment = data.data || [];
       
       const selectedEquipment = allEquipment
-        .filter((eq: any) => equipmentIds.includes(eq.id))
-        .map((eq: any) => ({
+        .filter((eq: { id: string }) => equipmentIds.includes(eq.id))
+        .map((eq: { id: string; name: string; partNumber?: string; part_number?: string; serialNumber?: string; serial_number?: string; location: string; subLocation?: string; sub_location?: string }) => ({
           id: eq.id,
           name: eq.name,
           partNumber: eq.partNumber || eq.part_number || '',

@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, ClipboardList, ArrowRight, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { useLanguage } from "@/hooks/useLanguage";
 import Header from "@/components/Header";
 import { VALID_CAMPUSES } from "@/lib/config";
 
@@ -27,7 +26,6 @@ interface Equipment {
 }
 
 export default function CreateJobOrderPage() {
-  const { t } = useLanguage();
   const router = useRouter();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);

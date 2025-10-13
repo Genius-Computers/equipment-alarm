@@ -1,8 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search as SearchIcon, Box, Calendar, AlertCircle, ClipboardList, PlusCircle, Package, Loader2, MapPin } from "lucide-react";
 import Header from "@/components/Header";
@@ -17,8 +16,6 @@ const Page = () => {
   const { t } = useLanguage();
   const {
     addEquipment,
-    equipmentNameCache,
-    isCaching,
     searchTerm,
     setSearchTerm,
     searchResults,

@@ -1,5 +1,4 @@
-import { MapPin, Wrench, XCircle, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { MapPin, Wrench, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
