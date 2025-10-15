@@ -19,9 +19,20 @@ const LOCATIONS_TO_ADD = [
   { name: "University Clinics", nameAr: "العيادات الجامعية" },
 ];
 
+interface SeedResult {
+  message?: string;
+  locations?: unknown[];
+  summary?: {
+    deleted: number;
+    added: number;
+    total: number;
+    errors: number;
+  };
+}
+
 export default function SeedLocationsPage() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ message?: string; locations?: unknown[] } | null>(null);
+  const [result, setResult] = useState<SeedResult | null>(null);
   const [currentLocations, setCurrentLocations] = useState<Array<{ id: string; campus: string; name: string; name_ar?: string }>>([]);
 
   const fetchCurrentLocations = async () => {
