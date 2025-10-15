@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getJobOrderById } from '@/lib/db';
-import { stackServerApp } from '@/stack';
+import { getCurrentServerUser } from '@/lib/auth';
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await stackServerApp.getUser();
+    const user = await getCurrentServerUser(req);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

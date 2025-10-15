@@ -66,17 +66,21 @@ export async function POST(req: NextRequest) {
     
     const body = await req.json();
     
-    // Validate location
+    // Legacy location validation (for backward compatibility)
     if (body.location && !VALID_CAMPUSES.includes(body.location)) {
       return NextResponse.json({ 
         error: `Invalid location. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
       }, { status: 400 });
     }
     
-    // Create location entry if sublocation is provided
+    // Legacy: Create location entry if legacy sublocation is provided
     if (body.location && body.subLocation && body.subLocation.trim()) {
       try {
-        await findOrCreateLocation(body.location, body.subLocation.trim(), user.id);
+        const locationId = await findOrCreateLocation(body.location, body.subLocation.trim(), user.id);
+        // If no new locationId provided, use the legacy one
+        if (!body.locationId) {
+          body.locationId = locationId;
+        }
       } catch (error) {
         console.error('Failed to create location:', error);
         // Continue anyway - equipment can still be created

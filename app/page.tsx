@@ -127,8 +127,8 @@ const Page = () => {
               ),
             },
             {
-              title: "Locations",
-              description: "Manage campus locations and view equipment distribution",
+              title: t("dashboard.locations"),
+              description: t("dashboard.locationsDesc"),
               icon: <MapPin className="h-6 w-6 cursor-pointer text-indigo-600" />,
               cta: (
                 <Link href={"/locations"} className="w-full">
@@ -163,8 +163,8 @@ const Page = () => {
               ),
             },
             {
-              title: "Job Orders",
-              description: "Create job orders for equipment maintenance and service requests",
+              title: t("dashboard.jobOrders"),
+              description: t("dashboard.jobOrdersDesc"),
               icon: <ClipboardList className="h-6 w-6 cursor-pointer text-orange-500" />,
               cta: (
                 <Link href={"/job-orders"} className="w-full">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentServerUser } from '@/lib/auth';
-import { listLocationsByCampus, insertLocation } from '@/lib/db';
+import { listLocationsByCampus, listAllLocations, insertLocation } from '@/lib/db';
 import { snakeToCamelCase } from '@/lib/utils';
 import { VALID_CAMPUSES } from '@/lib/config';
 
@@ -14,17 +14,21 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const campus = searchParams.get('campus');
 
-    if (!campus) {
-      return NextResponse.json({ error: 'Campus parameter is required' }, { status: 400 });
+    let locations;
+    
+    if (campus) {
+      // Filter by campus (backward compatibility)
+      if (!VALID_CAMPUSES.includes(campus as typeof VALID_CAMPUSES[number])) {
+        return NextResponse.json({ 
+          error: `Invalid campus. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
+        }, { status: 400 });
+      }
+      locations = await listLocationsByCampus(campus);
+    } else {
+      // Return all locations with campus info
+      locations = await listAllLocations();
     }
-
-    if (!VALID_CAMPUSES.includes(campus as typeof VALID_CAMPUSES[number])) {
-      return NextResponse.json({ 
-        error: `Invalid campus. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
-      }, { status: 400 });
-    }
-
-    const locations = await listLocationsByCampus(campus);
+    
     const mapped = locations.map((loc) => snakeToCamelCase(loc));
     
     return NextResponse.json({ data: mapped });
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { campus, name } = body;
+    const { campus, name, nameAr } = body;
 
     if (!campus || !name) {
       return NextResponse.json({ 
@@ -56,7 +60,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const newLocation = await insertLocation(campus, name.trim(), user.id);
+    const newLocation = await insertLocation(campus, name.trim(), user.id, nameAr?.trim());
     const mapped = snakeToCamelCase(newLocation);
     
     return NextResponse.json({ data: mapped }, { status: 201 });

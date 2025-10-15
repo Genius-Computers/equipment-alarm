@@ -14,8 +14,14 @@ export interface Equipment {
     model: string;
     manufacturer: string;
     serialNumber: string;
-    location: string;
-    subLocation: string;
+    // Legacy location fields (will be deprecated)
+    location: string; // campus
+    subLocation: string; // free text sublocation (room, etc.)
+    // New location structure
+    locationId?: string;
+    // Expanded location info for display
+    locationName?: string;
+    campus?: string;
     status: string;
     lastMaintenance?: string;
     maintenanceInterval?: string;
@@ -47,8 +53,11 @@ export interface DbEquipment extends DbBaseAudit {
     model: string;
     manufacturer: string;
     serial_number: string;
+    // Legacy location fields (will be deprecated)
     location: string;
     sub_location: string;
+    // New location structure
+    location_id?: string;
     status: string;
     last_maintenance?: string;
     maintenance_interval?: string;

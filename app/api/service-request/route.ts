@@ -34,7 +34,10 @@ export async function GET(req: NextRequest) {
     const equipmentId = searchParams.get('equipmentId') || undefined;
     const priority = searchParams.get('priority') || undefined; // expected: 'low' | 'medium' | 'high' | 'all'
     const approval = searchParams.get('approval') || undefined; // expected: 'pending' | 'approved' | 'rejected' | 'all'
+    
+    console.log('[Service Request GET] Fetching with params:', { page, pageSize, scope, priority, approval, assignedTo: assignedToParam });
     const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval);
+    console.log('[Service Request GET] Found:', rows.length, 'rows, total:', total);
 
     // Fetch only needed technicians, in parallel
     const techIds = Array.from(new Set((rows.map((r) => r.assigned_technician_id).filter(Boolean) as string[])));

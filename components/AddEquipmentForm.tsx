@@ -37,11 +37,8 @@ const EquipmentForm = ({
   const { t } = useLanguage();
   const [internalOpen, setInternalOpen] = useState(false);
   const [isSparePartsMode, setIsSparePartsMode] = useState(false);
-  const [subLocationFilter, setSubLocationFilter] = useState("");
-  const [isCustomSubLocation, setIsCustomSubLocation] = useState(false);
-  const [customSubLocation, setCustomSubLocation] = useState("");
-  const [customSubLocations, setCustomSubLocations] = useState<string[]>([]);
-  const [loadingSubLocations, setLoadingSubLocations] = useState(false);
+  const [locations, setLocations] = useState<Array<{id: string, name: string, nameAr?: string, campus: string}>>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
 
@@ -53,8 +50,11 @@ const EquipmentForm = ({
         model: equipment.model || "",
         manufacturer: equipment.manufacturer || "",
         serialNumber: equipment.serialNumber || "",
+        // Legacy fields for backward compatibility
         location: equipment.location,
         subLocation: equipment.subLocation || "",
+        // New location structure
+        locationId: equipment.locationId || "",
         status: equipment.status,
         lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
         maintenanceInterval: equipment.maintenanceInterval,
@@ -68,6 +68,7 @@ const EquipmentForm = ({
       serialNumber: "",
       location: "",
       subLocation: "",
+      locationId: "",
       status: "",
       lastMaintenance: "",
       maintenanceInterval: "",
@@ -96,6 +97,28 @@ const EquipmentForm = ({
   const [formData, setFormData] = useState(getInitialFormData());
   const [sparePartFormData, setSparePartFormData] = useState(getInitialSparePartFormData());
 
+  // Fetch all locations on component mount
+  const fetchLocations = async () => {
+    try {
+      setLoadingLocations(true);
+      const response = await fetch('/api/locations');
+      if (response.ok) {
+        const data = await response.json();
+        setLocations(data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch locations:', error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      void fetchLocations();
+    }
+  }, [open]);
+
   // Update form data when equipment or spare part changes (for edit mode)
   useEffect(() => {
     if (mode === "edit" && equipment) {
@@ -111,11 +134,6 @@ const EquipmentForm = ({
         lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
         maintenanceInterval: equipment.maintenanceInterval,
       });
-      
-      // In edit mode, check if the current sublocation is in the fetched list
-      // For now, just set the sublocation value
-      setIsCustomSubLocation(false);
-      setCustomSubLocation("");
       
       setIsSparePartsMode(false);
     }
@@ -134,46 +152,6 @@ const EquipmentForm = ({
     }
   }, [sparePart, mode]);
 
-  // Fetch sublocations from the locations table when location changes
-  useEffect(() => {
-    const fetchCustomSubLocations = async () => {
-      if (!formData.location) {
-        setCustomSubLocations([]);
-        return;
-      }
-
-      setLoadingSubLocations(true);
-      try {
-        // Fetch from locations API instead of equipment sublocations
-        const response = await fetch(`/api/locations?campus=${encodeURIComponent(formData.location)}`);
-        if (response.ok) {
-          const data = await response.json();
-          const locations = data.data || [];
-          const fetchedLocations = locations.map((loc: { name: string }) => loc.name);
-          setCustomSubLocations(fetchedLocations);
-          
-          // In edit mode, check if current sublocation is in the fetched list
-          if (mode === "edit" && equipment && equipment.subLocation) {
-            const isInList = fetchedLocations.includes(equipment.subLocation);
-            if (!isInList) {
-              setIsCustomSubLocation(true);
-              setCustomSubLocation(equipment.subLocation);
-            }
-          }
-        } else {
-          // If API fails (e.g., invalid campus), clear the list
-          setCustomSubLocations([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch sublocations:', error);
-        setCustomSubLocations([]);
-      } finally {
-        setLoadingSubLocations(false);
-      }
-    };
-
-    void fetchCustomSubLocations();
-  }, [formData.location, mode, equipment]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,26 +211,6 @@ const EquipmentForm = ({
 
       const lastDate = formData.lastMaintenance ? new Date(formData.lastMaintenance).toISOString() : undefined;
       
-      // Use custom sublocation if custom is selected, otherwise use the selected value
-      const finalSubLocation = isCustomSubLocation ? customSubLocation : formData.subLocation;
-      
-      // If sublocation was entered (custom or selected), ensure it exists in locations table
-      if (finalSubLocation && finalSubLocation.trim() && formData.location) {
-        try {
-          await fetch('/api/locations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              campus: formData.location,
-              name: finalSubLocation.trim(),
-            }),
-          });
-          // Ignore errors - location might already exist (409) which is fine
-        } catch (error) {
-          console.log('Location might already exist:', error);
-        }
-      }
-      
       if (mode === "edit" && equipment) {
         // Edit mode: preserve the equipment ID
         onSubmitEquipment({
@@ -263,7 +221,8 @@ const EquipmentForm = ({
           manufacturer: formData.manufacturer,
           serialNumber: formData.serialNumber,
           location: formData.location,
-          subLocation: finalSubLocation,
+          locationId: formData.locationId,
+          subLocation: formData.subLocation,
           status: formData.status,
           lastMaintenance: lastDate,
           maintenanceInterval: formData.maintenanceInterval || undefined,
@@ -277,7 +236,8 @@ const EquipmentForm = ({
           manufacturer: formData.manufacturer,
           serialNumber: formData.serialNumber,
           location: formData.location,
-          subLocation: finalSubLocation,
+          locationId: formData.locationId,
+          subLocation: formData.subLocation,
           status: formData.status,
           lastMaintenance: lastDate,
           maintenanceInterval: formData.maintenanceInterval || undefined,
@@ -298,9 +258,6 @@ const EquipmentForm = ({
           lastMaintenance: "",
           maintenanceInterval: "",
         });
-        setIsCustomSubLocation(false);
-        setCustomSubLocation("");
-        setSubLocationFilter("");
       }
       
       setOpen(false);
@@ -484,98 +441,57 @@ const EquipmentForm = ({
             </Label>
             <Select 
               onValueChange={(value) => {
-                setFormData({ ...formData, location: value, subLocation: "" });
-                // Reset sublocation related state when location changes
-                setIsCustomSubLocation(false);
-                setCustomSubLocation("");
-                setSubLocationFilter("");
+                const selectedLocation = locations.find(loc => loc.id === value);
+                setFormData({ 
+                  ...formData, 
+                  locationId: value,
+                  // Keep legacy fields for backward compatibility
+                  location: selectedLocation?.campus || "",
+                  // Reset sublocation field
+                  subLocation: ""
+                });
               }} 
-              value={formData.location}
+              value={formData.locationId}
               required
+              disabled={loadingLocations}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Campus" />
+                <SelectValue placeholder={loadingLocations ? "Loading locations..." : "Select Location"} />
               </SelectTrigger>
               <SelectContent>
-                {VALID_CAMPUSES.map((campus) => (
-                  <SelectItem key={campus} value={campus}>
-                    {campus}
-                  </SelectItem>
-                ))}
+                {locations.map((location) => {
+                  const currentLang = t("lang");
+                  const displayName = currentLang === "ar" 
+                    ? (location.nameAr || location.name)  // Arabic mode: prefer Arabic, fallback to English
+                    : location.name;                       // English mode: always show English
+                  return (
+                    <SelectItem key={location.id} value={location.id}>
+                      <div className="flex flex-col items-start">
+                        <span>{displayName}</span>
+                        <span className="text-xs text-muted-foreground">{location.campus}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex flex-col gap-1">
             <Label htmlFor="subLocation">
-              {t("form.subLocation") || "Sub-location"}
+              {t("form.subLocation") || "Sub-location"} (Optional)
             </Label>
-            <Select 
-              onValueChange={(value) => {
-                if (value === "__custom__") {
-                  setIsCustomSubLocation(true);
-                  setFormData({ ...formData, subLocation: "" });
-                } else {
-                  setIsCustomSubLocation(false);
-                  setCustomSubLocation("");
-                  setFormData({ ...formData, subLocation: value });
-                }
-              }} 
-              value={isCustomSubLocation ? "__custom__" : formData.subLocation}
-              disabled={!formData.location || loadingSubLocations}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={
-                  !formData.location 
-                    ? "Select location first" 
-                    : loadingSubLocations 
-                    ? "Loading sub-locations..." 
-                    : "Select sub-location"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2">
-                  <Input
-                    value={subLocationFilter}
-                    onChange={(e) => setSubLocationFilter(e.target.value)}
-                    placeholder="Type to filter sub-locations..."
-                    className="h-8"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                <SelectItem value="__custom__">Custom sub-location</SelectItem>
-                {(() => {
-                  // Use only sublocations from locations table
-                  return customSubLocations
-                    .filter((subLoc) => {
-                      const q = subLocationFilter.trim().toLowerCase();
-                      if (!q) return true;
-                      return subLoc.toLowerCase().includes(q);
-                    })
-                    .sort()
-                    .map((subLoc) => (
-                      <SelectItem key={subLoc} value={subLoc}>
-                        {subLoc}
-                      </SelectItem>
-                    ));
-                })()}
-              </SelectContent>
-            </Select>
+            <Input
+              id="subLocation"
+              value={formData.subLocation}
+              onChange={(e) => setFormData({ ...formData, subLocation: e.target.value })}
+              placeholder="e.g., Room 101, Lab A, Workshop"
+              disabled={!formData.locationId}
+            />
+            <p className="text-xs text-muted-foreground">
+              Specify a room or area within the location (optional)
+            </p>
           </div>
-
-          {isCustomSubLocation && (
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="customSubLocation">
-                Custom Sub-location
-              </Label>
-              <Input
-                id="customSubLocation"
-                value={customSubLocation}
-                onChange={(e) => setCustomSubLocation(e.target.value)}
-                placeholder="Enter custom sub-location"
-              />
-            </div>
-          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">

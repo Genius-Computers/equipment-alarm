@@ -11,6 +11,9 @@ export type EquipmentResult = {
   model?: string;
   manufacturer?: string;
   location?: string;
+  locationName?: string;
+  campus?: string;
+  subLocation?: string;
   serialNumber?: string;
 };
 
@@ -39,10 +42,18 @@ export default function EquipmentResultCard({ equipment }: EquipmentResultCardPr
         {e.model ? <Badge variant="secondary">{e.model}</Badge> : null}
         {e.manufacturer ? <Badge variant="secondary">{e.manufacturer}</Badge> : null}
       </div>
-      {e.location ? (
-        <div className="text-xs mt-3 flex items-center gap-1">
-          <MapPin className="h-3 w-3 text-muted-foreground" />
-          {e.location}
+      {(e.locationName || e.location) ? (
+        <div className="text-xs mt-3 space-y-0.5">
+          <div className="flex items-center gap-1">
+            <MapPin className="h-3 w-3 text-muted-foreground" />
+            <span className="font-medium">{e.locationName || e.location}</span>
+          </div>
+          {e.campus && (
+            <div className="text-muted-foreground ml-4">{e.campus}</div>
+          )}
+          {e.subLocation && (
+            <div className="text-muted-foreground ml-4">Room: {e.subLocation}</div>
+          )}
         </div>
       ) : null}
       {e.serialNumber ? (

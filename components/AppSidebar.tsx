@@ -63,7 +63,7 @@ export default function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isActive("/locations")}>
                     <Link href="/locations">
                       <MapPin />
-                      <span>Locations</span>
+                      <span>{t("sidebar.locations")}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -71,7 +71,7 @@ export default function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isActive("/job-orders")}>
                     <Link href="/job-orders">
                       <ClipboardList />
-                      <span>Job Orders</span>
+                      <span>{t("sidebar.jobOrders")}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

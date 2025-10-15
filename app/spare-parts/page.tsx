@@ -4,20 +4,26 @@ import SparePartsFilters from "@/components/SparePartsFilters";
 import SparePartsTable from "@/components/SparePartsTable";
 import { useSpareParts } from "@/hooks/useSpareParts";
 import CustomPagination from "@/components/CustomPagination";
-import { SparePart } from "@/lib/types";
+import { SparePart, SparePartOrderItem } from "@/lib/types";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ShoppingCart } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SparePartsCSVImport from "@/components/SparePartsCSVImport";
 import SparePartsCSVExport from "@/components/SparePartsCSVExport";
+import PlaceOrderDialog from "@/components/PlaceOrderDialog";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useSelfProfile } from "@/hooks/useSelfProfile";
+import { useSparePartOrders } from "@/hooks/useSparePartOrders";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const { t } = useLanguage();
+  const router = useRouter();
+  const { profile } = useSelfProfile();
   const {
     filteredSpareParts,
     loading,
@@ -35,7 +41,9 @@ const Page = () => {
     updateSparePart,
     deleteSparePart,
   } = useSpareParts();
+  const { createOrder, isCreating } = useSparePartOrders();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     serialNumber: "",
@@ -43,6 +51,8 @@ const Page = () => {
     manufacturer: "",
     supplier: "",
   });
+
+  const isSupervisor = profile?.role === "supervisor" || profile?.role === "admin" || profile?.role === "admin_x";
 
   const handleAddSparePart = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,17 +111,39 @@ const Page = () => {
     }
   };
 
+  const handlePlaceOrder = async (items: SparePartOrderItem[], notes?: string) => {
+    try {
+      await createOrder(items, notes);
+      toast(t("common.success"), {
+        description: t("orders.createSuccess"),
+      });
+      setIsOrderDialogOpen(false);
+      router.push("/spare-parts/orders");
+    } catch {
+      toast(t("common.error"), {
+        description: t("orders.createError"),
+      });
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="container mx-auto px-6 py-8">
-        <div className="space-y-6">
+          <div className="space-y-6">
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold">{t("spareParts.title")}</h1>
-              <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <div className="flex gap-2">
+                {isSupervisor && (
+                  <Button onClick={() => setIsOrderDialogOpen(true)} disabled={isCreating}>
+                    <ShoppingCart className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                    {t("orders.placeOrder")}
+                  </Button>
+                )}
+                <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
               <SheetTrigger asChild>
                 <Button disabled={isInserting}>
                   <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
@@ -190,6 +222,7 @@ const Page = () => {
                 </form>
               </SheetContent>
             </Sheet>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -230,6 +263,13 @@ const Page = () => {
           )}
         </div>
       </main>
+
+      <PlaceOrderDialog
+        open={isOrderDialogOpen}
+        onOpenChange={setIsOrderDialogOpen}
+        onSubmit={handlePlaceOrder}
+        submitting={isCreating}
+      />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import EquipmentForm from "@/components/AddEquipmentForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Equipment, JEquipment } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
@@ -22,12 +23,23 @@ interface EquipmentTableProps {
   onEdit: (updated: Equipment) => Promise<void> | void;
   onDelete?: (id: string) => Promise<void> | void;
   updating?: boolean;
+  deleteMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (id: string) => void;
 }
 
 const headerClass = "px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide";
 const cellClass = "px-3 py-3 text-sm align-middle";
 
-const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: EquipmentTableProps) => {
+const EquipmentTable = ({ 
+  items, 
+  onEdit, 
+  onDelete, 
+  updating = false,
+  deleteMode = false,
+  selectedIds = new Set(),
+  onToggleSelection,
+}: EquipmentTableProps) => {
   const { t } = useLanguage();
   const router = useRouter();
   const { profile } = useSelfProfile();
@@ -43,6 +55,11 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
       <table className="w-full text-sm">
         <thead className="bg-muted/50">
           <tr>
+            {deleteMode && (
+              <th className={headerClass + " w-10"}>
+                <span className="sr-only">Select</span>
+              </th>
+            )}
             <th className={headerClass}>{t("equipment.name")}</th>
             <th className={headerClass}>Tag Number</th>
             <th className={headerClass}>{t("form.model")}</th>
@@ -69,7 +86,15 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
 
             return (
               <Fragment key={e.id}>
-                <tr onClick={() => router.push(`/equipments/${e.id}`)} className="border-t hover:bg-muted/30">
+                <tr onClick={deleteMode ? undefined : () => router.push(`/equipments/${e.id}`)} className={deleteMode ? "border-t" : "border-t hover:bg-muted/30"}>
+                  {deleteMode && (
+                    <td className={cellClass + " w-10"} onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(e.id)}
+                        onCheckedChange={() => onToggleSelection?.(e.id)}
+                      />
+                    </td>
+                  )}
                   <td className={cellClass}>
                     <div className="flex items-center gap-2">
                       <div className="font-medium">{e.name}</div>
@@ -80,8 +105,9 @@ const EquipmentTable = ({ items, onEdit, onDelete, updating = false }: Equipment
                   <td className={cellClass}>{e.manufacturer || "—"}</td>
                   <td className={cellClass}>{e.serialNumber || "—"}</td>
                   <td className={cellClass}>
-                    <div className="inline-flex items-center gap-1 text-muted-foreground">
-                      <span>{e.location}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium">{e.locationName || e.subLocation || "—"}</span>
+                      {e.campus && <span className="text-xs text-muted-foreground">{e.campus}</span>}
                     </div>
                   </td>
                   <td className={cellClass}>{e.subLocation || "—"}</td>

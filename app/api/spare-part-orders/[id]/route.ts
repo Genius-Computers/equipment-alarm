@@ -1,0 +1,103 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSparePartOrderById, updateSparePartOrder, softDeleteSparePartOrder } from '@/lib/db';
+import { getCurrentServerUser } from '@/lib/auth';
+import { snakeToCamelCase } from '@/lib/utils';
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentServerUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const { id } = await params;
+    const order = await getSparePartOrderById(id);
+    
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json({ data: snakeToCamelCase(order) });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentServerUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const { id } = await params;
+    const body = await req.json();
+    const { status, items, supervisorNotes, technicianNotes } = body;
+    
+    // Validate status transitions based on role
+    const order = await getSparePartOrderById(id);
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    const isSupervisor = user.role === 'supervisor' || user.role === 'admin' || user.role === 'admin_x';
+    const isTechnician = user.role === 'technician' || user.role === 'admin';
+    
+    // Supervisors can create orders and complete them
+    // Technicians can update pending orders and submit them for review
+    if (status === 'Pending Supervisor Review' && !isTechnician) {
+      return NextResponse.json({ error: 'Only technicians can submit orders for review' }, { status: 403 });
+    }
+    
+    if ((status === 'Completed' || status === 'Approved') && !isSupervisor) {
+      return NextResponse.json({ error: 'Only supervisors can complete/approve orders' }, { status: 403 });
+    }
+    
+    const updatedRow = await updateSparePartOrder(
+      id,
+      status,
+      JSON.stringify(items),
+      supervisorNotes,
+      technicianNotes,
+      user.id,
+    );
+    
+    return NextResponse.json({ data: snakeToCamelCase(updatedRow) });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentServerUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Only supervisors can delete orders
+    if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'admin_x') {
+      return NextResponse.json({ error: 'Only supervisors can delete orders' }, { status: 403 });
+    }
+    
+    const { id } = await params;
+    await softDeleteSparePartOrder(id, user.id);
+    
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+

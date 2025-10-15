@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, ClipboardList, ArrowRight, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
-import { VALID_CAMPUSES } from "@/lib/config";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface Equipment {
   id: string;
@@ -20,29 +20,46 @@ interface Equipment {
   model?: string;
   manufacturer?: string;
   serialNumber?: string;
-  location: string;
+  location: string; // legacy - campus
   subLocation?: string;
+  locationId?: string;
+  locationName?: string;
+  campus?: string;
   status: string;
 }
 
 export default function CreateJobOrderPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);
   const [selectedEquipment, setSelectedEquipment] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [campusFilter, setCampusFilter] = useState<string>("all");
-  const [subLocationFilter, setSubLocationFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [locations, setLocations] = useState<Array<{id: string, name: string, nameAr?: string, campus: string}>>([]);
 
   useEffect(() => {
     fetchEquipment();
+    fetchLocations();
   }, []);
 
   useEffect(() => {
     filterEquipment();
-  }, [equipment, searchTerm, campusFilter, subLocationFilter, statusFilter]);
+  }, [equipment, searchTerm, locationFilter, statusFilter]);
+
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch('/api/locations');
+      if (response.ok) {
+        const data = await response.json();
+        setLocations(data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch locations:', error);
+    }
+  };
 
   const fetchEquipment = async () => {
     try {
@@ -72,23 +89,15 @@ export default function CreateJobOrderPage() {
         eq.model?.toLowerCase().includes(term) ||
         eq.manufacturer?.toLowerCase().includes(term) ||
         eq.serialNumber?.toLowerCase().includes(term) ||
-        eq.location.toLowerCase().includes(term) ||
+        eq.locationName?.toLowerCase().includes(term) ||
+        eq.campus?.toLowerCase().includes(term) ||
         eq.subLocation?.toLowerCase().includes(term)
       );
     }
 
-    // Campus filter
-    if (campusFilter !== "all" && campusFilter !== "unknown") {
-      filtered = filtered.filter(eq => eq.location === campusFilter);
-    } else if (campusFilter === "unknown") {
-      filtered = filtered.filter(eq => !eq.location || eq.location.trim() === '');
-    }
-
-    // Sub-location filter (only applies if campus is selected)
-    if (campusFilter !== "all" && subLocationFilter !== "all" && subLocationFilter !== "unknown") {
-      filtered = filtered.filter(eq => eq.subLocation === subLocationFilter);
-    } else if (subLocationFilter === "unknown") {
-      filtered = filtered.filter(eq => !eq.subLocation || eq.subLocation.trim() === '');
+    // Location filter
+    if (locationFilter !== "all") {
+      filtered = filtered.filter(eq => eq.locationId === locationFilter);
     }
 
     // Status filter
@@ -129,33 +138,10 @@ export default function CreateJobOrderPage() {
     router.push(`/job-orders/review?equipmentIds=${equipmentIds}`);
   };
 
-  const getUniqueCampuses = () => {
-    // Use hard-coded campuses from config, not from equipment data
-    return VALID_CAMPUSES;
-  };
-
-  const getUniqueSubLocations = () => {
-    if (campusFilter === "all") return [];
-    const subLocations = [...new Set(
-      equipment
-        .filter(eq => eq.location === campusFilter)
-        .map(eq => eq.subLocation)
-        .filter(subLoc => subLoc && subLoc.trim() !== '')
-    )];
-    return subLocations.sort();
-  };
-
   const getUniqueStatuses = () => {
     const statuses = [...new Set(equipment.map(eq => eq.status).filter(status => status && status.trim() !== ''))];
     return statuses.sort();
   };
-
-  // Reset sub-location when campus changes
-  useEffect(() => {
-    if (campusFilter === "all") {
-      setSubLocationFilter("all");
-    }
-  }, [campusFilter]);
 
   if (loading) {
     return (
@@ -189,12 +175,11 @@ export default function CreateJobOrderPage() {
             <CardHeader>
               <CardTitle>Filter Equipment</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Select a campus first, then choose a sub-location to filter equipment. 
-                {campusFilter !== "all" && subLocationFilter !== "all" && " Select All option is now available!"}
+                Filter by location or status to find equipment.
               </p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -204,34 +189,26 @@ export default function CreateJobOrderPage() {
                     className="pl-10"
                   />
                 </div>
-                <Select value={campusFilter} onValueChange={setCampusFilter}>
+                <Select value={locationFilter} onValueChange={setLocationFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Campus" />
+                    <SelectValue placeholder="All Locations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Campuses</SelectItem>
-                    {getUniqueCampuses().map(campus => (
-                      <SelectItem key={campus} value={campus || 'unknown'}>
-                        {campus || 'Unknown Campus'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select 
-                  value={subLocationFilter} 
-                  onValueChange={setSubLocationFilter}
-                  disabled={campusFilter === "all"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={campusFilter === "all" ? "Select Campus First" : "Select Sub-location"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sub-locations</SelectItem>
-                    {getUniqueSubLocations().map(subLocation => (
-                      <SelectItem key={subLocation} value={subLocation || 'unknown'}>
-                        {subLocation || 'Unknown Sub-location'}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="all">All Locations</SelectItem>
+                    {locations.map(location => {
+                      const currentLang = t("lang");
+                      const displayName = currentLang === "ar" 
+                        ? (location.nameAr || location.name)
+                        : location.name;
+                      return (
+                        <SelectItem key={location.id} value={location.id}>
+                          <div className="flex flex-col items-start">
+                            <span>{displayName}</span>
+                            <span className="text-xs text-muted-foreground">{location.campus}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -262,7 +239,7 @@ export default function CreateJobOrderPage() {
                   Select Equipment ({selectedEquipment.size} selected)
                 </CardTitle>
                 <div className="flex gap-2">
-                  {campusFilter !== "all" && subLocationFilter !== "all" && (
+                  {locationFilter !== "all" && filteredEquipment.length > 0 && (
                     <Button variant="outline" size="sm" onClick={handleSelectAll}>
                       {selectedEquipment.size === filteredEquipment.length ? 'Deselect All' : 'Select All'}
                     </Button>
@@ -315,8 +292,11 @@ export default function CreateJobOrderPage() {
                           {eq.manufacturer && <span>Make: {eq.manufacturer}</span>}
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            <span>{eq.location}</span>
-                            {eq.subLocation && <span> - {eq.subLocation}</span>}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{eq.locationName || eq.subLocation || eq.location}</span>
+                              {eq.campus && <span className="text-xs">{eq.campus}</span>}
+                              {eq.subLocation && <span className="text-xs">Room: {eq.subLocation}</span>}
+                            </div>
                           </div>
                         </div>
                       </div>

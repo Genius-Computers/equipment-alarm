@@ -10,18 +10,33 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, ClipboardList, CheckCircle, MapPin, Box } from "lucide-react";
+import { ArrowLeft, Loader2, ClipboardList, CheckCircle, MapPin, Box, MoveRight } from "lucide-react";
 import { toast } from "sonner";
 import { ServiceRequestType, ServiceRequestPriority } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface EquipmentItem {
   id: string;
   name: string;
   partNumber: string;
   serialNumber: string;
-  location: string;
+  location: string; // legacy - campus
   subLocation: string;
+  locationId?: string;
+  locationName?: string;
+  campus?: string;
   ticketNumber?: string; // Preview ticket number
+  newSubLocation?: string; // Edited sublocation
+  moveEquipment?: boolean; // Whether to move equipment
 }
 
 interface Technician {
@@ -50,6 +65,13 @@ export default function ReviewJobOrderPage() {
   const [scheduledAt, setScheduledAt] = useState<string>(new Date().toISOString().split('T')[0]);
   const [assignedTechnicianId, setAssignedTechnicianId] = useState<string>("unassigned");
   const [notes, setNotes] = useState<string>("");
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [pendingSubLocationEdit, setPendingSubLocationEdit] = useState<{
+    equipmentId: string;
+    equipmentName: string;
+    oldSubLocation: string;
+    newSubLocation: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!equipmentIdsParam) {
@@ -82,22 +104,26 @@ export default function ReviewJobOrderPage() {
       const allEquipment = data.data || [];
       
       const selectedEquipment = allEquipment
-        .filter((eq: { id: string }) => equipmentIds.includes(eq.id))
-        .map((eq: { id: string; name: string; partNumber?: string; part_number?: string; serialNumber?: string; serial_number?: string; location: string; subLocation?: string; sub_location?: string }) => ({
+        .filter((eq: any) => equipmentIds.includes(eq.id))
+        .map((eq: any) => ({
           id: eq.id,
           name: eq.name,
           partNumber: eq.partNumber || eq.part_number || '',
           serialNumber: eq.serialNumber || eq.serial_number || '',
           location: eq.location,
           subLocation: eq.subLocation || eq.sub_location || '',
+          locationId: eq.locationId,
+          locationName: eq.locationName,
+          campus: eq.campus,
         }));
       
       setEquipment(selectedEquipment);
       
-      // Group by location for display
+      // Group by location for display (using locationId, or fallback to legacy campus|||sublocation)
       const grouped = new Map<string, EquipmentItem[]>();
       selectedEquipment.forEach((eq: EquipmentItem) => {
-        const key = `${eq.location}|||${eq.subLocation}`;
+        // Use locationId as key if available, otherwise use legacy campus|||sublocation
+        const key = eq.locationId || `legacy|||${eq.location}|||${eq.subLocation}`;
         if (!grouped.has(key)) {
           grouped.set(key, []);
         }
@@ -176,6 +202,81 @@ export default function ReviewJobOrderPage() {
     }
   };
 
+  const handleSubLocationChange = (equipmentId: string, newValue: string) => {
+    // Just update the field value - don't show dialog yet
+    setEquipment(prev => prev.map(eq => 
+      eq.id === equipmentId 
+        ? { ...eq, newSubLocation: newValue }
+        : eq
+    ));
+    
+    // Update the grouped map as well
+    setEquipmentByLocation(prevMap => {
+      const newMap = new Map<string, EquipmentItem[]>();
+      prevMap.forEach((items, key) => {
+        const updatedItems = items.map(item => 
+          item.id === equipmentId
+            ? { ...item, newSubLocation: newValue }
+            : item
+        );
+        newMap.set(key, updatedItems);
+      });
+      return newMap;
+    });
+  };
+
+  const handleUpdateSubLocation = (equipmentId: string, equipmentName: string, oldSubLocation: string, newSubLocation: string) => {
+    // Show confirmation dialog for location change
+    setPendingSubLocationEdit({
+      equipmentId,
+      equipmentName,
+      oldSubLocation,
+      newSubLocation,
+    });
+    setMoveDialogOpen(true);
+  };
+
+  const handleConfirmMove = (shouldMove: boolean) => {
+    if (!pendingSubLocationEdit) return;
+
+    setEquipment(prev => prev.map(eq => 
+      eq.id === pendingSubLocationEdit.equipmentId
+        ? { 
+            ...eq, 
+            newSubLocation: pendingSubLocationEdit.newSubLocation,
+            moveEquipment: shouldMove,
+          }
+        : eq
+    ));
+
+    // Update the grouped map as well
+    setEquipmentByLocation(prevMap => {
+      const newMap = new Map<string, EquipmentItem[]>();
+      prevMap.forEach((items, key) => {
+        const updatedItems = items.map(item => 
+          item.id === pendingSubLocationEdit.equipmentId
+            ? { 
+                ...item, 
+                newSubLocation: pendingSubLocationEdit.newSubLocation,
+                moveEquipment: shouldMove,
+              }
+            : item
+        );
+        newMap.set(key, updatedItems);
+      });
+      return newMap;
+    });
+
+    setMoveDialogOpen(false);
+    setPendingSubLocationEdit(null);
+
+    if (shouldMove) {
+      toast.success(`Equipment will be moved to "${pendingSubLocationEdit.newSubLocation}"`);
+    } else {
+      toast.info("Sublocation updated, equipment will stay in original location");
+    }
+  };
+
   const handleCheckout = async () => {
     // Validate required fields
     if (!scheduledAt) {
@@ -196,52 +297,108 @@ export default function ReviewJobOrderPage() {
         error?: string;
       }> = [];
       
+      let orderIndex = 0;
       for (const [locationKey, items] of locationEntries) {
-        const [campus, sublocation] = locationKey.split('|||');
+        // Parse location key - could be locationId or legacy "legacy|||campus|||sublocation"
+        let campus: string;
+        let sublocation: string;
+        
+        if (locationKey.startsWith('legacy|||')) {
+          const parts = locationKey.split('|||');
+          campus = parts[1];
+          sublocation = parts[2];
+        } else {
+          // Using new structure - get campus from first item
+          const firstItem = items[0];
+          campus = firstItem.campus || firstItem.location;
+          sublocation = firstItem.locationName || firstItem.subLocation || '';
+        }
+        
+        // Add a small delay between job order creations to avoid race conditions
+        if (orderIndex > 0) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        orderIndex++;
         
         try {
-          const response = await fetch('/api/job-orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              campus,
-              sublocation,
-              equipmentIds: items.map(eq => eq.id),
-              requestType,
-              priority,
-              scheduledAt: new Date(scheduledAt).toISOString(),
-              assignedTechnicianId: assignedTechnicianId !== 'unassigned' ? assignedTechnicianId : undefined,
-              notes: notes.trim() || undefined,
-            }),
-          });
+          // Build notes with move information
+          const moveNotes = items
+            .filter(item => item.moveEquipment && item.newSubLocation)
+            .map(item => `[MOVE] ${item.name}: Move from "${item.subLocation || 'unspecified'}" to "${item.newSubLocation}"`)
+            .join('\n');
+          
+          const finalNotes = moveNotes 
+            ? (notes.trim() ? `${notes.trim()}\n\n${moveNotes}` : moveNotes)
+            : notes.trim() || undefined;
 
-          if (response.ok) {
-            const data = await response.json();
-            results.push({
-              locationKey,
-              success: true,
-              orderNumber: data.orderNumber,
-              itemCount: data.itemCount,
-            });
-          } else {
-            let errorMessage = 'Unknown error';
+          // Retry logic for duplicate key errors
+          let success = false;
+          let lastError: any = null;
+          
+          for (let attempt = 0; attempt < 3; attempt++) {
             try {
-              const errorData = await response.json();
-              errorMessage = errorData.details || errorData.error || 'Unknown error';
-            } catch (jsonError) {
-              errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+              const response = await fetch('/api/job-orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  campus,
+                  sublocation,
+                  equipmentIds: items.map(eq => eq.id),
+                  requestType,
+                  priority,
+                  scheduledAt: new Date(scheduledAt).toISOString(),
+                  assignedTechnicianId: assignedTechnicianId !== 'unassigned' ? assignedTechnicianId : undefined,
+                  notes: finalNotes,
+                }),
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                results.push({
+                  locationKey,
+                  success: true,
+                  orderNumber: data.orderNumber,
+                  itemCount: data.itemCount,
+                });
+                success = true;
+                break;
+              } else {
+                const errorData = await response.json();
+                const errorMessage = errorData.details || errorData.error || 'Unknown error';
+                
+                // If it's a duplicate key error and we have retries left, wait and retry
+                if (errorMessage.includes('duplicate') && attempt < 2) {
+                  console.warn(`Duplicate key detected, retrying... (attempt ${attempt + 1})`);
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  lastError = errorMessage;
+                  continue;
+                }
+                
+                lastError = errorMessage;
+                break;
+              }
+            } catch (fetchError) {
+              lastError = fetchError instanceof Error ? fetchError.message : 'Network error';
+              if (attempt < 2) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                continue;
+              }
+              break;
             }
+          }
+          
+          if (!success) {
             results.push({
               locationKey,
               success: false,
-              error: errorMessage,
+              error: lastError || 'Unknown error',
             });
           }
         } catch (error) {
           results.push({
             locationKey,
             success: false,
-            error: error instanceof Error ? error.message : 'Network error',
+            error: error instanceof Error ? error.message : 'Unexpected error',
           });
         }
       }
@@ -367,13 +524,26 @@ export default function ReviewJobOrderPage() {
                 <div className="text-sm text-muted-foreground mb-1">Locations</div>
                 <div className="space-y-1">
                   {Array.from(equipmentByLocation.entries()).map(([locationKey, items]) => {
-                    const [campus, sublocation] = locationKey.split('|||');
+                    const firstItem = items[0];
+                    let displayLocation: string;
+                    let displayCampus: string;
+                    
+                    if (locationKey.startsWith('legacy|||')) {
+                      const parts = locationKey.split('|||');
+                      displayCampus = parts[1];
+                      displayLocation = parts[2];
+                    } else {
+                      displayCampus = firstItem.campus || firstItem.location;
+                      displayLocation = firstItem.locationName || firstItem.subLocation || '';
+                    }
+                    
                     return (
                       <div key={locationKey} className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{campus}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span>{sublocation}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{displayLocation}</span>
+                          <span className="text-xs text-muted-foreground">{displayCampus}</span>
+                        </div>
                         <Badge variant="outline" className="ml-2">
                           {items.length} item{items.length !== 1 ? 's' : ''}
                         </Badge>
@@ -531,7 +701,19 @@ export default function ReviewJobOrderPage() {
           <CardContent>
             <div className="space-y-6">
               {Array.from(equipmentByLocation.entries()).map(([locationKey, items], groupIndex) => {
-                const [campus, sublocation] = locationKey.split('|||');
+                const firstItem = items[0];
+                let displayLocation: string;
+                let displayCampus: string;
+                
+                if (locationKey.startsWith('legacy|||')) {
+                  const parts = locationKey.split('|||');
+                  displayCampus = parts[1];
+                  displayLocation = parts[2];
+                } else {
+                  displayCampus = firstItem.campus || firstItem.location;
+                  displayLocation = firstItem.locationName || firstItem.subLocation || '';
+                }
+                
                 return (
                   <div key={locationKey}>
                     {groupIndex > 0 && <Separator className="my-6" />}
@@ -540,7 +722,8 @@ export default function ReviewJobOrderPage() {
                     <div className="flex items-center gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
                       <MapPin className="h-5 w-5 text-primary" />
                       <div className="flex-1">
-                        <div className="font-semibold">{campus} → {sublocation}</div>
+                        <div className="font-semibold">{displayLocation}</div>
+                        <div className="text-sm text-muted-foreground">{displayCampus}</div>
                         <div className="text-sm text-muted-foreground">
                           {items.length} equipment item{items.length !== 1 ? 's' : ''}
                         </div>
@@ -574,6 +757,49 @@ export default function ReviewJobOrderPage() {
                                   <span className="font-medium">Serial Number:</span> {item.serialNumber}
                                 </div>
                               )}
+                              <div className="md:col-span-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm shrink-0">Sublocation:</span>
+                                  <Input
+                                    value={item.newSubLocation ?? item.subLocation ?? ''}
+                                    onChange={(e) => handleSubLocationChange(item.id, e.target.value)}
+                                    placeholder="e.g., Room 101, Lab A"
+                                    className="h-8 text-sm flex-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  {(item.newSubLocation !== undefined && 
+                                    item.newSubLocation.trim() !== (item.subLocation || '').trim() &&
+                                    !item.moveEquipment) && (
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="h-8 text-xs shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateSubLocation(
+                                          item.id,
+                                          item.name,
+                                          item.subLocation || '',
+                                          item.newSubLocation || ''
+                                        );
+                                      }}
+                                    >
+                                      Update
+                                    </Button>
+                                  )}
+                                  {item.moveEquipment && (
+                                    <Badge variant="outline" className="text-xs gap-1 shrink-0">
+                                      <MoveRight className="h-3 w-3" />
+                                      Will Move
+                                    </Badge>
+                                  )}
+                                </div>
+                                {item.moveEquipment && (
+                                  <div className="text-xs text-orange-600 mt-1">
+                                    ⚠️ Equipment will be moved to this location as part of the service request
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -615,6 +841,46 @@ export default function ReviewJobOrderPage() {
             )}
           </Button>
         </div>
+
+        {/* Move Equipment Confirmation Dialog */}
+        <AlertDialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Move Equipment?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                {pendingSubLocationEdit && (
+                  <div className="space-y-2">
+                    <div>
+                      <strong>{pendingSubLocationEdit.equipmentName}</strong> is currently located at:
+                    </div>
+                    <div className="text-sm bg-muted p-2 rounded">
+                      {pendingSubLocationEdit.oldSubLocation || '(No sublocation set)'}
+                    </div>
+                    <div className="mt-2">
+                      You've changed it to:
+                    </div>
+                    <div className="text-sm bg-muted p-2 rounded">
+                      {pendingSubLocationEdit.newSubLocation}
+                    </div>
+                    <div className="mt-4 font-semibold">
+                      Do you want to move this equipment as part of the service request?
+                    </div>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                handleConfirmMove(false);
+              }}>
+                No, Keep Original Location
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleConfirmMove(true)}>
+                Yes, Move Equipment
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

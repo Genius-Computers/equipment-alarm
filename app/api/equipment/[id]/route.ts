@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEquipmentById, updateEquipment, softDeleteEquipment, findOrCreateLocation } from '@/lib/db';
+import { getEquipmentById, updateEquipment, softDeleteEquipment, findOrCreateLocation, getEquipmentWithLocationInfo } from '@/lib/db';
 import { snakeToCamelCase, deriveMaintenanceInfo } from '@/lib/utils';
 import { getCurrentServerUser } from '@/lib/auth';
 import { VALID_CAMPUSES } from '@/lib/config';
@@ -13,17 +13,21 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     }
     const body = await req.json();
 
-    // Validate location
+    // Legacy location validation (for backward compatibility)
     if (body.location && !VALID_CAMPUSES.includes(body.location)) {
       return NextResponse.json({ 
         error: `Invalid location. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
       }, { status: 400 });
     }
 
-    // Create location entry if sublocation is provided
+    // Legacy: Create location entry if legacy sublocation is provided
     if (body.location && body.subLocation && body.subLocation.trim()) {
       try {
-        await findOrCreateLocation(body.location, body.subLocation.trim(), user.id);
+        const locationId = await findOrCreateLocation(body.location, body.subLocation.trim(), user.id);
+        // If no new locationId provided, use the legacy one
+        if (!body.locationId) {
+          body.locationId = locationId;
+        }
       } catch (error) {
         console.error('Failed to create location:', error);
         // Continue anyway - equipment can still be updated
@@ -35,6 +39,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       part_number: body.partNumber,
       location: body.location,
       sub_location: body.subLocation,
+      location_id: body.locationId,
       last_maintenance: body.lastMaintenance,
       maintenance_interval: body.maintenanceInterval,
       status: body.status,
@@ -62,7 +67,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const row = await getEquipmentById(id);
+    // Use new function that includes location info
+    const row = await getEquipmentWithLocationInfo(id);
     if (!row) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }

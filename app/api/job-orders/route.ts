@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createJobOrder, listJobOrdersPaginated } from '@/lib/db';
-import { stackServerApp } from '@/stack';
+import { getCurrentServerUser } from '@/lib/auth';
 import { isValidCampus } from '@/lib/config';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await stackServerApp.getUser();
+    const user = await getCurrentServerUser(req);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await stackServerApp.getUser();
+    const user = await getCurrentServerUser(req);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -87,33 +87,9 @@ export async function POST(req: NextRequest) {
 
     console.log('[Job Order] Creating for:', campus, '→', sublocation, 'with', equipmentIds.length, 'items');
 
-    // Validate that the sublocation exists in the locations table
-    const { listLocationsByCampus, listEquipmentPaginated, getNextTicketId } = await import('@/lib/db');
-    
-    try {
-      const existingLocations = await listLocationsByCampus(campus);
-      const locationExists = existingLocations.some(loc => loc.name === sublocation);
-      
-      if (!locationExists) {
-        console.error('[Job Order] Sublocation not found in locations table:', sublocation);
-        return NextResponse.json(
-          { 
-            error: `Sublocation "${sublocation}" does not exist in ${campus}. Please create it in the Locations module first.`,
-            details: 'Location validation failed'
-          },
-          { status: 400 }
-        );
-      }
-    } catch (locationError) {
-      console.error('[Job Order] Error validating location:', locationError);
-      return NextResponse.json(
-        { 
-          error: 'Failed to validate location',
-          details: locationError instanceof Error ? locationError.message : 'Unknown error'
-        },
-        { status: 500 }
-      );
-    }
+    // Note: sublocation is now the location name (from the new locations table)
+    // No validation needed - it's just a reference to what location the equipment is in
+    const { listEquipmentPaginated, getNextTicketId } = await import('@/lib/db');
 
     // Fetch equipment details for the items
     
@@ -166,7 +142,30 @@ export async function POST(req: NextRequest) {
     console.log('[Job Order] Creating job order with number: JO' + firstTicketNumber);
     
     // Create job order directly as submitted (using first ticket number for order ID)
-    const jobOrder = await createJobOrder(campus, sublocation, itemsJson, user.id, firstTicketNumber);
+    // Retry up to 3 times if we hit a duplicate key error
+    let jobOrder;
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        jobOrder = await createJobOrder(campus, sublocation, itemsJson, user.id, firstTicketNumber);
+        break;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('duplicate key') && retries > 1) {
+          console.warn('[Job Order] Duplicate order number detected, regenerating...');
+          // Generate a new first ticket number
+          firstTicketNumber = await getNextTicketId();
+          retries--;
+          // Small delay to avoid race conditions
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    if (!jobOrder) {
+      throw new Error('Failed to create job order after retries');
+    }
     
     console.log('[Job Order] Job order created, ID:', jobOrder.id, 'Number:', jobOrder.order_number);
     

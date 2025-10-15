@@ -68,8 +68,8 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
         [USER_FRIENDLY_NAMES.model]: "Model X100",
         [USER_FRIENDLY_NAMES.manufacturer]: "Acme Corp",
         [USER_FRIENDLY_NAMES.serialNumber]: "SN-00012345",
-        [USER_FRIENDLY_NAMES.location]: "Main Campus",
-        [USER_FRIENDLY_NAMES.subLocation]: "Engineering Building - Floor 2",
+        [USER_FRIENDLY_NAMES.location]: "College of Medicine",
+        [USER_FRIENDLY_NAMES.subLocation]: "Room 201",
         [USER_FRIENDLY_NAMES.status]: "Working",
         [USER_FRIENDLY_NAMES.lastMaintenance]: "2024-01-15",
         [USER_FRIENDLY_NAMES.maintenanceInterval]: "6 months",
@@ -80,8 +80,8 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
         [USER_FRIENDLY_NAMES.model]: "V-500",
         [USER_FRIENDLY_NAMES.manufacturer]: "MedTech Inc",
         [USER_FRIENDLY_NAMES.serialNumber]: "SN-98765432",
-        [USER_FRIENDLY_NAMES.location]: "AJA Complex",
-        [USER_FRIENDLY_NAMES.subLocation]: "Medical Center - ICU",
+        [USER_FRIENDLY_NAMES.location]: "College of Dentistry",
+        [USER_FRIENDLY_NAMES.subLocation]: "Lab A",
         [USER_FRIENDLY_NAMES.status]: "Maintenance",
         [USER_FRIENDLY_NAMES.lastMaintenance]: "2024-02-01",
         [USER_FRIENDLY_NAMES.maintenanceInterval]: "3 months",
@@ -205,7 +205,9 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Note: All sublocations must exist in the Locations module before importing.
+        Note: The "Location" column should contain the location name (e.g., "College of Medicine"), not the campus. 
+        All locations must exist in the Locations module before importing.
+        The "Sub Location" column is optional and can contain free text (e.g., "Room 101", "Lab A").
       </p>
     </div>
   );

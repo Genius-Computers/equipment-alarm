@@ -71,17 +71,22 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
-            {equipment.location}
-          </div>
-          {equipment.subLocation ? (
-            <div className="flex items-center text-xs text-muted-foreground">
-              <span className="ml-6 rtl:ml-0 rtl:mr-6">
-                {t("form.subLocation")}: {equipment.subLocation}
-              </span>
+          <div className="space-y-1">
+            <div className="flex items-center text-sm">
+              <MapPin className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+              <span className="font-medium">{equipment.locationName || equipment.subLocation || equipment.location || "—"}</span>
             </div>
-          ) : null}
+            {equipment.campus && (
+              <div className="text-xs text-muted-foreground ml-6 rtl:ml-0 rtl:mr-6">
+                {equipment.campus}
+              </div>
+            )}
+            {equipment.subLocation && (
+              <div className="text-xs text-muted-foreground ml-6 rtl:ml-0 rtl:mr-6">
+                {t("form.subLocation")}: {equipment.subLocation}
+              </div>
+            )}
+          </div>
 
           {equipment.lastMaintenance || equipment.maintenanceInterval ? (
             <div className="grid grid-cols-2 gap-4 text-sm">

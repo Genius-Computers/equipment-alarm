@@ -264,10 +264,46 @@ const translations = {
     "sidebar.menu": "Menu",
     "sidebar.home": "Home",
     "sidebar.inventory": "Inventory",
+    "sidebar.locations": "Locations",
+    "sidebar.jobOrders": "Job Orders",
     "sidebar.serviceRequests": "Service Requests",
     "sidebar.reports": "Reports",
     "sidebar.manageUsers": "Manage Users",
     "sidebar.accountSettings": "Account / Settings",
+
+    // Locations
+    "locations.title": "Locations",
+    "locations.subtitle": "Manage locations across all campuses",
+    "locations.addLocation": "Add New Location",
+    "locations.campus": "Campus",
+    "locations.locationName": "Location Name",
+    "locations.selectCampus": "Select campus",
+    "locations.enterName": "e.g., Engineering Building",
+    "locations.addButton": "Add Location",
+    "locations.allLocations": "All Locations",
+    "locations.showAll": "Show All Locations",
+    "locations.noLocations": "No locations added yet",
+    "locations.noLocationsFiltered": "No locations found for {campus}",
+    "locations.addFirst": "Add your first location above",
+    "locations.delete": "Delete Location",
+    "locations.deleteConfirm": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "locations.deleteSuccess": "Location deleted successfully",
+    "locations.viewEquipment": "View equipment for this location",
+    "locations.equipmentItems": "Equipment Items",
+    "locations.workingEquipment": "Working Equipment",
+    "locations.noEquipment": "No equipment in this location yet",
+    "locations.equipmentWillAppear": "Equipment will appear here once added",
+    "locations.general": "General",
+
+    // Job Orders
+    "jobOrders.title": "Job Orders",
+    "jobOrders.subtitle": "Manage job orders and work requests",
+
+    // Dashboard
+    "dashboard.locations": "Locations",
+    "dashboard.locationsDesc": "Manage campus locations and view equipment distribution",
+    "dashboard.jobOrders": "Job Orders",
+    "dashboard.jobOrdersDesc": "Create job orders for equipment maintenance and service requests",
 
     // Spare Parts
     "spareParts.title": "Spare Parts",
@@ -294,6 +330,43 @@ const translations = {
     "spareParts.quantityPlaceholder": "e.g., 10",
     "spareParts.manufacturerPlaceholder": "e.g., Acme Corp",
     "spareParts.supplierPlaceholder": "e.g., Parts Warehouse Inc.",
+    
+    // Spare Part Orders
+    "orders.title": "Spare Part Orders",
+    "orders.placeOrder": "Place Order",
+    "orders.reviewOrder": "Review Order",
+    "orders.editOrder": "Edit Order",
+    "orders.updateOrder": "Update Order",
+    "orders.review": "Review",
+    "orders.searchEquipment": "Search Equipment",
+    "orders.searchPlaceholder": "Search by name, serial number, or location...",
+    "orders.noEquipmentFound": "No equipment found",
+    "orders.sparePartName": "Spare Part Name",
+    "orders.sparePartNamePlaceholder": "Enter spare part name if needed",
+    "orders.quantity": "Quantity",
+    "orders.itemsSelected": "{count} item selected|{count} items selected",
+    "orders.selectAtLeastOne": "Please select at least one item",
+    "orders.equipment": "Equipment",
+    "orders.sparePart": "Spare Part",
+    "orders.requested": "Requested",
+    "orders.supplied": "Supplied",
+    "orders.notes": "Notes",
+    "orders.notesPlaceholder": "Add any additional notes...",
+    "orders.submitOrder": "Submit Order",
+    "orders.submitting": "Submitting...",
+    "orders.createSuccess": "Order created successfully!",
+    "orders.createError": "Failed to create order",
+    "orders.updateSuccess": "Order updated successfully!",
+    "orders.updateError": "Failed to update order",
+    "orders.noOrders": "No orders found",
+    "orders.orderNumber": "Order #",
+    "orders.items": "item(s)",
+    "orders.supervisorNotes": "Supervisor Notes",
+    "orders.technicianNotes": "Technician Notes",
+    "orders.status": "Status",
+    "orders.statusPendingSupervisorReview": "Pending Supervisor Review",
+    "orders.statusCompleted": "Completed",
+    "orders.statusApproved": "Approved",
     
     // Attendance
     "attendance.title": "Attendance",
@@ -342,6 +415,11 @@ const translations = {
     "common.open": "Open",
     "common.selectEquipment": "Select Equipment",
     "common.filterPlaceholder": "Type to filter by name or serial number...",
+    "common.optional": "Optional",
+    "common.next": "Next",
+    "common.back": "Back",
+    "common.refresh": "Refresh",
+    "common.saving": "Saving...",
 
     // Dashboard Cards
     "dashboard.addEquipment": "Add Equipment/Device",
@@ -655,10 +733,46 @@ const translations = {
     "sidebar.menu": "القائمة",
     "sidebar.home": "الرئيسية",
     "sidebar.inventory": "المخزون",
+    "sidebar.locations": "المواقع",
+    "sidebar.jobOrders": "أوامر العمل",
     "sidebar.serviceRequests": "طلبات الخدمة",
     "sidebar.reports": "التقارير",
     "sidebar.manageUsers": "إدارة المستخدمين",
     "sidebar.accountSettings": "الحساب / الإعدادات",
+
+    // Locations
+    "locations.title": "المواقع",
+    "locations.subtitle": "إدارة المواقع عبر جميع الحرم الجامعي",
+    "locations.addLocation": "إضافة موقع جديد",
+    "locations.campus": "الحرم الجامعي",
+    "locations.locationName": "اسم الموقع",
+    "locations.selectCampus": "اختر الحرم الجامعي",
+    "locations.enterName": "مثال: مبنى الهندسة",
+    "locations.addButton": "إضافة موقع",
+    "locations.allLocations": "جميع المواقع",
+    "locations.showAll": "عرض جميع المواقع",
+    "locations.noLocations": "لم تتم إضافة أي مواقع بعد",
+    "locations.noLocationsFiltered": "لم يتم العثور على مواقع لـ {campus}",
+    "locations.addFirst": "أضف موقعك الأول أعلاه",
+    "locations.delete": "حذف الموقع",
+    "locations.deleteConfirm": "هل أنت متأكد أنك تريد حذف \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "locations.deleteSuccess": "تم حذف الموقع بنجاح",
+    "locations.viewEquipment": "عرض المعدات لهذا الموقع",
+    "locations.equipmentItems": "عناصر المعدات",
+    "locations.workingEquipment": "المعدات العاملة",
+    "locations.noEquipment": "لا توجد معدات في هذا الموقع بعد",
+    "locations.equipmentWillAppear": "ستظهر المعدات هنا بمجرد إضافتها",
+    "locations.general": "عام",
+
+    // Job Orders
+    "jobOrders.title": "أوامر العمل",
+    "jobOrders.subtitle": "إدارة أوامر العمل وطلبات الخدمة",
+
+    // Dashboard
+    "dashboard.locations": "المواقع",
+    "dashboard.locationsDesc": "إدارة مواقع الحرم الجامعي وعرض توزيع المعدات",
+    "dashboard.jobOrders": "أوامر العمل",
+    "dashboard.jobOrdersDesc": "إنشاء أوامر عمل لصيانة المعدات وطلبات الخدمة",
 
     // Spare Parts
     "spareParts.title": "قطع الغيار",
@@ -685,6 +799,43 @@ const translations = {
     "spareParts.quantityPlaceholder": "مثال: 10",
     "spareParts.manufacturerPlaceholder": "مثال: شركة أكمي",
     "spareParts.supplierPlaceholder": "مثال: مستودع القطع",
+    
+    // Spare Part Orders
+    "orders.title": "طلبات قطع الغيار",
+    "orders.placeOrder": "تقديم طلب",
+    "orders.reviewOrder": "مراجعة الطلب",
+    "orders.editOrder": "تعديل الطلب",
+    "orders.updateOrder": "تحديث الطلب",
+    "orders.review": "مراجعة",
+    "orders.searchEquipment": "البحث عن المعدات",
+    "orders.searchPlaceholder": "البحث بالاسم أو الرقم التسلسلي أو الموقع...",
+    "orders.noEquipmentFound": "لم يتم العثور على معدات",
+    "orders.sparePartName": "اسم قطعة الغيار",
+    "orders.sparePartNamePlaceholder": "أدخل اسم قطعة الغيار إذا لزم الأمر",
+    "orders.quantity": "الكمية",
+    "orders.itemsSelected": "تم تحديد {count} عنصر|تم تحديد {count} عناصر",
+    "orders.selectAtLeastOne": "الرجاء تحديد عنصر واحد على الأقل",
+    "orders.equipment": "المعدات",
+    "orders.sparePart": "قطعة الغيار",
+    "orders.requested": "المطلوب",
+    "orders.supplied": "الموردة",
+    "orders.notes": "ملاحظات",
+    "orders.notesPlaceholder": "أضف أي ملاحظات إضافية...",
+    "orders.submitOrder": "إرسال الطلب",
+    "orders.submitting": "جارٍ الإرسال...",
+    "orders.createSuccess": "تم إنشاء الطلب بنجاح!",
+    "orders.createError": "فشل في إنشاء الطلب",
+    "orders.updateSuccess": "تم تحديث الطلب بنجاح!",
+    "orders.updateError": "فشل في تحديث الطلب",
+    "orders.noOrders": "لا توجد طلبات",
+    "orders.orderNumber": "طلب #",
+    "orders.items": "عنصر",
+    "orders.supervisorNotes": "ملاحظات المشرف",
+    "orders.technicianNotes": "ملاحظات الفني",
+    "orders.status": "الحالة",
+    "orders.statusPendingSupervisorReview": "في انتظار مراجعة المشرف",
+    "orders.statusCompleted": "مكتمل",
+    "orders.statusApproved": "معتمد",
     
     // Attendance
     "attendance.title": "الحضور",
@@ -733,6 +884,11 @@ const translations = {
     "common.open": "فتح",
     "common.selectEquipment": "اختر المعدة",
     "common.filterPlaceholder": "اكتب للتصفية حسب الاسم أو الرقم التسلسلي...",
+    "common.optional": "اختياري",
+    "common.next": "التالي",
+    "common.back": "رجوع",
+    "common.refresh": "تحديث",
+    "common.saving": "جارٍ الحفظ...",
 
     // Dashboard Cards
     "dashboard.addEquipment": "إضافة معدة/جهاز",
@@ -801,6 +957,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>("en");
   
   const t = (key: string, params?: Record<string, unknown>) => {
+    // Special case for getting current language code
+    if (key === "lang") return language;
+    
     let text = translations[language][key as keyof typeof translations[typeof language]] || key;
     
     // Handle pluralization for count
