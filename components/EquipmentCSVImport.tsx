@@ -204,10 +204,8 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
           {uploading ? t("csv.importing") : t("csv.import")}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Note: The &quot;Location&quot; column should contain the location name (e.g., &quot;College of Medicine&quot;), not the campus. 
-        All locations must exist in the Locations module before importing.
-        The &quot;Sub Location&quot; column is optional and can contain free text (e.g., &quot;Room 101&quot;, &quot;Lab A&quot;).
+      <p className="text-xs text-muted-foreground mt-2">
+        <span className="font-medium">Note:</span> Location must exist in Locations module. Sub Location is optional.
       </p>
     </div>
   );

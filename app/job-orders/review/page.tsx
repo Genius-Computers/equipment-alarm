@@ -391,7 +391,7 @@ export default function ReviewJobOrderPage() {
             results.push({
               locationKey,
               success: false,
-              error: lastError || 'Unknown error',
+              error: lastError instanceof Error ? lastError.message : 'Unknown error',
             });
           }
         } catch (error) {
