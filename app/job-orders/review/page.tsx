@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2, ClipboardList, CheckCircle, MapPin, Box, MoveRight } from "lucide-react";
 import { toast } from "sonner";
-import { ServiceRequestType, ServiceRequestPriority } from "@/lib/types";
+import { ServiceRequestType, ServiceRequestPriority, Equipment } from "@/lib/types";
 import {
   AlertDialog,
   AlertDialogAction,
