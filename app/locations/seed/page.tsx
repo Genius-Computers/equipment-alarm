@@ -194,8 +194,8 @@ export default function SeedLocationsPage() {
                   <div>
                     <div className="font-medium text-sm mb-2 text-green-600">✓ Added:</div>
                     <div className="space-y-1 text-sm">
-                      {result.results.added.map((loc: string, idx: number) => (
-                        <div key={idx} className="text-muted-foreground">• {loc}</div>
+                      {result.results.added.map((loc, idx) => (
+                        <div key={idx} className="text-muted-foreground">• {loc.campus} - {loc.name}</div>
                       ))}
                     </div>
                   </div>
@@ -209,8 +209,8 @@ export default function SeedLocationsPage() {
                       Errors:
                     </div>
                     <div className="space-y-1 text-sm">
-                      {result.results.errors.map((err: string, idx: number) => (
-                        <div key={idx} className="text-destructive">• {err}</div>
+                      {result.results.errors.map((err, idx) => (
+                        <div key={idx} className="text-destructive">• {err.campus} - {err.name}: {err.error}</div>
                       ))}
                     </div>
                   </div>

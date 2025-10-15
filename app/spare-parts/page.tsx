@@ -137,6 +137,10 @@ const Page = () => {
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold">{t("spareParts.title")}</h1>
               <div className="flex gap-2">
+                <Button variant="outline" onClick={() => router.push("/spare-parts/orders")}>
+                  <ShoppingCart className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                  {t("orders.viewOrders")}
+                </Button>
                 {isSupervisor && (
                   <Button onClick={() => setIsOrderDialogOpen(true)} disabled={isCreating}>
                     <ShoppingCart className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />

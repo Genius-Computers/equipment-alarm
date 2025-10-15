@@ -333,6 +333,7 @@ const translations = {
     
     // Spare Part Orders
     "orders.title": "Spare Part Orders",
+    "orders.viewOrders": "View Orders",
     "orders.placeOrder": "Place Order",
     "orders.reviewOrder": "Review Order",
     "orders.editOrder": "Edit Order",
@@ -802,6 +803,7 @@ const translations = {
     
     // Spare Part Orders
     "orders.title": "طلبات قطع الغيار",
+    "orders.viewOrders": "عرض الطلبات",
     "orders.placeOrder": "تقديم طلب",
     "orders.reviewOrder": "مراجعة الطلب",
     "orders.editOrder": "تعديل الطلب",
