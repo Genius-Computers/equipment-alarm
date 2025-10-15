@@ -69,7 +69,7 @@ export default function LocationsPage() {
       if (equipmentRes.ok) {
         const equipmentData = await equipmentRes.json();
         const counts: Record<string, number> = {};
-        equipmentData.data.forEach((eq: any) => {
+        equipmentData.data.forEach((eq: { locationId?: string }) => {
           if (eq.locationId) {
             counts[eq.locationId] = (counts[eq.locationId] || 0) + 1;
           }

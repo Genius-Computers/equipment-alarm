@@ -104,14 +104,14 @@ export default function ReviewJobOrderPage() {
       const allEquipment = data.data || [];
       
       const selectedEquipment = allEquipment
-        .filter((eq: any) => equipmentIds.includes(eq.id))
-        .map((eq: any) => ({
+        .filter((eq: Equipment) => equipmentIds.includes(eq.id))
+        .map((eq: Equipment) => ({
           id: eq.id,
           name: eq.name,
-          partNumber: eq.partNumber || eq.part_number || '',
-          serialNumber: eq.serialNumber || eq.serial_number || '',
+          partNumber: eq.partNumber || '',
+          serialNumber: eq.serialNumber || '',
           location: eq.location,
-          subLocation: eq.subLocation || eq.sub_location || '',
+          subLocation: eq.subLocation || '',
           locationId: eq.locationId,
           locationName: eq.locationName,
           campus: eq.campus,
@@ -333,7 +333,7 @@ export default function ReviewJobOrderPage() {
 
           // Retry logic for duplicate key errors
           let success = false;
-          let lastError: any = null;
+          let lastError: Error | null = null;
           
           for (let attempt = 0; attempt < 3; attempt++) {
             try {
@@ -857,7 +857,7 @@ export default function ReviewJobOrderPage() {
                       {pendingSubLocationEdit.oldSubLocation || '(No sublocation set)'}
                     </div>
                     <div className="mt-2">
-                      You've changed it to:
+                      You&apos;ve changed it to:
                     </div>
                     <div className="text-sm bg-muted p-2 rounded">
                       {pendingSubLocationEdit.newSubLocation}

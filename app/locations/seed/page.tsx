@@ -21,12 +21,10 @@ const LOCATIONS_TO_ADD = [
 
 export default function SeedLocationsPage() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [currentLocations, setCurrentLocations] = useState<any[]>([]);
-  const [debugLoading, setDebugLoading] = useState(false);
+  const [result, setResult] = useState<{ message?: string; locations?: unknown[] } | null>(null);
+  const [currentLocations, setCurrentLocations] = useState<Array<{ id: string; campus: string; name: string }>>([]);
 
   const fetchCurrentLocations = async () => {
-    setDebugLoading(true);
     try {
       const response = await fetch('/api/locations/debug');
       if (response.ok) {
@@ -35,8 +33,6 @@ export default function SeedLocationsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch current locations:', error);
-    } finally {
-      setDebugLoading(false);
     }
   };
 

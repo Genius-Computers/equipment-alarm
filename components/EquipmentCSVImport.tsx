@@ -205,9 +205,9 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Note: The "Location" column should contain the location name (e.g., "College of Medicine"), not the campus. 
+        Note: The &quot;Location&quot; column should contain the location name (e.g., &quot;College of Medicine&quot;), not the campus. 
         All locations must exist in the Locations module before importing.
-        The "Sub Location" column is optional and can contain free text (e.g., "Room 101", "Lab A").
+        The &quot;Sub Location&quot; column is optional and can contain free text (e.g., &quot;Room 101&quot;, &quot;Lab A&quot;).
       </p>
     </div>
   );
