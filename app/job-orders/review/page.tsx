@@ -378,7 +378,7 @@ export default function ReviewJobOrderPage() {
                 break;
               }
             } catch (fetchError) {
-              lastError = fetchError instanceof Error ? fetchError.message : 'Network error';
+              lastError = fetchError instanceof Error ? fetchError : new Error('Network error');
               if (attempt < 2) {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 continue;
