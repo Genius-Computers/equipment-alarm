@@ -28,6 +28,11 @@ interface SeedResult {
     total: number;
     errors: number;
   };
+  results?: {
+    added: Array<{ campus: string; name: string }>;
+    deleted: Array<{ campus: string; name: string }>;
+    errors: Array<{ campus: string; name: string; error: string }>;
+  };
 }
 
 export default function SeedLocationsPage() {
@@ -185,7 +190,7 @@ export default function SeedLocationsPage() {
                   </div>
                 </div>
 
-                {result.results.added.length > 0 && (
+                {result.results && result.results.added.length > 0 && (
                   <div>
                     <div className="font-medium text-sm mb-2 text-green-600">✓ Added:</div>
                     <div className="space-y-1 text-sm">
@@ -197,7 +202,7 @@ export default function SeedLocationsPage() {
                 )}
 
 
-                {result.results.errors.length > 0 && (
+                {result.results && result.results.errors.length > 0 && (
                   <div>
                     <div className="font-medium text-sm mb-2 text-destructive flex items-center gap-1">
                       <AlertCircle className="h-4 w-4" />
