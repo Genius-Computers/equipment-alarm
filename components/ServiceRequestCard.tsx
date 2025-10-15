@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Wrench, Check, X, Loader2, Pencil, User, Ticket, Flag } from "lucide-react";
+import { Wrench, Check, X, Loader2, Pencil, User, Ticket, Flag, Bell } from "lucide-react";
 import ServiceRequestDialog from "@/components/ServiceRequestDialog";
 import ExpandableText from "@/components/ExpandableText";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -67,8 +67,14 @@ export default function ServiceRequestCard({
       !request.recommendation?.trim?.() ||
       !request.problemDescription?.trim());
 
+  // Highlight pending approval for supervisors
+  const needsApproval = request.approvalStatus === ServiceRequestApprovalStatus.PENDING && canApprove;
+  const cardClassName = needsApproval 
+    ? "hover:shadow-lg transition-shadow duration-200 border-2 border-amber-400 dark:border-amber-600 bg-amber-50/30 dark:bg-amber-950/20"
+    : "hover:shadow-lg transition-shadow duration-200";
+
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
+    <Card className={cardClassName}>
       <CardHeader className="flex-row items-center justify-between gap-2">
         <CardTitle className="flex flex-col gap-2">
           {request.ticketId && (
@@ -86,6 +92,12 @@ export default function ServiceRequestCard({
                 <Flag className="h-4 w-4 text-red-600" />
               </span>
             ) : null}
+            {needsApproval && (
+              <span title="Awaiting Approval" className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-md text-xs font-semibold animate-pulse">
+                <Bell className="h-4 w-4" />
+                Needs Approval
+              </span>
+            )}
           </div>
         </CardTitle>
         <div className="flex items-center gap-2 flex-wrap">

@@ -7,6 +7,7 @@ import ServiceRequestCard from "@/components/ServiceRequestCard";
 import ServiceRequestStats from "@/components/ServiceRequestStats";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
+import { Bell } from "lucide-react";
 
 const Page = () => {
 	const user = useUser();
@@ -29,31 +30,54 @@ const Page = () => {
 		scope,
 		setScope,
 		updatingById,
+		refreshKey,
 		changeApprovalStatus,
 		changeWorkStatus,
 		refresh,
 	} = useServiceRequests();
 
+	// Count requests awaiting approval (for supervisors only)
+	const pendingApprovalCount = canApprove 
+		? filteredRequests.filter(r => r.approvalStatus === ServiceRequestApprovalStatus.PENDING).length 
+		: 0;
+
 	return (
 		<div className="min-h-screen bg-background">
 			<Header />
 			<main className="container mx-auto px-6 py-8 space-y-6">
-				<div className="flex items-center gap-2">
-					<button
-						className={`px-3 py-1 rounded border text-sm ${scope === "pending" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-						onClick={() => setScope("pending")}
-					>
-						Pending
-					</button>
-					<button
-						className={`px-3 py-1 rounded border text-sm ${scope === "completed" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-						onClick={() => setScope("completed")}
-					>
-						Completed
-					</button>
+				<div className="flex items-center justify-between gap-4">
+					<div className="flex items-center gap-2">
+						<button
+							className={`px-3 py-1 rounded border text-sm ${scope === "pending" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+							onClick={() => setScope("pending")}
+						>
+							Pending
+						</button>
+						<button
+							className={`px-3 py-1 rounded border text-sm ${scope === "completed" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+							onClick={() => setScope("completed")}
+						>
+							Completed
+						</button>
+					</div>
+
+					{canApprove && pendingApprovalCount > 0 && scope === "pending" && (
+						<div className="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 px-4 py-2 rounded-lg border-2 border-amber-300 dark:border-amber-700 animate-pulse">
+							<Bell className="h-5 w-5" />
+							<span className="font-semibold">
+								{pendingApprovalCount} {pendingApprovalCount === 1 ? 'request' : 'requests'} awaiting approval
+							</span>
+						</div>
+					)}
 				</div>
 
-				<ServiceRequestStats scope={scope} />
+				{role === "technician" && (
+					<div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 p-3 rounded-md text-sm">
+						<strong>Note:</strong> You are viewing only approved service requests. Unapproved requests are pending supervisor approval.
+					</div>
+				)}
+
+				<ServiceRequestStats scope={scope} refreshTrigger={refreshKey} />
 
 				<ServiceRequestFilters
 					priority={priorityFilter}

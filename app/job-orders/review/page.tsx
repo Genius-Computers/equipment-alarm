@@ -862,7 +862,7 @@ export default function ReviewJobOrderPage() {
                     <div className="text-sm bg-muted p-2 rounded">
                       {pendingSubLocationEdit.newSubLocation}
                     </div>
-                    <div className="mt-4 font-semibold">
+                    <div className="mt-4 bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 p-3 rounded-md font-semibold">
                       Do you want to move this equipment as part of the service request?
                     </div>
                   </div>

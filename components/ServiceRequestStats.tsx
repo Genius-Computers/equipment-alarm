@@ -10,9 +10,10 @@ import { ClipboardList, Wrench, PackagePlus, Search, MoreHorizontal, User } from
 
 interface ServiceRequestStatsProps {
   scope: "pending" | "completed";
+  refreshTrigger?: number; // Add a trigger to force refresh
 }
 
-export default function ServiceRequestStats({ scope }: ServiceRequestStatsProps) {
+export default function ServiceRequestStats({ scope, refreshTrigger }: ServiceRequestStatsProps) {
   const { t } = useLanguage();
   const user = useUser();
   const [stats, setStats] = useState<{
@@ -39,6 +40,7 @@ export default function ServiceRequestStats({ scope }: ServiceRequestStatsProps)
       setLoading(true);
       try {
         // Fetch all requests for the current scope
+        // Note: The API already filters by role (technicians only see approved requests)
         const res = await fetch(`/api/service-request?page=1&pageSize=10000&scope=${scope}`, {
           cache: "no-store",
         });
@@ -66,7 +68,7 @@ export default function ServiceRequestStats({ scope }: ServiceRequestStatsProps)
     };
 
     void fetchStats();
-  }, [scope, user?.id]);
+  }, [scope, user?.id, refreshTrigger]);
 
   if (loading) {
     return (

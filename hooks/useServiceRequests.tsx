@@ -32,6 +32,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	const [scope, setScope] = useState<"pending" | "completed">("pending");
 	const [assignedToMe, setAssignedToMe] = useState(false);
 	const [cache, setCache] = useState<Record<string, { page: number; pageSize: number; total: number; rows: Array<JServiceRequest> }>>({});
+	const [refreshKey, setRefreshKey] = useState(0); // Key to trigger external refreshes (e.g., stats component)
 
 	const refresh = useCallback(async () => {
 		try {
@@ -184,19 +185,21 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 					const j = await res.json().catch(() => ({}));
 					throw new Error(j?.error || "Failed to update approval status");
 				}
-				const { data } = await res.json();
-				setRequests((prev) => prev.map((r) => (r.id === (data as JServiceRequest).id ? (data as JServiceRequest) : r)));
-				toast(t("toast.success"), { description: t("toast.updated") });
-				return data as JServiceRequest;
-			} catch (e: unknown) {
-				const message = e instanceof Error ? e.message : "Failed to update approval status";
-				toast(t("toast.error"), { description: message });
-				throw e;
+			const { data } = await res.json();
+			toast(t("toast.success"), { description: t("toast.updated") });
+			// Immediately refresh to update the list and move items between scopes if needed
+			await refresh();
+			setRefreshKey(prev => prev + 1); // Trigger refresh in stats component
+			return data as JServiceRequest;
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : "Failed to update approval status";
+			toast(t("toast.error"), { description: message });
+			throw e;
 			} finally {
 				setUpdatingById((s) => ({ ...s, [id]: { ...(s[id] || {}), approval: false } }));
 			}
 		},
-		[t]
+		[t, refresh]
 	);
 
 	const changeWorkStatus = useCallback(
@@ -213,8 +216,10 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 					throw new Error(j?.error || "Failed to update work status");
 				}
 				const { data } = await res.json();
-				setRequests((prev) => prev.map((r) => (r.id === (data as JServiceRequest).id ? (data as JServiceRequest) : r)));
 				toast(t("toast.success"), { description: t("toast.updated") });
+				// Immediately refresh to update the list and move items between scopes if needed
+				await refresh();
+				setRefreshKey(prev => prev + 1); // Trigger refresh in stats component
 				return data as JServiceRequest;
 			} catch (e: unknown) {
 				const message = e instanceof Error ? e.message : "Failed to update work status";
@@ -224,7 +229,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 				setUpdatingById((s) => ({ ...s, [id]: { ...(s[id] || {}), work: false } }));
 			}
 		},
-		[t]
+		[t, refresh]
 	);
 
 	const filtered = useMemo(() => {
@@ -252,6 +257,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		assignedToMe,
 		priorityFilter,
 		approvalFilter,
+		refreshKey,
 		setPriorityFilter,
 		setApprovalFilter,
 		setPage,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { insertServiceRequest, listServiceRequestPaginated, getNextTicketId, findOrCreateSparePart } from '@/lib/db';
 import { camelToSnakeCase, formatStackUserLight, snakeToCamelCase } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
-import { getCurrentServerUser } from '@/lib/auth';
+import { getCurrentServerUser, getUserRole } from '@/lib/auth';
 import { stackServerApp } from '@/stack';
 import type { SparePartNeeded } from '@/lib/types/service-request';
 
@@ -33,9 +33,17 @@ export async function GET(req: NextRequest) {
     const assignedToTechnicianId = assignedToParam === 'me' ? user.id : undefined;
     const equipmentId = searchParams.get('equipmentId') || undefined;
     const priority = searchParams.get('priority') || undefined; // expected: 'low' | 'medium' | 'high' | 'all'
-    const approval = searchParams.get('approval') || undefined; // expected: 'pending' | 'approved' | 'rejected' | 'all'
+    let approval = searchParams.get('approval') || undefined; // expected: 'pending' | 'approved' | 'rejected' | 'all'
     
-    console.log('[Service Request GET] Fetching with params:', { page, pageSize, scope, priority, approval, assignedTo: assignedToParam });
+    // Role-based filtering: Technicians only see approved requests
+    const userRole = getUserRole(user);
+    if (userRole === 'technician') {
+      // Technicians can only see approved requests
+      approval = 'approved';
+    }
+    // Supervisors and admins see all requests (no override)
+    
+    console.log('[Service Request GET] Fetching with params:', { page, pageSize, scope, priority, approval, assignedTo: assignedToParam, userRole });
     const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval);
     console.log('[Service Request GET] Found:', rows.length, 'rows, total:', total);
 
