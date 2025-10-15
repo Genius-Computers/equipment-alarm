@@ -226,6 +226,13 @@ const translations = {
     "serviceRequest.spareParts.total": "Total: {amount}",
     "serviceRequest.spareParts.validation": "Please enter part name and quantity",
     "serviceRequest.ticketId": "Ticket ID",
+    "serviceRequest.stats.total": "Total",
+    "serviceRequest.stats.preventive": "Preventive",
+    "serviceRequest.stats.corrective": "Corrective",
+    "serviceRequest.stats.install": "Install",
+    "serviceRequest.stats.assess": "Assess",
+    "serviceRequest.stats.other": "Other",
+    "serviceRequest.stats.assignedToMe": "Assigned to Me",
 
     // Users
     "users.title": "Users",
@@ -696,6 +703,13 @@ const translations = {
     "serviceRequest.spareParts.total": "الإجمالي: {amount}",
     "serviceRequest.spareParts.validation": "يرجى إدخال اسم القطعة والكمية",
     "serviceRequest.ticketId": "رقم التذكرة",
+    "serviceRequest.stats.total": "الإجمالي",
+    "serviceRequest.stats.preventive": "الصيانة الوقائية",
+    "serviceRequest.stats.corrective": "الصيانة التصحيحية",
+    "serviceRequest.stats.install": "التركيب",
+    "serviceRequest.stats.assess": "التقييم",
+    "serviceRequest.stats.other": "أخرى",
+    "serviceRequest.stats.assignedToMe": "المُسندة لي",
 
     // Users
     "users.title": "المستخدمين",

@@ -4,6 +4,7 @@ import { useUser } from "@stackframe/stack";
 import CustomPagination from "@/components/CustomPagination";
 import ServiceRequestFilters from "@/components/ServiceRequestFilters";
 import ServiceRequestCard from "@/components/ServiceRequestCard";
+import ServiceRequestStats from "@/components/ServiceRequestStats";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
 
@@ -37,14 +38,6 @@ const Page = () => {
 		<div className="min-h-screen bg-background">
 			<Header />
 			<main className="container mx-auto px-6 py-8 space-y-6">
-				<ServiceRequestFilters
-					priority={priorityFilter}
-					onPriorityChange={setPriorityFilter}
-					showAssignedToggle={role === "technician" || role === "end_user"}
-					assignedToMe={assignedToMe}
-					onAssignedToMeChange={setAssignedToMe}
-				/>
-
 				<div className="flex items-center gap-2">
 					<button
 						className={`px-3 py-1 rounded border text-sm ${scope === "pending" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
@@ -59,6 +52,16 @@ const Page = () => {
 						Completed
 					</button>
 				</div>
+
+				<ServiceRequestStats scope={scope} />
+
+				<ServiceRequestFilters
+					priority={priorityFilter}
+					onPriorityChange={setPriorityFilter}
+					showAssignedToggle={role === "technician" || role === "end_user"}
+					assignedToMe={assignedToMe}
+					onAssignedToMeChange={setAssignedToMe}
+				/>
 
 				{loading ? (
 					<div className="text-sm text-muted-foreground">Updating…</div>
