@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentServerUser } from '@/lib/auth';
 import { camelToSnakeCase } from '@/lib/utils';
-import { bulkInsertEquipment, listAllLocations, findOrCreateLocation } from '@/lib/db';
+import { bulkInsertEquipment, listAllLocations } from '@/lib/db';
+import { DbEquipment } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const snakeItems = processedItems.map((i: Record<string, unknown>) => camelToSnakeCase(i));
+    const snakeItems = processedItems.map((i: Record<string, unknown>) => camelToSnakeCase(i)) as Array<Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>>;
     const inserted = await bulkInsertEquipment(snakeItems, user.id);
     return NextResponse.json({ data: inserted }, { status: 201 });
   } catch (error: unknown) {
