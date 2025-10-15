@@ -22,7 +22,7 @@ const LOCATIONS_TO_ADD = [
 export default function SeedLocationsPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ message?: string; locations?: unknown[] } | null>(null);
-  const [currentLocations, setCurrentLocations] = useState<Array<{ id: string; campus: string; name: string }>>([]);
+  const [currentLocations, setCurrentLocations] = useState<Array<{ id: string; campus: string; name: string; name_ar?: string }>>([]);
 
   const fetchCurrentLocations = async () => {
     try {
