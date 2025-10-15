@@ -164,7 +164,7 @@ export default function SeedLocationsPage() {
             </Button>
 
             {/* Results */}
-            {result && (
+            {result && result.summary && (
               <div className="space-y-3 mt-6 p-4 rounded-lg border bg-muted/20">
                 <div className="flex items-center gap-2 font-semibold">
                   <CheckCircle className="h-5 w-5 text-green-600" />
