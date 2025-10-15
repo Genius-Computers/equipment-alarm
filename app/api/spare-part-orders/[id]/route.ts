@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSparePartOrderById, updateSparePartOrder, softDeleteSparePartOrder } from '@/lib/db';
-import { getCurrentServerUser } from '@/lib/auth';
+import { getCurrentServerUser, getUserRole } from '@/lib/auth';
 import { snakeToCamelCase } from '@/lib/utils';
 
 export async function GET(
@@ -47,8 +47,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
     
-    const isSupervisor = user.role === 'supervisor' || user.role === 'admin' || user.role === 'admin_x';
-    const isTechnician = user.role === 'technician' || user.role === 'admin';
+    const role = getUserRole(user);
+    const isSupervisor = role === 'supervisor' || role === 'admin' || role === 'admin_x';
+    const isTechnician = role === 'technician' || role === 'admin';
     
     // Supervisors can create orders and complete them
     // Technicians can update pending orders and submit them for review
@@ -87,7 +88,8 @@ export async function DELETE(
     }
     
     // Only supervisors can delete orders
-    if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'admin_x') {
+    const role = getUserRole(user);
+    if (role !== 'supervisor' && role !== 'admin' && role !== 'admin_x') {
       return NextResponse.json({ error: 'Only supervisors can delete orders' }, { status: 403 });
     }
     

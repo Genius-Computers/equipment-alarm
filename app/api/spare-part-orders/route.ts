@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSparePartOrder, listSparePartOrders } from '@/lib/db';
-import { getCurrentServerUser } from '@/lib/auth';
+import { getCurrentServerUser, getUserRole } from '@/lib/auth';
 import { snakeToCamelCase } from '@/lib/utils';
 
 export async function GET(req: NextRequest) {
@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
     }
     
     // Check if user is a supervisor
-    if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'admin_x') {
+    const role = getUserRole(user);
+    if (role !== 'supervisor' && role !== 'admin' && role !== 'admin_x') {
       return NextResponse.json({ error: 'Only supervisors can create orders' }, { status: 403 });
     }
     
