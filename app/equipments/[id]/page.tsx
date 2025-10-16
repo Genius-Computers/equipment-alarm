@@ -8,7 +8,6 @@ import ServiceRequestCard from "@/components/ServiceRequestCard";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import ServiceRequestDialog from "@/components/ServiceRequestDialog";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
 import { useEquipment } from "@/hooks/useEquipment";
@@ -121,7 +120,7 @@ const DetailPage = () => {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">{currentEquipment?.name}</h2>
-              <ServiceRequestDialog equipmentId={id} equipmentName={currentEquipment?.name} trigger={<Button>{t("serviceRequest.create")}</Button>} />
+              {/* Service requests are now created via Job Orders module */}
             </div>
 
             <EquipmentCard equipment={equipmentForCard} />

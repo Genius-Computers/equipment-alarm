@@ -122,6 +122,17 @@ const EquipmentForm = ({
   // Update form data when equipment or spare part changes (for edit mode)
   useEffect(() => {
     if (mode === "edit" && equipment) {
+      // Try to find the location by name if locationId is missing
+      let locationId = equipment.locationId || "";
+      if (!locationId && equipment.location && locations.length > 0) {
+        const matchingLocation = locations.find(
+          loc => loc.name.toLowerCase() === equipment.location.toLowerCase()
+        );
+        if (matchingLocation) {
+          locationId = matchingLocation.id;
+        }
+      }
+      
       setFormData({
         name: equipment.name,
         partNumber: equipment.partNumber || "",
@@ -130,7 +141,7 @@ const EquipmentForm = ({
         serialNumber: equipment.serialNumber || "",
         location: equipment.location,
         subLocation: equipment.subLocation || "",
-        locationId: equipment.locationId || "",
+        locationId: locationId,
         status: equipment.status,
         lastMaintenance: equipment.lastMaintenance ? new Date(equipment.lastMaintenance).toISOString().split('T')[0] : "",
         maintenanceInterval: equipment.maintenanceInterval,
@@ -138,7 +149,7 @@ const EquipmentForm = ({
       
       setIsSparePartsMode(false);
     }
-  }, [equipment, mode]);
+  }, [equipment, mode, locations]);
 
   useEffect(() => {
     if (mode === "edit" && sparePart) {
@@ -447,18 +458,22 @@ const EquipmentForm = ({
                 setFormData({ 
                   ...formData, 
                   locationId: value,
-                  // Keep legacy fields for backward compatibility
-                  location: selectedLocation?.campus || "",
-                  // Reset sublocation field
+                  // Store the location name for validation and display
+                  location: selectedLocation?.name || "",
+                  // Reset sublocation when location changes
                   subLocation: ""
                 });
               }} 
               value={formData.locationId}
               required
-              disabled={loadingLocations}
+              disabled={loadingLocations || locations.length === 0}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loadingLocations ? "Loading locations..." : "Select Location"} />
+                <SelectValue placeholder={
+                  loadingLocations ? "Loading locations..." : 
+                  locations.length === 0 ? "No locations available" :
+                  "Select Location"
+                } />
               </SelectTrigger>
               <SelectContent>
                 {locations.map((location) => {

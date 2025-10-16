@@ -2,7 +2,6 @@
 
 import { Fragment } from "react";
 import { getDaysUntilMaintenance } from "@/components/EquipmentCard";
-import ServiceRequestDialog from "@/components/ServiceRequestDialog";
 import EquipmentForm from "@/components/AddEquipmentForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Equipment, JEquipment } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
-import { Wrench, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
@@ -129,22 +128,9 @@ const EquipmentTable = ({
                     )}
                   </td>
                   <td className={cellClass}>{e.maintenanceInterval || "—"}</td>
-                  <td className={cellClass}>
-                    <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
-                      {canCreateRequest && (
-                        <ServiceRequestDialog
-                          equipmentId={e.id}
-                          equipmentName={e.name}
-                          existing={e.latestPendingServiceRequest as JServiceRequest}
-                          trigger={
-                            <Button size="sm" variant="outline">
-                              <Wrench className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-                              {t("serviceRequest.manage")}
-                            </Button>
-                          }
-                        />
-                      )}
-                      <EquipmentForm
+                <td className={cellClass}>
+                  <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
+                    <EquipmentForm
                         mode="edit"
                         equipment={e as unknown as Equipment}
                         onSubmitEquipment={(updated) => onEdit(updated as Equipment)}

@@ -2,7 +2,6 @@ import { MapPin, Wrench, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
-import ServiceRequestDialog from "./ServiceRequestDialog";
 import EquipmentForm from "./AddEquipmentForm";
 
 import { Equipment, JEquipment } from "@/lib/types";
@@ -177,9 +176,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
             )}
           </div>
 
-          <div className="flex gap-2 pt-2">
-            {canCreateRequest && <ServiceRequestDialog equipmentId={equipment.id} equipmentName={equipment.name} />}
-          </div>
+          {/* Service requests are now created via Job Orders module */}
         </CardContent>
       </Card>
     </Link>

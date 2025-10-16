@@ -13,7 +13,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const body = await req.json();
 
     // Validate that location exists in the locations table (if provided)
-    if (body.location && body.location.trim() && !body.locationId) {
+    // Always validate and update locationId when location is provided
+    if (body.location && body.location.trim()) {
       const allLocations = await listAllLocations();
       const locationMap = new Map(allLocations.map(loc => [loc.name.toLowerCase(), loc]));
       const location = locationMap.get(body.location.trim().toLowerCase());
@@ -24,7 +25,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         }, { status: 400 });
       }
       
-      // Set the locationId from the found location
+      // Always set/update the locationId from the found location
       body.locationId = location.id;
     }
 

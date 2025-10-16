@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
     // Validate that location exists in the locations table (if provided)
-    if (body.location && body.location.trim() && !body.locationId) {
+    if (body.location && body.location.trim()) {
       const allLocations = await listAllLocations();
       const locationMap = new Map(allLocations.map(loc => [loc.name.toLowerCase(), loc]));
       const location = locationMap.get(body.location.trim().toLowerCase());
