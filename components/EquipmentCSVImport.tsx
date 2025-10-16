@@ -205,7 +205,7 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground mt-2">
-        <span className="font-medium">Note:</span> Location must be a registered location name (e.g., "College of Medicine"). Sub Location is a free text field (e.g., "Room 201").
+        <span className="font-medium">Note:</span> Location must be a registered location name (e.g., &ldquo;College of Medicine&rdquo;). Sub Location is a free text field (e.g., &ldquo;Room 201&rdquo;).
       </p>
     </div>
   );

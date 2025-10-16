@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEquipmentById, updateEquipment, softDeleteEquipment, getEquipmentWithLocationInfo, listAllLocations } from '@/lib/db';
+import { updateEquipment, softDeleteEquipment, getEquipmentWithLocationInfo, listAllLocations } from '@/lib/db';
 import { snakeToCamelCase, deriveMaintenanceInfo } from '@/lib/utils';
 import { getCurrentServerUser } from '@/lib/auth';
 
