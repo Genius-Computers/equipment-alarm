@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSparePartOrderById, updateSparePartOrder, softDeleteSparePartOrder } from '@/lib/db';
+import { getSparePartOrderById, updateSparePartOrder, softDeleteSparePartOrder, addSparePartOrderToInventory } from '@/lib/db';
 import { getCurrentServerUser, getUserRole } from '@/lib/auth';
 import { snakeToCamelCase } from '@/lib/utils';
 
@@ -69,6 +69,18 @@ export async function PATCH(
       technicianNotes,
       user.id,
     );
+    
+    // When order is completed, automatically add items to spare parts inventory
+    if (status === 'Completed') {
+      try {
+        await addSparePartOrderToInventory(id, user.id);
+        console.log(`[PATCH SparePartOrder] Successfully added order ${id} to inventory`);
+      } catch (error) {
+        console.error(`[PATCH SparePartOrder] Failed to add order to inventory:`, error);
+        // Don't fail the request, just log the error
+        // The order is still marked as completed
+      }
+    }
     
     return NextResponse.json({ data: snakeToCamelCase(updatedRow) });
   } catch (error: unknown) {

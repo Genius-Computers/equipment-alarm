@@ -108,29 +108,28 @@ const EquipmentList = ({
       setDeleting(true);
       const idsArray = Array.from(selectedIds);
       
-      // Delete each item
-      let successCount = 0;
-      let failCount = 0;
-      
-      for (const id of idsArray) {
-        try {
-          if (onDelete) {
-            await onDelete(id);
-            successCount++;
-          }
-        } catch (error) {
-          console.error(`Failed to delete equipment ${id}:`, error);
-          failCount++;
-        }
+      // Use bulk delete endpoint for faster deletion
+      const response = await fetch('/api/equipment/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: idsArray }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete items');
       }
 
-      if (successCount > 0) {
-        toast.success(`Successfully deleted ${successCount} item${successCount !== 1 ? 's' : ''}`);
+      const { deleted, failed } = result;
+
+      if (deleted > 0) {
+        toast.success(`Successfully deleted ${deleted} item${deleted !== 1 ? 's' : ''}`);
         if (onRefresh) onRefresh();
       }
       
-      if (failCount > 0) {
-        toast.error(`Failed to delete ${failCount} item${failCount !== 1 ? 's' : ''}`);
+      if (failed > 0) {
+        toast.error(`Failed to delete ${failed} item${failed !== 1 ? 's' : ''}`);
       }
 
       // Reset state
@@ -138,7 +137,8 @@ const EquipmentList = ({
       setDeleteMode(false);
       setDeleteDialogOpen(false);
     } catch (error) {
-      toast.error("Failed to delete items");
+      console.error('Bulk delete error:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete items");
     } finally {
       setDeleting(false);
     }

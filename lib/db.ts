@@ -345,6 +345,30 @@ export const softDeleteEquipment = async (
   return row as unknown as DbEquipment | undefined;
 };
 
+export const bulkSoftDeleteEquipment = async (
+  ids: string[],
+  actorId: string,
+): Promise<{ deleted: number; failed: number }> => {
+  if (!ids || ids.length === 0) {
+    return { deleted: 0, failed: 0 };
+  }
+  
+  const sql = getDb();
+  await ensureSchema();
+  
+  const rows = await sql`
+    update equipment set
+      deleted_by = ${actorId},
+      deleted_at = now()
+    where id = any(${ids}::uuid[]) and deleted_at is null
+    returning id`;
+  
+  return { 
+    deleted: rows.length,
+    failed: ids.length - rows.length 
+  };
+};
+
 export const bulkInsertEquipment = async (
   inputs: Array<Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>>,
   actorId: string,
@@ -359,6 +383,7 @@ export const bulkInsertEquipment = async (
   const serialNumbers = inputs.map((i) => i.serial_number ?? null);
   const locations = inputs.map((i) => i.location ?? null);
   const subLocations = inputs.map((i) => i.sub_location ?? null);
+  const locationIds = inputs.map((i) => i.location_id ?? null);
   const statuses = inputs.map((i) => i.status ?? 'Working');
   const lastMaintenance = inputs.map((i) => i.last_maintenance ?? null);
   const maintenanceIntervals = inputs.map((i) => i.maintenance_interval ?? null);
@@ -367,13 +392,13 @@ export const bulkInsertEquipment = async (
     insert into equipment (
       created_at, created_by,
       name, part_number, model, manufacturer, serial_number,
-      location, sub_location, status,
+      location, sub_location, location_id, status,
       last_maintenance, maintenance_interval
     )
     select
       now(), ${actorId},
       t.name, t.part_number, t.model, t.manufacturer, t.serial_number,
-      t.location, t.sub_location, t.status,
+      t.location, t.sub_location, t.location_id::uuid, t.status,
       t.last_maintenance, t.maintenance_interval
     from unnest(
       ${names}::text[],
@@ -383,12 +408,13 @@ export const bulkInsertEquipment = async (
       ${serialNumbers}::text[],
       ${locations}::text[],
       ${subLocations}::text[],
+      ${locationIds}::text[],
       ${statuses}::text[],
       ${lastMaintenance}::text[],
       ${maintenanceIntervals}::text[]
     ) as t(
       name, part_number, model, manufacturer, serial_number,
-      location, sub_location, status,
+      location, sub_location, location_id, status,
       last_maintenance, maintenance_interval
     )
     returning *`;
@@ -404,6 +430,21 @@ export const getEquipmentById = async (id: string): Promise<DbEquipment | null> 
     limit 1
   `;
   return (rows && rows.length > 0 ? (rows[0] as unknown as DbEquipment) : null);
+}
+
+export const validateLocationExists = async (campus: string, name: string): Promise<boolean> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  const rows = await sql`
+    select id from locations
+    where campus = ${campus}
+      and name = ${name}
+      and deleted_at is null
+    limit 1
+  `;
+  
+  return rows && rows.length > 0;
 }
 
 export const getUniqueSubLocationsByLocation = async (location: string): Promise<string[]> => {
@@ -884,6 +925,84 @@ export const softDeleteSparePartOrder = async (
     where id = ${id} and deleted_at is null
     returning *`;
   return row as unknown as DbSparePartOrder | undefined;
+};
+
+/**
+ * Updates spare parts inventory when an order is completed
+ * Adds the quantitySupplied from each order item to the inventory
+ */
+export const addSparePartOrderToInventory = async (
+  orderId: string,
+  actorId: string,
+): Promise<void> => {
+  const sql = getDb();
+  await ensureSchema();
+  
+  // Get the order with its items
+  const order = await getSparePartOrderById(orderId);
+  if (!order) {
+    throw new Error('Spare part order not found');
+  }
+  
+  // Parse the items from JSON
+  const items = typeof order.items === 'string' 
+    ? JSON.parse(order.items) 
+    : order.items;
+  
+  console.log(`[addSparePartOrderToInventory] Processing ${items.length} items from order ${orderId}`);
+  
+  // Update inventory for each item
+  for (const item of items) {
+    const quantityToAdd = item.quantitySupplied || 0;
+    
+    if (quantityToAdd <= 0) {
+      console.log(`[addSparePartOrderToInventory] Skipping item with no quantity supplied:`, item);
+      continue;
+    }
+    
+    // Find or create the spare part in inventory
+    let sparePartId: string | null = null;
+    
+    if (item.sparePartName) {
+      // Use findOrCreateSparePart to get/create the spare part
+      sparePartId = await findOrCreateSparePart(
+        item.sparePartName,
+        undefined, // manufacturer not tracked in order items
+        undefined, // supplier not tracked in order items
+        actorId
+      );
+      console.log(`[addSparePartOrderToInventory] Found/created spare part ID: ${sparePartId} for "${item.sparePartName}"`);
+    }
+    
+    if (!sparePartId) {
+      console.log(`[addSparePartOrderToInventory] Skipping item without spare part name:`, item);
+      continue;
+    }
+    
+    // Get current spare part to update quantity
+    const [currentPart] = await sql`
+      select * from spare_parts
+      where id = ${sparePartId} and deleted_at is null
+      limit 1
+    `;
+    
+    if (currentPart) {
+      const current = currentPart as unknown as DbSparePart;
+      const newQuantity = current.quantity + quantityToAdd;
+      
+      await sql`
+        update spare_parts set
+          updated_by = ${actorId},
+          updated_at = now(),
+          quantity = ${newQuantity}
+        where id = ${sparePartId}
+      `;
+      
+      console.log(`[addSparePartOrderToInventory] Updated "${item.sparePartName}" quantity: ${current.quantity} + ${quantityToAdd} = ${newQuantity}`);
+    }
+  }
+  
+  console.log(`[addSparePartOrderToInventory] Successfully processed order ${orderId}`);
 };
 
 export const getServiceRequestsBySparePartId = async (

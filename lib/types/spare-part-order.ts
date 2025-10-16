@@ -13,6 +13,7 @@ export interface SparePartOrderItem {
   sparePartName?: string;
   quantityRequested: number;
   quantitySupplied?: number;
+  cost?: number; // Cost per unit entered by technician
   notes?: string;
 }
 

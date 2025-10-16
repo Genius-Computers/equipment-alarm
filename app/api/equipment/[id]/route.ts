@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEquipmentById, updateEquipment, softDeleteEquipment, findOrCreateLocation, getEquipmentWithLocationInfo } from '@/lib/db';
+import { getEquipmentById, updateEquipment, softDeleteEquipment, getEquipmentWithLocationInfo, listAllLocations } from '@/lib/db';
 import { snakeToCamelCase, deriveMaintenanceInfo } from '@/lib/utils';
 import { getCurrentServerUser } from '@/lib/auth';
-import { VALID_CAMPUSES } from '@/lib/config';
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -13,25 +12,20 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     }
     const body = await req.json();
 
-    // Legacy location validation (for backward compatibility)
-    if (body.location && !VALID_CAMPUSES.includes(body.location)) {
-      return NextResponse.json({ 
-        error: `Invalid location. Must be one of: ${VALID_CAMPUSES.join(', ')}` 
-      }, { status: 400 });
-    }
-
-    // Legacy: Create location entry if legacy sublocation is provided
-    if (body.location && body.subLocation && body.subLocation.trim()) {
-      try {
-        const locationId = await findOrCreateLocation(body.location, body.subLocation.trim(), user.id);
-        // If no new locationId provided, use the legacy one
-        if (!body.locationId) {
-          body.locationId = locationId;
-        }
-      } catch (error) {
-        console.error('Failed to create location:', error);
-        // Continue anyway - equipment can still be updated
+    // Validate that location exists in the locations table (if provided)
+    if (body.location && body.location.trim() && !body.locationId) {
+      const allLocations = await listAllLocations();
+      const locationMap = new Map(allLocations.map(loc => [loc.name.toLowerCase(), loc]));
+      const location = locationMap.get(body.location.trim().toLowerCase());
+      
+      if (!location) {
+        return NextResponse.json({ 
+          error: `Location "${body.location}" does not exist in the Locations module. Please register it first.` 
+        }, { status: 400 });
       }
+      
+      // Set the locationId from the found location
+      body.locationId = location.id;
     }
 
     const row = await updateEquipment(id, {
