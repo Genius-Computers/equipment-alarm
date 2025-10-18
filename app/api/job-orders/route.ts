@@ -35,9 +35,8 @@ export async function GET(req: NextRequest) {
       data,
     });
   } catch (error) {
-    console.error('Error fetching job orders:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch job orders' },
+      { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -78,14 +77,11 @@ export async function POST(req: NextRequest) {
 
     // Validate campus
     if (!isValidCampus(campus)) {
-      console.error('[Job Order] Invalid campus:', campus);
       return NextResponse.json(
         { error: `Invalid campus: "${campus}". Only Main Campus and AJA Complex are supported.` },
         { status: 400 }
       );
     }
-
-    console.log('[Job Order] Creating for:', campus, '→', sublocation, 'with', equipmentIds.length, 'items');
 
     // Note: sublocation is now the location name (from the new locations table)
     // No validation needed - it's just a reference to what location the equipment is in
@@ -139,8 +135,6 @@ export async function POST(req: NextRequest) {
 
     const itemsJson = JSON.stringify(items);
     
-    console.log('[Job Order] Creating job order with number: JO' + firstTicketNumber);
-    
     // Create job order directly as submitted (using first ticket number for order ID)
     // Retry up to 3 times if we hit a duplicate key error
     let jobOrder;
@@ -167,8 +161,6 @@ export async function POST(req: NextRequest) {
       throw new Error('Failed to create job order after retries');
     }
     
-    console.log('[Job Order] Job order created, ID:', jobOrder.id, 'Number:', jobOrder.order_number);
-    
     // Immediately submit it (creates service requests with provided details)
     const { submitJobOrder } = await import('@/lib/db');
     const submittedOrder = await submitJobOrder(jobOrder.id, user.id, {
@@ -179,16 +171,12 @@ export async function POST(req: NextRequest) {
       notes,
     });
 
-    console.log('[Job Order] Successfully submitted:', submittedOrder?.order_number);
-
     return NextResponse.json({
       success: true,
       orderNumber: submittedOrder?.order_number,
       itemCount: items.length,
     });
   } catch (error) {
-    console.error('[Job Order API] Error creating job order:', error);
-    console.error('[Job Order API] Stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json(
       { 
         error: 'Failed to create job order',
