@@ -1,5 +1,5 @@
+import { DbLocation } from '../types/location';
 import { getDb } from './connection';
-import { DbLocation } from '../types';
 
 export const validateLocationExists = async (campus: string, name: string): Promise<boolean> => {
   const sql = getDb();

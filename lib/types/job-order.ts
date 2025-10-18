@@ -1,3 +1,4 @@
+import { DbBaseAudit } from ".";
 
 export interface JobOrderItem {
     equipmentId: string;
@@ -19,11 +20,18 @@ export interface JobOrder {
     createdAt: string;
 }
 
-
 export interface CreateJobOrderRequest {
     campus: string;
     sublocation: string;
     equipmentIds: string[];
 }
 
-
+export interface DbJobOrder extends DbBaseAudit {
+    order_number: string;
+    campus: string;
+    sublocation: string;
+    items: string;
+    status: string;
+    submitted_by?: string;
+    submitted_at?: string;
+}
