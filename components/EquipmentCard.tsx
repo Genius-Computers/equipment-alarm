@@ -50,7 +50,6 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
   const href = `/equipments/${equipment.id}`;
   const isSameRoute = pathname === href;
   const canDelete = canApprove(profile?.role);
-  const canCreateRequest = canApprove(profile?.role);
 
   return (
     <Link

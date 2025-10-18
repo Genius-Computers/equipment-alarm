@@ -9,7 +9,6 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Equipment, JEquipment } from "@/lib/types";
-import type { JServiceRequest } from "@/lib/types/service-request";
 import { Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -43,7 +42,6 @@ const EquipmentTable = ({
   const router = useRouter();
   const { profile } = useSelfProfile();
   const canDelete = canApprove(profile?.role);
-  const canCreateRequest = canApprove(profile?.role);
 
   if (!items || items.length === 0) {
     return <Card className="p-6 text-center text-sm text-muted-foreground">{t("common.noResults")}</Card>;

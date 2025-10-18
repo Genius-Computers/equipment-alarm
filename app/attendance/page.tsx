@@ -326,7 +326,7 @@ export default function AttendancePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {records.map((record, index) => (
+                      {records.map((record) => (
                         <tr key={record.id}>
                           <td className="border border-gray-800 text-left p-1 text-sm">{record.display_name || record.user_id}</td>
                           <td className="border border-gray-800 text-center p-1 text-sm">{record.employee_id || '-'}</td>

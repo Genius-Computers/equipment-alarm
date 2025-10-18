@@ -9,7 +9,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
 import { Equipment, SparePart } from "@/lib/types";
-import { VALID_CAMPUSES } from "@/lib/config";
 
 interface EquipmentFormProps {
   onSubmitEquipment: (equipment: Omit<Equipment, "id"> | Equipment) => void;

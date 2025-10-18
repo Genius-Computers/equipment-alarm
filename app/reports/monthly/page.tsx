@@ -181,7 +181,7 @@ const MaintenancePieChart = ({ data }: { data: MonthlyReportData['maintenanceTyp
           stroke="#e5e7eb"
           strokeWidth="2"
         />
-        {segments.map((segment, index) => {
+        {segments.map((segment) => {
           const radius = 80;
           const startAngleRad = (segment.startAngle - 90) * (Math.PI / 180);
           const endAngleRad = (segment.endAngle - 90) * (Math.PI / 180);

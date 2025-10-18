@@ -6,7 +6,6 @@ import Header from "@/components/Header";
 import EquipmentCard from "@/components/EquipmentCard";
 import ServiceRequestCard from "@/components/ServiceRequestCard";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useServiceRequests } from "@/hooks/useServiceRequests";

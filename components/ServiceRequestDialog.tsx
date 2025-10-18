@@ -747,7 +747,7 @@ const ServiceRequestDialog = ({
                           } else {
                             throw new Error('Failed to update spare part');
                           }
-                        } catch (error) {
+                        } catch {
                           toast(t("toast.error"), { description: "Failed to update spare part in inventory" });
                         } finally {
                           setUpdatingSparePart(false);

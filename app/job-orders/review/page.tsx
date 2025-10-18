@@ -735,7 +735,7 @@ export default function ReviewJobOrderPage() {
                     
                     {/* Equipment in this location */}
                     <div className="space-y-3 ml-4">
-                      {items.map((item, itemIndex) => (
+                      {items.map((item) => (
                         <div key={item.id} className="flex items-start justify-between p-3 border rounded-lg">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">

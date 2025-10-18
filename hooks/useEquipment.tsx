@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Equipment, EquipmentCache, EquipmentMaintenanceStatus, JEquipment } from "@/lib/types";
+import { Equipment, EquipmentMaintenanceStatus, JEquipment } from "@/lib/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
-const EQUIPMENT_CACHE_KEY = "EquipmentCacheKey";
 
 export function useEquipment(list = true) {
   const { t } = useLanguage();
@@ -30,8 +29,6 @@ export function useEquipment(list = true) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isInserting, setIsInserting] = useState(false);
 
-  const [equipmentNameCache, setEquipmentNameCache] = useState<EquipmentCache[]>([]);
-  const [isCaching, setIsCaching] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
   // Single equipment detail state
@@ -76,36 +73,6 @@ export function useEquipment(list = true) {
     };
   }, [refresh, list]);
 
-  const fetchCache = useCallback(async () => {
-    try {
-      if (sessionStorage.getItem(EQUIPMENT_CACHE_KEY)) {
-        setEquipmentNameCache(JSON.parse(sessionStorage.getItem(EQUIPMENT_CACHE_KEY)!));
-        return;
-      }
-      setIsCaching(true);
-      const res = await fetch(`/api/equipment/cache`, { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to load equipment");
-      const json = await res.json();
-      const data = json.data;
-      setEquipmentNameCache(data);
-      sessionStorage.setItem(EQUIPMENT_CACHE_KEY, JSON.stringify(data));
-    } catch {
-      setEquipmentNameCache([]);
-      sessionStorage.removeItem(EQUIPMENT_CACHE_KEY);
-    } finally {
-      setIsCaching(false);
-    }
-  }, []);
-
-  const reCache = useCallback(async () => {
-    sessionStorage.removeItem(EQUIPMENT_CACHE_KEY);
-    fetchCache();
-  }, [fetchCache]);
-
-  useEffect(() => {
-    fetchCache();
-  }, [fetchCache]);
-
   const loadEquipmentById = useCallback(async (id: string) => {
     try {
       if (!id) return;
@@ -136,7 +103,6 @@ export function useEquipment(list = true) {
         const { data } = await res.json();
         setEquipment((prev) => [...prev, data as JEquipment]);
         toast(t("toast.success"), { description: t("toast.equipmentAdded") });
-        reCache();
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Failed to add equipment";
         toast(t("toast.error"), { description: message });
@@ -144,7 +110,7 @@ export function useEquipment(list = true) {
         setIsInserting(false);
       }
     },
-    [t, reCache]
+    [t]
   );
 
   const updateEquipment = useCallback(
@@ -171,7 +137,6 @@ export function useEquipment(list = true) {
         const { data } = await res.json();
         setEquipment((prev) => prev.map((e) => (e.id === (data as JEquipment).id ? (data as JEquipment) : e)));
         toast(t("toast.success"), { description: t("toast.equipmentUpdated") });
-        reCache();
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Failed to update equipment";
         toast(t("toast.error"), { description: message });
@@ -179,7 +144,7 @@ export function useEquipment(list = true) {
         setIsUpdating(false);
       }
     },
-    [t, reCache]
+    [t]
   );
 
   const deleteEquipment = useCallback(
@@ -192,7 +157,6 @@ export function useEquipment(list = true) {
         if (!res.ok) throw new Error("Failed to delete equipment");
         setEquipment((prev) => prev.filter((e) => e.id !== id));
         toast(t("toast.success"), { description: t("toast.updated") });
-        reCache();
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Failed to delete equipment";
         toast(t("toast.error"), { description: message });
@@ -200,7 +164,7 @@ export function useEquipment(list = true) {
         setIsUpdating(false);
       }
     },
-    [t, reCache]
+    [t]
   );
 
   // Debounced server search for homepage (non-list usage)
@@ -251,8 +215,6 @@ export function useEquipment(list = true) {
     total,
     searchTerm,
     statusFilter,
-    equipmentNameCache,
-    isCaching,
     currentEquipment,
     setSearchTerm,
     setStatusFilter,

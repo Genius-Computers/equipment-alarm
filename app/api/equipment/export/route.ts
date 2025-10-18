@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, ensureSchema } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getCurrentServerUser } from '@/lib/auth';
 import { canManageUsers } from '@/lib/types/user';
 
@@ -16,7 +16,6 @@ export async function GET(req: NextRequest) {
     }
 
     const sql = getDb();
-    await ensureSchema();
 
     // Get query parameters for filtering
     const { searchParams } = new URL(req.url);
