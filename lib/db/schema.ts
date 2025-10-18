@@ -1,26 +1,30 @@
 import { getDb } from './connection';
 
-// Guard to ensure schema only runs once per boot
-// Use a timestamp-based check to avoid running schema checks too frequently
-let schemaInitialized = false;
-let lastSchemaCheck = 0;
-const SCHEMA_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
-
 // Ensure all database tables exist with proper schema
 export const ensureSchema = async () => {
-  const now = Date.now();
-  
-  // Skip if we've checked recently (within 5 minutes)
-  if (schemaInitialized && (now - lastSchemaCheck) < SCHEMA_CHECK_INTERVAL) {
-    return;
-  }
-  
   const sql = getDb();
-  lastSchemaCheck = now;
   
   // Enable required extensions
   await sql`create extension if not exists pgcrypto`;
   
+  // Create locations table FIRST (equipment references it)
+  await sql`
+    create table if not exists locations (
+      id uuid primary key default gen_random_uuid(),
+      created_at timestamp not null default now(),
+      updated_at timestamp,
+      deleted_at timestamp,
+      created_by text not null,
+      updated_by text,
+      deleted_by text,
+
+      campus text not null,
+      name text not null,
+      name_ar text,
+      
+      unique(campus, name)
+    )`;
+
   // Create equipment table
   await sql`
     create table if not exists equipment (
@@ -69,24 +73,6 @@ export const ensureSchema = async () => {
       spare_parts_needed jsonb,
       ticket_id text not null,
       approval_note text
-    )`;
-
-  // Create locations table
-  await sql`
-    create table if not exists locations (
-      id uuid primary key default gen_random_uuid(),
-      created_at timestamp not null default now(),
-      updated_at timestamp,
-      deleted_at timestamp,
-      created_by text not null,
-      updated_by text,
-      deleted_by text,
-
-      campus text not null,
-      name text not null,
-      name_ar text,
-      
-      unique(campus, name)
     )`;
 
   // Create spare_parts table
@@ -163,8 +149,6 @@ export const ensureSchema = async () => {
 
   // Apply schema migrations
   await applySchemaMigrations(sql);
-  
-  schemaInitialized = true;
 };
 
 // Apply incremental schema changes (migrations)

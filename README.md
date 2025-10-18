@@ -33,13 +33,31 @@ cp .example.env .env.local
 
 3. Set `DATABASE_URL` in `.env.local` to your Neon connection string.
 
-4. Run the dev server. The schema is auto-created on first request:
+4. Run the dev server:
 
 ```bash
 npm run dev
 ```
 
-API endpoints:
+## Database Migrations
+
+This application includes a database migration system that creates and updates the database schema. The migration is **idempotent** - you can run it multiple times safely.
+
+### Running Migrations
+
+#### Using curl (Recommended)
+```bash
+curl -X POST http://localhost:3000/api/migrate
+```
+
+### Prerequisites
+
+- Database connection configured in environment variables
+- Next.js app running (`npm run dev`)
+- Proper database permissions to create tables and extensions
+
+## API Endpoints
+
 - `GET /api/equipment` → list equipment
 - `POST /api/equipment` → insert equipment
 
