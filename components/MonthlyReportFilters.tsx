@@ -44,8 +44,8 @@ export function MonthlyReportFilters({ onGenerate, loading = false }: MonthlyRep
   };
 
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    t('months.january'), t('months.february'), t('months.march'), t('months.april'), t('months.may'), t('months.june'),
+    t('months.july'), t('months.august'), t('months.september'), t('months.october'), t('months.november'), t('months.december')
   ];
 
   const currentYear = new Date().getFullYear();

@@ -3,13 +3,14 @@
 import { MonthlyReport } from '@/lib/types/report';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, MapPin, FileText } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface JobOrdersSummaryProps {
   report: MonthlyReport;
 }
 
 export function JobOrdersSummary({ report }: JobOrdersSummaryProps) {
-
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-6">
@@ -20,10 +21,10 @@ export function JobOrdersSummary({ report }: JobOrdersSummaryProps) {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Job Orders Summary
+            {t('reports.jobOrders.title')}
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
-            {report.period.monthName} {report.period.year} • {report.jobOrders.total} total orders
+            {report.period.monthName} {report.period.year} • {report.jobOrders.total} {t('reports.jobOrders.orders')}
           </p>
         </div>
       </div>
@@ -90,14 +91,14 @@ export function JobOrdersSummary({ report }: JobOrdersSummaryProps) {
                 
                 // Color coding based on activity level
                 let barColor = '#a5b4fc'; // Light indigo for low
-                let activityText = 'Low';
+                let activityText = t('priority.low');
                 
                 if (item.count >= 5) {
                   barColor = '#6366f1'; // Dark indigo for high
-                  activityText = 'High';
+                  activityText = t('priority.high');
                 } else if (item.count >= 3) {
                   barColor = '#818cf8'; // Medium indigo for medium
-                  activityText = 'Med';
+                  activityText = t('priority.med');
                 }
                 
                 return (

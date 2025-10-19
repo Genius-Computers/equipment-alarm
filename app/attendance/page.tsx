@@ -13,6 +13,7 @@ import { formatSaudiDate, formatSaudiTime, getTodaySaudiDate } from "@/lib/utils
 import { useAttendance } from "@/hooks/useAttendance";
 import { canLogAttendance } from "@/lib/types/user";
 import { AttendanceDialog } from "@/components/AttendanceDialog";
+import { useLanguage } from "@/hooks/useLanguage";
 
 type AttendanceRecord = {
   id: string;
@@ -26,6 +27,7 @@ type AttendanceRecord = {
 
 export default function AttendancePage() {
   const user = useUser();
+  const {t} = useLanguage();
   const role = user?.clientReadOnlyMetadata?.role as string | undefined;
   const canViewAttendance = role !== "end_user";
   const canLog = canLogAttendance(role);
@@ -142,11 +144,11 @@ export default function AttendancePage() {
                     onClick={async () => {
                       try {
                         await logIn();
-                        toast("Success", { description: "Logged in successfully" });
+                        toast(t("common.success"), { description: t("success.loggedInSuccessfully") });
                         loadAttendance(); // Refresh the records
                       } catch (e: unknown) {
-                        const message = e instanceof Error ? e.message : "Failed to log in";
-                        toast("Error", { description: message });
+                        const message = e instanceof Error ? e.message : t("errors.failedToLogIn");
+                        toast(t("common.error"), { description: message });
                       }
                     }}
                     disabled={!!isLoggedIn || attendanceLoading}
@@ -157,7 +159,7 @@ export default function AttendancePage() {
                     {isLoggedIn ? (
                       <>IN: {formatSaudiTime(todayAttendance?.log_in_time)}</>
                     ) : (
-                      "Time In"
+                      t("time.timeIn")
                     )}
                   </Button>
                   
@@ -165,11 +167,11 @@ export default function AttendancePage() {
                     onClick={async () => {
                       try {
                         await logOut();
-                        toast("Success", { description: "Logged out successfully" });
+                        toast(t("common.success"), { description: t("success.loggedOutSuccessfully") });
                         loadAttendance(); // Refresh the records
                       } catch (e: unknown) {
-                        const message = e instanceof Error ? e.message : "Failed to log out";
-                        toast("Error", { description: message });
+                        const message = e instanceof Error ? e.message : t("errors.failedToLogOut");
+                        toast(t("common.error"), { description: message });
                       }
                     }}
                     disabled={!isLoggedIn || !!isLoggedOut || attendanceLoading}
@@ -180,7 +182,7 @@ export default function AttendancePage() {
                     {isLoggedOut ? (
                       <>OUT: {formatSaudiTime(todayAttendance?.log_out_time)}</>
                     ) : (
-                      "Time Out"
+                      t("time.timeOut")
                     )}
                   </Button>
                 </div>

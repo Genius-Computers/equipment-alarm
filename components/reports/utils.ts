@@ -15,7 +15,7 @@ export const formatHours = (hours: number, decimals: number = 1): string =>
 export const formatServiceRequestType = (type: string): string => 
   type.replace('_', ' ').toUpperCase();
 
-export const getTechnicianDisplayName = (technician: { id: string; displayName?: string }): string => 
-  technician.displayName || `Tech ${technician.id.slice(0, 8)}`;
+export const getTechnicianDisplayName = (technician: { id: string; displayName?: string }, techPrefix: string = 'Tech'): string => 
+  technician.displayName || `${techPrefix} ${technician.id.slice(0, 8)}`;
 
 export const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];

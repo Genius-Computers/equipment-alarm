@@ -52,7 +52,7 @@ export function EquipmentStatistics({ report }: EquipmentStatisticsProps) {
             <div className="relative">
               <Plus className="h-8 w-8 mb-3 opacity-90" />
               <p className="text-4xl font-bold mb-1">{report.equipment.newThisMonth}</p>
-              <p className="text-sm text-blue-100 font-medium">New Equipment Added</p>
+              <p className="text-sm text-blue-100 font-medium">{t('reports.equipment.newEquipmentAdded')}</p>
             </div>
           </div>
           
@@ -61,7 +61,7 @@ export function EquipmentStatistics({ report }: EquipmentStatisticsProps) {
             <div className="relative">
               <Activity className="h-8 w-8 mb-3 opacity-90" />
               <p className="text-4xl font-bold mb-1">{Object.keys(report.serviceRequests.byEquipment).length}</p>
-              <p className="text-sm text-emerald-100 font-medium">Equipment Serviced</p>
+              <p className="text-sm text-emerald-100 font-medium">{t('reports.equipment.equipmentServiced')}</p>
             </div>
           </div>
 
@@ -70,7 +70,7 @@ export function EquipmentStatistics({ report }: EquipmentStatisticsProps) {
             <div className="relative">
               <Wrench className="h-8 w-8 mb-3 opacity-90" />
               <p className="text-4xl font-bold mb-1">{serviceRequestRate}%</p>
-              <p className="text-sm text-violet-100 font-medium">Service Request Rate</p>
+              <p className="text-sm text-violet-100 font-medium">{t('reports.equipment.serviceRequestRate')}</p>
             </div>
           </div>
         </div>
@@ -81,7 +81,7 @@ export function EquipmentStatistics({ report }: EquipmentStatisticsProps) {
             <div className="flex items-center gap-2 mb-3">
               <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-base">
-                Equipment with Most Service Requests
+                {t('reports.equipment.equipmentWithMostServiceRequests')}
               </h4>
             </div>
             
@@ -94,14 +94,14 @@ export function EquipmentStatistics({ report }: EquipmentStatisticsProps) {
                 
                 // Simple color coding based on actual count
                 let barColor = '#3b82f6'; // Blue for low
-                let priorityText = 'Low';
+                let priorityText = t('priority.low');
                 
                 if (item.count >= 3) {
                   barColor = '#dc2626'; // Red for high
-                  priorityText = 'High';
+                  priorityText = t('priority.high');
                 } else if (item.count >= 2) {
                   barColor = '#f59e0b'; // Orange for medium
-                  priorityText = 'Med';
+                  priorityText = t('priority.med');
                 }
                 
                 return (
@@ -140,25 +140,25 @@ export function EquipmentStatistics({ report }: EquipmentStatisticsProps) {
                 <div className="text-blue-600 dark:text-blue-400 mt-0.5">💡</div>
                 <div className="flex-1">
                   <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-2">
-                    Service Request Summary
+                    {t('reports.equipment.serviceRequestSummary')}
                   </p>
                   <div className="flex flex-wrap gap-4 text-xs mb-2">
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-blue-800 dark:text-blue-200">High (3+ requests)</span>
+                      <span className="text-blue-800 dark:text-blue-200">{t('reports.equipment.highRequests')}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                      <span className="text-blue-800 dark:text-blue-200">Medium (2 requests)</span>
+                      <span className="text-blue-800 dark:text-blue-200">{t('reports.equipment.mediumRequests')}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span className="text-blue-800 dark:text-blue-200">Low (1 request)</span>
+                      <span className="text-blue-800 dark:text-blue-200">{t('reports.equipment.lowRequests')}</span>
                     </div>
                   </div>
                   <div className="text-xs text-blue-700 dark:text-blue-300">
-                    Showing {equipmentWithServiceRequests.length} equipment with service requests. 
-                    {equipmentWithServiceRequests.length > 10 && ' Scroll to see all equipment.'}
+                    {t('reports.equipment.showingEquipment', { count: equipmentWithServiceRequests.length })}
+                    {equipmentWithServiceRequests.length > 10 && ` ${t('reports.equipment.scrollToSeeMore')}`}
                   </div>
                 </div>
               </div>
@@ -175,20 +175,20 @@ export function EquipmentStatistics({ report }: EquipmentStatisticsProps) {
               </div>
               <div className="flex-1">
                 <h5 className="font-semibold text-amber-900 dark:text-amber-100 mb-3 text-sm">
-                  Current Maintenance Status <span className="text-xs font-normal text-amber-600 dark:text-amber-400">(Reference Only)</span>
+                  {t('reports.equipment.currentMaintenanceStatus')} <span className="text-xs font-normal text-amber-600 dark:text-amber-400">{t('reports.equipment.referenceOnly')}</span>
                 </h5>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white dark:bg-slate-900 p-3 rounded-lg">
-                    <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">Maintenance Due</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">{t('reports.equipment.maintenanceDue')}</p>
                     <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{report.equipment.maintenanceDue}</p>
                   </div>
                   <div className="bg-white dark:bg-slate-900 p-3 rounded-lg">
-                    <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">Overdue</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">{t('reports.equipment.overdue')}</p>
                     <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{report.equipment.maintenanceOverdue}</p>
                   </div>
                 </div>
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-3">
-                  * Current state at time of report generation, not specific to reporting period
+                  {t('reports.equipment.currentStateNote')}
                 </p>
               </div>
             </div>

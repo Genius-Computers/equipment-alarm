@@ -4,13 +4,14 @@ import { MonthlyReport } from '@/lib/types/report';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Clock, DollarSign, ShoppingCart } from 'lucide-react';
 import { formatCurrency } from './utils';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface SparePartsSectionProps {
   report: MonthlyReport;
 }
 
 export function SparePartsSection({ report }: SparePartsSectionProps) {
-
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-6">
@@ -21,10 +22,10 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Spare Parts Activity
+            {t('reports.spareParts.activity')}
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
-            {report.period.monthName} {report.period.year} • {report.spareParts.monthlyUsage} parts used
+            {report.period.monthName} {report.period.year} • {report.spareParts.monthlyUsage} {t('reports.spareParts.partsUsed').toLowerCase()}
           </p>
         </div>
       </div>
@@ -35,7 +36,7 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Parts Used</p>
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">{t('reports.spareParts.partsUsed')}</p>
                 <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{report.spareParts.monthlyUsage}</p>
               </div>
               <Package className="h-8 w-8 text-purple-500" />
@@ -47,7 +48,7 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Total Cost</p>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('reports.spareParts.totalCost')}</p>
                 <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{formatCurrency(report.spareParts.monthlyCost)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-amber-500" />
@@ -59,7 +60,7 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Orders Placed</p>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t('reports.spareParts.ordersPlaced')}</p>
                 <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{report.sparePartOrders.total}</p>
               </div>
               <ShoppingCart className="h-8 w-8 text-blue-500" />
@@ -74,10 +75,10 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
               <Package className="h-5 w-5 text-purple-500" />
-              Most Requested Parts
+              {t('reports.spareParts.topRequestedParts')}
             </CardTitle>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Parts with highest usage this month
+              {t('reports.spareParts.partsWithHighestUsage')}
             </p>
           </CardHeader>
           <CardContent>
@@ -91,14 +92,14 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
                 
                 // Color coding based on usage level
                 let barColor = '#a78bfa'; // Light purple for low
-                let usageText = 'Low';
+                let usageText = t('priority.low');
                 
                 if (item.quantity >= 10) {
                   barColor = '#7c3aed'; // Dark purple for high
-                  usageText = 'High';
+                  usageText = t('priority.high');
                 } else if (item.quantity >= 5) {
                   barColor = '#8b5cf6'; // Medium purple for medium
-                  usageText = 'Med';
+                  usageText = t('priority.med');
                 }
                 
                 return (
@@ -140,25 +141,25 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
                 <div className="text-purple-600 dark:text-purple-400 mt-0.5">💡</div>
                 <div className="flex-1">
                   <p className="text-sm text-purple-900 dark:text-purple-100 font-medium mb-2">
-                    Parts Usage Summary
+                    {t('reports.spareParts.partsUsageSummary')}
                   </p>
                   <div className="flex flex-wrap gap-4 text-xs mb-2">
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 rounded-full bg-purple-600"></div>
-                      <span className="text-purple-800 dark:text-purple-200">High (10+ units)</span>
+                      <span className="text-purple-800 dark:text-purple-200">{t('reports.spareParts.highDemand')}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                      <span className="text-purple-800 dark:text-purple-200">Medium (5-9 units)</span>
+                      <span className="text-purple-800 dark:text-purple-200">{t('reports.spareParts.mediumDemand')}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 rounded-full bg-purple-400"></div>
-                      <span className="text-purple-800 dark:text-purple-200">Low (1-4 units)</span>
+                      <span className="text-purple-800 dark:text-purple-200">{t('reports.spareParts.lowDemand')}</span>
                     </div>
                   </div>
                   <div className="text-xs text-purple-700 dark:text-purple-300">
-                    Showing {report.spareParts.topRequested.length} parts with usage data. 
-                    {report.spareParts.topRequested.length > 10 && ' Scroll to see all parts.'}
+                    {t('reports.spareParts.showingParts', { count: report.spareParts.topRequested.length })}
+                    {report.spareParts.topRequested.length > 10 && ` ${t('reports.spareParts.scrollToSeeAllParts')}`}
                   </div>
                 </div>
               </div>
@@ -171,10 +172,10 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-            Procurement Performance
+            {t('reports.spareParts.procurementPerformance')}
           </CardTitle>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Key metrics for spare part orders
+            {t('reports.spareParts.keyMetricsForOrders')}
           </p>
         </CardHeader>
         <CardContent>
@@ -182,7 +183,7 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
             <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg border border-purple-200 dark:border-purple-800/50">
               <div className="flex items-center gap-2 mb-3">
                 <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Total Requested</h5>
+                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{t('reports.spareParts.totalRequested')}</h5>
               </div>
               <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                 {report.sparePartOrders.totalQuantityRequested}
@@ -192,7 +193,7 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
             <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800/50">
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Avg Processing Time</h5>
+                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{t('reports.spareParts.avgProcessingTime')}</h5>
               </div>
               <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {report.sparePartOrders.averageProcessingTime.toFixed(1)}<span className="text-lg text-slate-500">h</span>
@@ -202,7 +203,7 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
             <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
               <div className="flex items-center gap-2 mb-3">
                 <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Total Cost</h5>
+                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{t('reports.spareParts.totalCost')}</h5>
               </div>
               <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(report.sparePartOrders.totalCost)}
@@ -217,10 +218,10 @@ export function SparePartsSection({ report }: SparePartsSectionProps) {
         <Card className="border-0 shadow-lg">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              Order Status Breakdown
+              {t('reports.spareParts.orderStatusBreakdown')}
             </CardTitle>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Distribution of spare part orders by status
+              {t('reports.spareParts.distributionByStatus')}
             </p>
           </CardHeader>
           <CardContent>

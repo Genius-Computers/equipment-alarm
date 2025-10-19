@@ -78,8 +78,8 @@ export default function LocationsPage() {
       }
     } catch (error) {
       console.error('Error fetching locations:', error);
-      toast("Error", { 
-        description: error instanceof Error ? error.message : "Failed to fetch locations" 
+      toast(t("common.error"), { 
+        description: error instanceof Error ? error.message : t("errors.failedToFetchLocations") 
       });
     } finally {
       setLoading(false);
@@ -92,12 +92,12 @@ export default function LocationsPage() {
 
   const handleAddLocation = async () => {
     if (!newLocationName.trim()) {
-      toast("Error", { description: "Please enter a location name" });
+      toast(t("common.error"), { description: t("errors.pleaseEnterLocationName") });
       return;
     }
 
     if (!newLocationCampus) {
-      toast("Error", { description: "Please select a campus" });
+      toast(t("common.error"), { description: t("errors.pleaseSelectCampus") });
       return;
     }
 
@@ -117,13 +117,13 @@ export default function LocationsPage() {
         throw new Error(error.error || 'Failed to add location');
       }
 
-      toast("Success", { description: "Location added successfully" });
+      toast(t("common.success"), { description: t("success.locationAddedSuccessfully") });
       setNewLocationName("");
       setNewLocationCampus("");
       await fetchLocations();
     } catch (error) {
-      toast("Error", { 
-        description: error instanceof Error ? error.message : "Failed to add location" 
+      toast(t("common.error"), { 
+        description: error instanceof Error ? error.message : t("errors.failedToAddLocation") 
       });
     } finally {
       setAdding(false);
@@ -142,11 +142,11 @@ export default function LocationsPage() {
         throw new Error(error.error || 'Failed to delete location');
       }
 
-      toast("Success", { description: `Location "${locationName}" deleted successfully` });
+      toast(t("common.success"), { description: t("success.locationDeletedSuccessfully", { name: locationName }) });
       await fetchLocations();
     } catch (error) {
-      toast("Error", { 
-        description: error instanceof Error ? error.message : "Failed to delete location" 
+      toast(t("common.error"), { 
+        description: error instanceof Error ? error.message : t("errors.failedToDeleteLocation") 
       });
     } finally {
       setDeleting(null);
@@ -195,7 +195,7 @@ export default function LocationsPage() {
                   size="sm"
                   onClick={() => setFilter(filter === campus ? "all" : campus)}
                 >
-                  {filter === campus ? "Show All" : "Filter"}
+                  {filter === campus ? t("filter.showAll") : t("filter.filter")}
                 </Button>
               </div>
             </Card>

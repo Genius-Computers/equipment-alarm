@@ -3,6 +3,7 @@
 import { MonthlyReport } from '@/lib/types/report';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Clock, CheckCircle, DollarSign, TrendingUp, AlertTriangle, Wrench, Zap } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 import { 
   BarChart,
   Bar,
@@ -22,12 +23,13 @@ interface ServiceRequestsAnalysisProps {
 }
 
 export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps) {
+  const { t } = useLanguage();
   
   // Prepare chart data for request types with better formatting
   const serviceRequestTypeData = Object.entries(report.serviceRequests.byType).map(([type, count]) => ({
-    type: type === 'MAINTENANCE' ? 'Maintenance' : 
-          type === 'REPAIR' ? 'Repair' : 
-          type === 'INSPECTION' ? 'Inspection' : 
+    type: type === 'MAINTENANCE' ? t('serviceRequest.types.maintenance') : 
+          type === 'REPAIR' ? t('serviceRequest.types.repair') : 
+          type === 'INSPECTION' ? t('serviceRequest.types.inspection') : 
           type.charAt(0).toUpperCase() + type.slice(1).toLowerCase(),
     count,
     originalType: type
@@ -56,7 +58,7 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
 
   // Get the most common request type for better insights
   const mostCommonType = serviceRequestTypeData.reduce((max, current) => 
-    current.count > max.count ? current : max, serviceRequestTypeData[0] || { type: 'None', count: 0 }
+    current.count > max.count ? current : max, serviceRequestTypeData[0] || { type: t('serviceRequest.types.none'), count: 0 }
   );
 
   return (
@@ -68,10 +70,10 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
         </div>
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Service Requests Overview
+            {t('reports.serviceRequests.overview')}
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
-            {report.period.monthName} {report.period.year} • {totalRequests} total requests
+            {report.period.monthName} {report.period.year} • {totalRequests} {t('reports.serviceRequests.totalRequestsLabel')}
           </p>
         </div>
       </div>
@@ -82,7 +84,7 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Requests</p>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t('reports.serviceRequests.totalRequests')}</p>
                 <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{totalRequests}</p>
               </div>
               <FileText className="h-8 w-8 text-blue-500" />
@@ -94,7 +96,7 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">Completed</p>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">{t('reports.serviceRequests.completed')}</p>
                 <p className="text-3xl font-bold text-green-700 dark:text-green-300">{completedCount}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
@@ -106,7 +108,7 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">In Progress</p>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('reports.serviceRequests.inProgress')}</p>
                 <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{inProgressTotal}</p>
               </div>
               <Clock className="h-8 w-8 text-amber-500" />
@@ -118,7 +120,7 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Success Rate</p>
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">{t('reports.serviceRequests.successRate')}</p>
                 <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{completionRate}%</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-500" />
@@ -134,10 +136,10 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
               <Zap className="h-5 w-5 text-blue-500" />
-              Request Types
+              {t('reports.serviceRequests.requestTypes')}
             </CardTitle>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Most common: {mostCommonType.type} ({mostCommonType.count} requests)
+              {t('reports.serviceRequests.mostCommon')}: {mostCommonType.type} ({mostCommonType.count} {t('reports.serviceRequests.requests')})
             </p>
           </CardHeader>
           <CardContent>
@@ -190,10 +192,10 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Priority Levels
+              {t('reports.serviceRequests.priorityLevels')}
             </CardTitle>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Distribution of request urgency
+              {t('reports.serviceRequests.distributionUrgency')}
             </p>
           </CardHeader>
           <CardContent>
@@ -251,12 +253,12 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
                 <Clock className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Average Response Time</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{t('reports.serviceRequests.averageResponseTime')}</h3>
                 <p className="text-3xl font-bold text-cyan-600 dark:text-cyan-400 mt-1">
                   {report.serviceRequests.averageCompletionTime.toFixed(1)} hours
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  From request to completion
+                  {t('reports.serviceRequests.fromRequestToCompletion')}
                 </p>
               </div>
             </div>
@@ -270,12 +272,12 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
                 <DollarSign className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Parts Cost</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{t('reports.serviceRequests.partsCost')}</h3>
                 <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                   {formatCurrency(report.serviceRequests.totalSparePartsCost)}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  Spare parts used this month
+                  {t('reports.serviceRequests.sparePartsUsedThisMonth')}
                 </p>
               </div>
             </div>

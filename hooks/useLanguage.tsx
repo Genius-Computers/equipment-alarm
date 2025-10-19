@@ -484,9 +484,23 @@ const translations = {
     
     // Service Requests Analysis
     "reports.serviceRequests.title": "Service Requests Analysis",
+    "reports.serviceRequests.overview": "Service Requests Overview",
+    "reports.serviceRequests.totalRequests": "Total Requests",
+    "reports.serviceRequests.totalRequestsLabel": "total requests",
     "reports.serviceRequests.byType": "Service Requests by Type",
     "reports.serviceRequests.completed": "Completed",
     "reports.serviceRequests.pending": "Pending",
+    "reports.serviceRequests.inProgress": "In Progress",
+    "reports.serviceRequests.successRate": "Success Rate",
+    "reports.serviceRequests.requestTypes": "Request Types",
+    "reports.serviceRequests.mostCommon": "Most common",
+    "reports.serviceRequests.requests": "requests",
+    "reports.serviceRequests.priorityLevels": "Priority Levels",
+    "reports.serviceRequests.distributionUrgency": "Distribution of request urgency",
+    "reports.serviceRequests.averageResponseTime": "Average Response Time",
+    "reports.serviceRequests.fromRequestToCompletion": "From request to completion",
+    "reports.serviceRequests.partsCost": "Parts Cost",
+    "reports.serviceRequests.sparePartsUsedThisMonth": "Spare parts used this month",
     "reports.serviceRequests.averageCompletionTime": "Average Completion Time",
     "reports.serviceRequests.totalSparePartsCost": "Total Spare Parts Cost",
     "reports.serviceRequests.hours": "hours",
@@ -502,6 +516,19 @@ const translations = {
     // Spare Parts Section
     "reports.spareParts.inventory": "Spare Parts Inventory",
     "reports.spareParts.orders": "Spare Part Orders",
+    "reports.spareParts.activity": "Spare Parts Activity",
+    "reports.spareParts.partsUsed": "Parts Used",
+    "reports.spareParts.ordersPlaced": "Orders Placed",
+    "reports.spareParts.topRequestedParts": "Most Requested Parts",
+    "reports.spareParts.quantityUsed": "Quantity Used",
+    "reports.spareParts.units": "units",
+    "reports.spareParts.highDemand": "High (10+ units)",
+    "reports.spareParts.mediumDemand": "Medium (5-9 units)",
+    "reports.spareParts.lowDemand": "Low (1-4 units)",
+    "reports.spareParts.showingParts": "Showing {count} parts with usage data.",
+    "reports.spareParts.scrollToSeeAllParts": "Scroll to see all parts.",
+    "reports.spareParts.procurementPerformance": "Procurement Performance",
+    "reports.spareParts.totalRequested": "Total Requested",
     "reports.spareParts.totalItems": "Total Items",
     "reports.spareParts.lowStock": "Low Stock",
     "reports.spareParts.monthlyUsage": "Monthly Usage",
@@ -510,8 +537,13 @@ const translations = {
     "reports.spareParts.totalOrders": "Total Orders",
     "reports.spareParts.itemsRequested": "Items Requested",
     "reports.spareParts.processingStats": "Processing Stats",
-    "reports.spareParts.avgProcessingTime": "Avg. Processing Time",
+    "reports.spareParts.avgProcessingTime": "Avg Processing Time",
     "reports.spareParts.totalCost": "Total Cost",
+    "reports.spareParts.partsWithHighestUsage": "Parts with highest usage this month",
+    "reports.spareParts.partsUsageSummary": "Parts Usage Summary",
+    "reports.spareParts.keyMetricsForOrders": "Key metrics for spare part orders",
+    "reports.spareParts.orderStatusBreakdown": "Order Status Breakdown",
+    "reports.spareParts.distributionByStatus": "Distribution of spare part orders by status",
     
     // Technician Performance
     "reports.technicians.title": "Technician Performance",
@@ -522,6 +554,7 @@ const translations = {
     "reports.technicians.avgHoursPerDay": "Avg. Hours/Day",
     "reports.technicians.topPerformers": "Top Performers",
     "reports.technicians.tech": "Tech",
+    "reports.technicians.techPrefix": "Tech",
     
     // Monthly Reports Page
     "reports.page.title": "Monthly Reports",
@@ -612,8 +645,6 @@ const translations = {
     
     // Service Requests Analysis
     "reports.serviceRequests.analysis": "Service Requests Analysis",
-    "reports.serviceRequests.totalRequests": "Total Requests",
-    "reports.serviceRequests.inProgress": "In Progress",
     "reports.serviceRequests.completionRate": "Completion Rate",
     "reports.serviceRequests.performanceMetrics": "Performance Metrics",
     
@@ -623,18 +654,80 @@ const translations = {
     "reports.jobOrders.locationsServed": "Locations Served",
     
     // Spare Parts Section
-    "reports.spareParts.activity": "Spare Parts Activity",
-    "reports.spareParts.partsUsed": "Parts Used",
-    "reports.spareParts.ordersPlaced": "Orders Placed",
-    "reports.spareParts.mostRequestedParts": "Most Requested Parts",
-    "reports.spareParts.quantityUsed": "Quantity Used",
-    "reports.spareParts.quantity": "Quantity",
-    "reports.spareParts.units": "units",
     "reports.spareParts.highDemandParts": "High-demand parts may require increased stock levels",
     "reports.spareParts.scrollToSeeMore": "← Scroll to see more parts →",
-    "reports.spareParts.procurementPerformance": "Procurement Performance",
     "reports.spareParts.requested": "Requested",
     "reports.spareParts.avgTime": "Avg Time",
+    
+    // Month Names
+    "months.january": "January",
+    "months.february": "February", 
+    "months.march": "March",
+    "months.april": "April",
+    "months.may": "May",
+    "months.june": "June",
+    "months.july": "July",
+    "months.august": "August",
+    "months.september": "September",
+    "months.october": "October",
+    "months.november": "November",
+    "months.december": "December",
+    
+    // Priority Levels (additional)
+    "priority.med": "Med",
+    
+    // Service Request Types
+    "serviceRequest.types.maintenance": "Maintenance",
+    "serviceRequest.types.repair": "Repair",
+    "serviceRequest.types.inspection": "Inspection",
+    "serviceRequest.types.none": "None",
+    
+    // Equipment Statistics (additional)
+    "reports.equipment.newEquipmentAdded": "New Equipment Added",
+    "reports.equipment.equipmentServiced": "Equipment Serviced",
+    "reports.equipment.equipmentWithMostServiceRequests": "Equipment with Most Service Requests",
+    "reports.equipment.serviceRequestSummary": "Service Request Summary",
+    "reports.equipment.highRequests": "High (3+ requests)",
+    "reports.equipment.mediumRequests": "Medium (2 requests)",
+    "reports.equipment.lowRequests": "Low (1 request)",
+    "reports.equipment.showingEquipment": "Showing {count} equipment with service requests.",
+    "reports.equipment.scrollToSeeMore": "Scroll to see all equipment.",
+    "reports.equipment.currentMaintenanceStatus": "Current Maintenance Status",
+    "reports.equipment.referenceOnly": "(Reference Only)",
+    "reports.equipment.currentStateNote": "* Current state at time of report generation, not specific to reporting period",
+    
+    // Error Messages
+    "errors.failedToFetchLocations": "Failed to fetch locations",
+    "errors.pleaseEnterLocationName": "Please enter a location name",
+    "errors.pleaseSelectCampus": "Please select a campus",
+    "errors.failedToAddLocation": "Failed to add location",
+    "errors.failedToDeleteLocation": "Failed to delete location",
+    "errors.failedToLogIn": "Failed to log in",
+    "errors.failedToLogOut": "Failed to log out",
+    "errors.invalidJobOrderData": "Invalid job order data",
+    "errors.failedToLoadEquipmentDetails": "Failed to load equipment details",
+    "errors.pleaseSelectScheduleDate": "Please select a schedule date",
+    "errors.failedToSubmitJobOrder": "Failed to submit job order",
+    
+    // Success Messages
+    "success.locationAddedSuccessfully": "Location added successfully",
+    "success.locationDeletedSuccessfully": "Location \"{name}\" deleted successfully",
+    "success.loggedInSuccessfully": "Logged in successfully",
+    "success.loggedOutSuccessfully": "Logged out successfully",
+    
+    // Time Labels
+    "time.timeIn": "Time In",
+    "time.timeOut": "Time Out",
+    
+    // Filter Actions
+    "filter.showAll": "Show All",
+    "filter.filter": "Filter",
+    
+    // Toast Messages (additional)
+    "toast.created": "Created successfully",
+    
+    // Auth Messages
+    "auth.forbidden": "You do not have permission to access this page",
   },
   ar: {
     // Table
@@ -1109,9 +1202,23 @@ const translations = {
     
     // Service Requests Analysis
     "reports.serviceRequests.title": "تحليل طلبات الخدمة",
+    "reports.serviceRequests.overview": "نظرة عامة على طلبات الخدمة",
+    "reports.serviceRequests.totalRequests": "إجمالي الطلبات",
+    "reports.serviceRequests.totalRequestsLabel": "إجمالي الطلبات",
     "reports.serviceRequests.byType": "طلبات الخدمة حسب النوع",
     "reports.serviceRequests.completed": "مكتمل",
     "reports.serviceRequests.pending": "في الانتظار",
+    "reports.serviceRequests.inProgress": "قيد التنفيذ",
+    "reports.serviceRequests.successRate": "معدل النجاح",
+    "reports.serviceRequests.requestTypes": "أنواع الطلبات",
+    "reports.serviceRequests.mostCommon": "الأكثر شيوعاً",
+    "reports.serviceRequests.requests": "طلبات",
+    "reports.serviceRequests.priorityLevels": "مستويات الأولوية",
+    "reports.serviceRequests.distributionUrgency": "توزيع إلحاح الطلبات",
+    "reports.serviceRequests.averageResponseTime": "متوسط وقت الاستجابة",
+    "reports.serviceRequests.fromRequestToCompletion": "من الطلب إلى الإنجاز",
+    "reports.serviceRequests.partsCost": "تكلفة القطع",
+    "reports.serviceRequests.sparePartsUsedThisMonth": "قطع الغيار المستخدمة هذا الشهر",
     "reports.serviceRequests.averageCompletionTime": "متوسط وقت الإنجاز",
     "reports.serviceRequests.totalSparePartsCost": "إجمالي تكلفة قطع الغيار",
     "reports.serviceRequests.hours": "ساعات",
@@ -1127,6 +1234,19 @@ const translations = {
     // Spare Parts Section
     "reports.spareParts.inventory": "مخزون قطع الغيار",
     "reports.spareParts.orders": "طلبات قطع الغيار",
+    "reports.spareParts.activity": "نشاط قطع الغيار",
+    "reports.spareParts.partsUsed": "القطع المستخدمة",
+    "reports.spareParts.ordersPlaced": "الطلبات المقدمة",
+    "reports.spareParts.topRequestedParts": "القطع الأكثر طلباً",
+    "reports.spareParts.quantityUsed": "الكمية المستخدمة",
+    "reports.spareParts.units": "وحدات",
+    "reports.spareParts.highDemand": "عالية (10+ وحدات)",
+    "reports.spareParts.mediumDemand": "متوسطة (5-9 وحدات)",
+    "reports.spareParts.lowDemand": "منخفضة (1-4 وحدات)",
+    "reports.spareParts.showingParts": "عرض {count} قطع مع بيانات الاستخدام.",
+    "reports.spareParts.scrollToSeeAllParts": "مرر لرؤية جميع القطع.",
+    "reports.spareParts.procurementPerformance": "أداء المشتريات",
+    "reports.spareParts.totalRequested": "إجمالي المطلوب",
     "reports.spareParts.totalItems": "إجمالي العناصر",
     "reports.spareParts.lowStock": "مخزون منخفض",
     "reports.spareParts.monthlyUsage": "الاستخدام الشهري",
@@ -1137,6 +1257,11 @@ const translations = {
     "reports.spareParts.processingStats": "إحصائيات المعالجة",
     "reports.spareParts.avgProcessingTime": "متوسط وقت المعالجة",
     "reports.spareParts.totalCost": "التكلفة الإجمالية",
+    "reports.spareParts.partsWithHighestUsage": "القطع ذات أعلى استخدام هذا الشهر",
+    "reports.spareParts.partsUsageSummary": "ملخص استخدام القطع",
+    "reports.spareParts.keyMetricsForOrders": "المقاييس الرئيسية لطلبات قطع الغيار",
+    "reports.spareParts.orderStatusBreakdown": "تفصيل حالة الطلبات",
+    "reports.spareParts.distributionByStatus": "توزيع طلبات قطع الغيار حسب الحالة",
     
     // Technician Performance
     "reports.technicians.title": "أداء الفنيين",
@@ -1147,6 +1272,7 @@ const translations = {
     "reports.technicians.avgHoursPerDay": "متوسط الساعات/اليوم",
     "reports.technicians.topPerformers": "أفضل الأداء",
     "reports.technicians.tech": "فني",
+    "reports.technicians.techPrefix": "فني",
     
     // Monthly Reports Page
     "reports.page.title": "التقارير الشهرية",
@@ -1237,8 +1363,6 @@ const translations = {
     
     // Service Requests Analysis
     "reports.serviceRequests.analysis": "تحليل طلبات الخدمة",
-    "reports.serviceRequests.totalRequests": "إجمالي الطلبات",
-    "reports.serviceRequests.inProgress": "قيد التنفيذ",
     "reports.serviceRequests.completionRate": "معدل الإنجاز",
     "reports.serviceRequests.performanceMetrics": "مقاييس الأداء",
     
@@ -1248,18 +1372,80 @@ const translations = {
     "reports.jobOrders.locationsServed": "المواقع المخدومة",
     
     // Spare Parts Section
-    "reports.spareParts.activity": "نشاط قطع الغيار",
-    "reports.spareParts.partsUsed": "القطع المستخدمة",
-    "reports.spareParts.ordersPlaced": "الطلبات المقدمة",
-    "reports.spareParts.mostRequestedParts": "القطع الأكثر طلباً",
-    "reports.spareParts.quantityUsed": "الكمية المستخدمة",
-    "reports.spareParts.quantity": "الكمية",
-    "reports.spareParts.units": "وحدات",
     "reports.spareParts.highDemandParts": "القطع عالية الطلب قد تتطلب مستويات مخزون متزايدة",
     "reports.spareParts.scrollToSeeMore": "← مرر لرؤية المزيد من القطع →",
-    "reports.spareParts.procurementPerformance": "أداء المشتريات",
     "reports.spareParts.requested": "مطلوب",
     "reports.spareParts.avgTime": "متوسط الوقت",
+    
+    // Month Names
+    "months.january": "يناير",
+    "months.february": "فبراير",
+    "months.march": "مارس",
+    "months.april": "أبريل",
+    "months.may": "مايو",
+    "months.june": "يونيو",
+    "months.july": "يوليو",
+    "months.august": "أغسطس",
+    "months.september": "سبتمبر",
+    "months.october": "أكتوبر",
+    "months.november": "نوفمبر",
+    "months.december": "ديسمبر",
+    
+    // Priority Levels (additional)
+    "priority.med": "متوسط",
+    
+    // Service Request Types
+    "serviceRequest.types.maintenance": "صيانة",
+    "serviceRequest.types.repair": "إصلاح",
+    "serviceRequest.types.inspection": "فحص",
+    "serviceRequest.types.none": "لا يوجد",
+    
+    // Equipment Statistics (additional)
+    "reports.equipment.newEquipmentAdded": "معدات جديدة مضافة",
+    "reports.equipment.equipmentServiced": "معدات تم صيانتها",
+    "reports.equipment.equipmentWithMostServiceRequests": "المعدات ذات أكبر عدد من طلبات الخدمة",
+    "reports.equipment.serviceRequestSummary": "ملخص طلبات الخدمة",
+    "reports.equipment.highRequests": "عالية (3+ طلبات)",
+    "reports.equipment.mediumRequests": "متوسطة (طلبين)",
+    "reports.equipment.lowRequests": "منخفضة (طلب واحد)",
+    "reports.equipment.showingEquipment": "عرض {count} معدات مع طلبات خدمة.",
+    "reports.equipment.scrollToSeeMore": "مرر لرؤية جميع المعدات.",
+    "reports.equipment.currentMaintenanceStatus": "حالة الصيانة الحالية",
+    "reports.equipment.referenceOnly": "(مرجع فقط)",
+    "reports.equipment.currentStateNote": "* الحالة الحالية وقت إنشاء التقرير، وليس محددة لفترة التقرير",
+    
+    // Error Messages
+    "errors.failedToFetchLocations": "فشل في جلب المواقع",
+    "errors.pleaseEnterLocationName": "يرجى إدخال اسم الموقع",
+    "errors.pleaseSelectCampus": "يرجى اختيار الحرم الجامعي",
+    "errors.failedToAddLocation": "فشل في إضافة الموقع",
+    "errors.failedToDeleteLocation": "فشل في حذف الموقع",
+    "errors.failedToLogIn": "فشل تسجيل الدخول",
+    "errors.failedToLogOut": "فشل تسجيل الخروج",
+    "errors.invalidJobOrderData": "بيانات أمر العمل غير صحيحة",
+    "errors.failedToLoadEquipmentDetails": "فشل في تحميل تفاصيل المعدات",
+    "errors.pleaseSelectScheduleDate": "يرجى اختيار تاريخ الجدولة",
+    "errors.failedToSubmitJobOrder": "فشل في إرسال أمر العمل",
+    
+    // Success Messages
+    "success.locationAddedSuccessfully": "تم إضافة الموقع بنجاح",
+    "success.locationDeletedSuccessfully": "تم حذف الموقع \"{name}\" بنجاح",
+    "success.loggedInSuccessfully": "تم تسجيل الدخول بنجاح",
+    "success.loggedOutSuccessfully": "تم تسجيل الخروج بنجاح",
+    
+    // Time Labels
+    "time.timeIn": "وقت الدخول",
+    "time.timeOut": "وقت الخروج",
+    
+    // Filter Actions
+    "filter.showAll": "عرض الكل",
+    "filter.filter": "تصفية",
+    
+    // Toast Messages (additional)
+    "toast.created": "تم الإنشاء بنجاح",
+    
+    // Auth Messages
+    "auth.forbidden": "ليس لديك صلاحية للوصول إلى هذه الصفحة",
   }
 };
 

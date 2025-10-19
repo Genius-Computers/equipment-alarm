@@ -71,7 +71,7 @@ export function TechnicianPerformance({ report }: TechnicianPerformanceProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-slate-900 dark:text-slate-100 text-sm truncate">
-                        {getTechnicianDisplayName(tech.technician)}
+                        {getTechnicianDisplayName(tech.technician, t('reports.technicians.techPrefix'))}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {tech.serviceRequestsCompleted}/{tech.serviceRequestsAssigned} {t('reports.technicians.completed')}
