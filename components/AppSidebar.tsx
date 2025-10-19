@@ -13,7 +13,7 @@ import {
   SidebarSeparator,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck, BarChart3, MapPin, ClipboardList } from "lucide-react";
+import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck, MapPin, ClipboardList, FileText } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -96,12 +96,12 @@ export default function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            {role === "admin_x" && (
+            {(role === "admin" || role === "admin_x" || role === "supervisor") && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/reports")}>
                   <Link href="/reports/monthly">
-                    <BarChart3 />
-                    <span>{t("sidebar.reports")}</span>
+                    <FileText />
+                    <span>Monthly Reports</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
