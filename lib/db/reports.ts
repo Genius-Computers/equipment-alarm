@@ -655,13 +655,14 @@ export const getAttendanceStats = async (filters: ReportFilters): Promise<Attend
   const attendanceResults = await sql`
     SELECT 
       user_id,
+      display_name,
       COUNT(*) as working_days,
       AVG(EXTRACT(EPOCH FROM (log_out_time - log_in_time))/3600) as avg_hours
     FROM attendance a
     WHERE a.date >= ${startDate.toISOString().split('T')[0]}
     AND a.date <= ${endDate.toISOString().split('T')[0]}
     AND log_in_time IS NOT NULL
-    GROUP BY user_id
+    GROUP BY user_id, display_name
   `;
   
   // Get service request assignments for technicians
@@ -697,7 +698,7 @@ export const getAttendanceStats = async (filters: ReportFilters): Promise<Attend
     return {
       technician: {
         id: attendance.user_id as string,
-        displayName: `Technician ${(attendance.user_id as string).slice(0, 8)}` // Simplified
+        displayName: attendance.display_name as string || `Technician ${(attendance.user_id as string).slice(0, 8)}`
       },
       workingDays: parseInt(attendance.working_days as string),
       averageHours: parseFloat(attendance.avg_hours as string || '0'),
