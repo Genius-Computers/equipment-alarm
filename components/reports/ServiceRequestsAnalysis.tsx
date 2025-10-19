@@ -2,7 +2,7 @@
 
 import { MonthlyReport } from '@/lib/types/report';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Clock, CheckCircle, DollarSign, TrendingUp } from 'lucide-react';
+import { FileText, Clock, CheckCircle, DollarSign, TrendingUp, AlertTriangle, Wrench, Zap } from 'lucide-react';
 import { 
   BarChart,
   Bar,
@@ -11,36 +11,37 @@ import {
   CartesianGrid,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  ResponsiveContainer
 } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { formatCurrency, formatServiceRequestType, COLORS } from './utils';
-import { useLanguage } from '@/hooks/useLanguage';
+import { ChartTooltip } from '@/components/ui/chart';
+import { formatCurrency } from './utils';
 
 interface ServiceRequestsAnalysisProps {
   report: MonthlyReport;
 }
 
 export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps) {
-  const {t} = useLanguage();
-  // Prepare chart data for request types
+  
+  // Prepare chart data for request types with better formatting
   const serviceRequestTypeData = Object.entries(report.serviceRequests.byType).map(([type, count]) => ({
-    type: formatServiceRequestType(type),
-    count
+    type: type === 'MAINTENANCE' ? 'Maintenance' : 
+          type === 'REPAIR' ? 'Repair' : 
+          type === 'INSPECTION' ? 'Inspection' : 
+          type.charAt(0).toUpperCase() + type.slice(1).toLowerCase(),
+    count,
+    originalType: type
   }));
 
-  // Prepare chart data for priority
+  // Prepare chart data for priority with better colors and labels
   const priorityData = Object.entries(report.serviceRequests.byPriority).map(([priority, count]) => ({
     priority: priority.charAt(0).toUpperCase() + priority.slice(1),
-    count
+    count,
+    color: priority.toLowerCase() === 'high' ? '#ef4444' :
+           priority.toLowerCase() === 'medium' ? '#f59e0b' :
+           priority.toLowerCase() === 'low' ? '#10b981' : '#6b7280'
   }));
 
-  const chartConfig = {
-    count: {
-      label: "Count",
-      color: "#10b981",
-    }
-  };
 
   // Calculate completion rate
   const completedCount = report.serviceRequests.byWorkStatus.completed || 0;
@@ -51,188 +52,236 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
   const workStatusByKey = report.serviceRequests.byWorkStatus as Record<string, number>;
   const pendingCount = workStatusByKey.pending || 0;
   const inProgressCount = workStatusByKey.in_progress || 0;
+  const inProgressTotal = pendingCount + inProgressCount;
+
+  // Get the most common request type for better insights
+  const mostCommonType = serviceRequestTypeData.reduce((max, current) => 
+    current.count > max.count ? current : max, serviceRequestTypeData[0] || { type: 'None', count: 0 }
+  );
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-      <CardHeader className="pb-6 space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-emerald-500/10 rounded-xl">
-            <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div>
-            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              {t('reports.serviceRequests.analysis')}
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+          <Wrench className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+            Service Requests Overview
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            {report.period.monthName} {report.period.year} • {totalRequests} total requests
+          </p>
+        </div>
+      </div>
+
+      {/* Key Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Requests</p>
+                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{totalRequests}</p>
+              </div>
+              <FileText className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">Completed</p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{completedCount}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">In Progress</p>
+                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{inProgressTotal}</p>
+              </div>
+              <Clock className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Success Rate</p>
+                <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{completionRate}%</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Request Types Chart */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+              <Zap className="h-5 w-5 text-blue-500" />
+              Request Types
             </CardTitle>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {report.period.monthName} {report.period.year}
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Most common: {mostCommonType.type} ({mostCommonType.count} requests)
             </p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{totalRequests}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Total Requests</p>
-          </div>
-          
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{completedCount}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Completed</p>
-          </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={serviceRequestTypeData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+                  <XAxis 
+                    dataKey="type" 
+                    className="text-sm text-slate-600 dark:text-slate-400"
+                    tickLine={false}
+                    axisLine={false}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    className="text-sm text-slate-600 dark:text-slate-400"
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <ChartTooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-white dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">{data.type}</p>
+                            <p className="text-blue-600 dark:text-blue-400 font-medium">{data.count} requests</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="#3b82f6"
+                    radius={[8, 8, 0, 0]}
+                    className="hover:opacity-80 transition-opacity"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{pendingCount + inProgressCount}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">In Progress</p>
-          </div>
-
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <TrendingUp className="h-5 w-5 text-violet-600 dark:text-violet-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{completionRate}%</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Completion Rate</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Request Types Bar Chart */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5">
-            <h4 className="font-semibold mb-4 text-slate-900 dark:text-slate-100 text-sm">Service Requests by Type</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
-              <BarChart data={serviceRequestTypeData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
-                <XAxis 
-                  dataKey="type" 
-                  className="text-xs text-slate-600 dark:text-slate-400"
-                  tickLine={false}
-                  axisLine={false}
-                  angle={-45}
-                  textAnchor="end"
-                  height={70}
-                />
-                <YAxis 
-                  className="text-xs text-slate-600 dark:text-slate-400"
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="count"
-                  fill="var(--color-count)"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
-          </div>
-
-          {/* Priority Distribution Pie Chart */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5">
-            <h4 className="font-semibold mb-4 text-slate-900 dark:text-slate-100 text-sm">Requests by Priority</h4>
-            <ChartContainer 
-              config={{
-                high: { label: "High", color: "#ef4444" },
-                medium: { label: "Medium", color: "#f59e0b" },
-                low: { label: "Low", color: "#10b981" }
-              }} 
-              className="h-[240px] w-full"
-            >
-              <PieChart>
-                <Pie
-                  data={priorityData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={false}
-                  outerRadius={90}
-                  innerRadius={50}
-                  fill="#8884d8"
-                  dataKey="count"
-                  paddingAngle={3}
-                >
-                  {priorityData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={
-                        entry.priority.toLowerCase() === 'high' ? '#ef4444' :
-                        entry.priority.toLowerCase() === 'medium' ? '#f59e0b' :
-                        entry.priority.toLowerCase() === 'low' ? '#10b981' :
-                        COLORS[index % COLORS.length]
-                      } 
+        {/* Priority Distribution Chart */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Priority Levels
+            </CardTitle>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Distribution of request urgency
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80 flex flex-col">
+              <div className="flex-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={priorityData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ priority, count, percent }) => 
+                        `${priority}: ${count} (${(percent * 100).toFixed(0)}%)`
+                      }
+                      outerRadius={100}
+                      innerRadius={40}
+                      fill="#8884d8"
+                      dataKey="count"
+                      paddingAngle={5}
+                      className="text-sm font-medium"
+                    >
+                      {priorityData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{data.priority} Priority</p>
+                              <p className="text-slate-600 dark:text-slate-400">{data.count} requests</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
-                  ))}
-                </Pie>
-                <ChartTooltip 
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
-                          <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">{data.priority}</p>
-                          <p className="text-xs text-slate-600 dark:text-slate-400">Count: {data.count}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-              </PieChart>
-            </ChartContainer>
-            <div className="mt-4 flex flex-wrap gap-3 justify-center">
-              {priorityData.map((entry, index) => {
-                const color = 
-                  entry.priority.toLowerCase() === 'high' ? '#ef4444' :
-                  entry.priority.toLowerCase() === 'medium' ? '#f59e0b' :
-                  entry.priority.toLowerCase() === 'low' ? '#10b981' :
-                  COLORS[index % COLORS.length];
-                
-                return (
-                  <div key={entry.priority} className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{entry.priority}: {entry.count}</span>
-                  </div>
-                );
-              })}
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Performance Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-5 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl border border-blue-200 dark:border-blue-800/50">
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Average Completion Time</h5>
+      {/* Performance Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-cyan-500 rounded-xl">
+                <Clock className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Average Response Time</h3>
+                <p className="text-3xl font-bold text-cyan-600 dark:text-cyan-400 mt-1">
+                  {report.serviceRequests.averageCompletionTime.toFixed(1)} hours
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  From request to completion
+                </p>
+              </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {report.serviceRequests.averageCompletionTime.toFixed(1)}
-              </span>
-              <span className="text-slate-600 dark:text-slate-400 text-sm">hours</span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              Average time from creation to completion
-            </p>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
-            <div className="flex items-center gap-2 mb-3">
-              <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Total Spare Parts Cost</h5>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-500 rounded-xl">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Parts Cost</h3>
+                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                  {formatCurrency(report.serviceRequests.totalSparePartsCost)}
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Spare parts used this month
+                </p>
+              </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                {formatCurrency(report.serviceRequests.totalSparePartsCost)}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              Cost of parts used in service requests
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

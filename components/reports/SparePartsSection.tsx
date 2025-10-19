@@ -3,203 +3,238 @@
 import { MonthlyReport } from '@/lib/types/report';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Clock, DollarSign, ShoppingCart } from 'lucide-react';
-import { 
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Cell
-} from 'recharts';
-import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { formatCurrency } from './utils';
-import { useLanguage } from '@/hooks/useLanguage';
 
 interface SparePartsSectionProps {
   report: MonthlyReport;
 }
 
 export function SparePartsSection({ report }: SparePartsSectionProps) {
-  const { t } = useLanguage();
 
-  const chartConfig = {
-    quantity: {
-      label: t('reports.spareParts.quantityUsed'),
-      color: "#8b5cf6",
-    }
-  };
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-      <CardHeader className="pb-6 space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-purple-500/10 rounded-xl">
-            <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div>
-            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              {t('reports.spareParts.activity')}
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+          <Package className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+            Spare Parts Activity
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            {report.period.monthName} {report.period.year} • {report.spareParts.monthlyUsage} parts used
+          </p>
+        </div>
+      </div>
+
+      {/* Key Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Parts Used</p>
+                <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{report.spareParts.monthlyUsage}</p>
+              </div>
+              <Package className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Total Cost</p>
+                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{formatCurrency(report.spareParts.monthlyCost)}</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Orders Placed</p>
+                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{report.sparePartOrders.total}</p>
+              </div>
+              <ShoppingCart className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top Requested Parts */}
+      {report.spareParts.topRequested.length > 0 && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+              <Package className="h-5 w-5 text-purple-500" />
+              Most Requested Parts
             </CardTitle>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {report.period.monthName} {report.period.year}
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Parts with highest usage this month
             </p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Monthly Activity Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <Package className="h-5 w-5 text-purple-600 dark:text-purple-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{report.spareParts.monthlyUsage}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('reports.spareParts.partsUsed')}</p>
-          </div>
-          
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <DollarSign className="h-5 w-5 text-amber-600 dark:text-amber-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{formatCurrency(report.spareParts.monthlyCost)}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('reports.spareParts.totalCost')}</p>
-          </div>
-
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{report.sparePartOrders.total}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('reports.spareParts.ordersPlaced')}</p>
-          </div>
-        </div>
-
-        {/* Top Requested Parts */}
-        {report.spareParts.topRequested.length > 0 && (
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-base">
-                {t('reports.spareParts.mostRequestedParts')}
-              </h4>
+          </CardHeader>
+          <CardContent>
+            
+            {/* Compact scrollable horizontal bars showing all parts */}
+            <div className="max-h-96 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+              {report.spareParts.topRequested.map((item, index) => {
+                const maxQty = Math.max(...report.spareParts.topRequested.map(p => p.quantity));
+                const percentage = (item.quantity / maxQty) * 100;
+                const barWidth = Math.max(percentage, 5); // Smaller minimum width for better space usage
+                
+                // Color coding based on usage level
+                let barColor = '#a78bfa'; // Light purple for low
+                let usageText = 'Low';
+                
+                if (item.quantity >= 10) {
+                  barColor = '#7c3aed'; // Dark purple for high
+                  usageText = 'High';
+                } else if (item.quantity >= 5) {
+                  barColor = '#8b5cf6'; // Medium purple for medium
+                  usageText = 'Med';
+                }
+                
+                return (
+                  <div key={index} className="flex items-center gap-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors">
+                    <div className="w-32 text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                      {item.name}
+                    </div>
+                    <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-500 ease-out"
+                        style={{ 
+                          width: `${barWidth}%`,
+                          backgroundColor: barColor
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 w-24">
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {item.quantity}
+                      </span>
+                      <span 
+                        className="text-xs px-1.5 py-0.5 rounded text-white font-medium"
+                        style={{ backgroundColor: barColor }}
+                      >
+                        {usageText}
+                      </span>
+                    </div>
+                    <div className="w-20 text-xs text-slate-500 dark:text-slate-400 text-right">
+                      {formatCurrency(item.cost)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
-              <div className="min-w-[600px]">
-                <ChartContainer config={chartConfig} className="h-[320px] w-full">
-                  <BarChart data={report.spareParts.topRequested.slice(0, 10)} margin={{ top: 30, right: 20, left: 20, bottom: 100 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" vertical={false} />
-                    <XAxis 
-                      dataKey="name"
-                      className="text-xs text-slate-600 dark:text-slate-400 font-medium"
-                      tickLine={false}
-                      axisLine={false}
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      interval={0}
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis 
-                      className="text-xs text-slate-600 dark:text-slate-400"
-                      tickLine={false}
-                      axisLine={false}
-                      label={{ value: t('reports.spareParts.quantityUsed'), angle: -90, position: 'insideLeft', className: 'text-xs text-slate-600 dark:text-slate-400 fill-slate-600 dark:fill-slate-400' }}
-                    />
-                    <ChartTooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-white dark:bg-slate-800 p-4 border-2 border-purple-200 dark:border-purple-700 rounded-lg shadow-xl max-w-xs">
-                              <p className="font-bold text-slate-900 dark:text-slate-100 text-base mb-2 break-words">{data.name}</p>
-                              <div className="space-y-1">
-                                <p className="text-sm text-slate-700 dark:text-slate-300">
-                                  <span className="font-semibold">{t('reports.spareParts.quantity')}:</span> {data.quantity} {t('reports.spareParts.units')}
-                                </p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">
-                                  <span className="font-semibold">{t('reports.spareParts.cost')}:</span> {formatCurrency(data.cost)}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar
-                      dataKey="quantity"
-                      fill="#8b5cf6"
-                      radius={[8, 8, 0, 0]}
-                      label={{
-                        position: 'top',
-                        className: 'fill-slate-700 dark:fill-slate-300 font-bold text-sm',
-                        formatter: (value: number) => value
-                      }}
-                    >
-                      {report.spareParts.topRequested.slice(0, 10).map((entry, index) => {
-                        const maxQty = Math.max(...report.spareParts.topRequested.map(p => p.quantity));
-                        const intensity = (entry.quantity / maxQty);
-                        const color = intensity > 0.7 ? '#7c3aed' : intensity > 0.4 ? '#8b5cf6' : '#a78bfa';
-                        return <Cell key={`cell-${index}`} fill={color} />;
-                      })}
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
+            
+            {/* Compact legend and summary */}
+            <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div className="flex items-start gap-2">
+                <div className="text-purple-600 dark:text-purple-400 mt-0.5">💡</div>
+                <div className="flex-1">
+                  <p className="text-sm text-purple-900 dark:text-purple-100 font-medium mb-2">
+                    Parts Usage Summary
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-xs mb-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                      <span className="text-purple-800 dark:text-purple-200">High (10+ units)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span className="text-purple-800 dark:text-purple-200">Medium (5-9 units)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+                      <span className="text-purple-800 dark:text-purple-200">Low (1-4 units)</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-purple-700 dark:text-purple-300">
+                    Showing {report.spareParts.topRequested.length} parts with usage data. 
+                    {report.spareParts.topRequested.length > 10 && ' Scroll to see all parts.'}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>💡 {t('reports.spareParts.highDemandParts')}</span>
-                <span className="hidden sm:block">{t('reports.spareParts.scrollToSeeMore')}</span>
-              </div>
-            </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Order Processing Metrics */}
-        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5">
-          <h4 className="font-semibold mb-4 text-slate-900 dark:text-slate-100 text-sm">
-            {t('reports.spareParts.procurementPerformance')}
-          </h4>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t('reports.spareParts.requested')}</p>
+      {/* Order Processing Metrics */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+            Procurement Performance
+          </CardTitle>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Key metrics for spare part orders
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg border border-purple-200 dark:border-purple-800/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Total Requested</h5>
               </div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                 {report.sparePartOrders.totalQuantityRequested}
               </p>
             </div>
 
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t('reports.spareParts.avgTime')}</p>
+            <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Avg Processing Time</h5>
               </div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                {report.sparePartOrders.averageProcessingTime.toFixed(1)}<span className="text-sm text-slate-500">h</span>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {report.sparePartOrders.averageProcessingTime.toFixed(1)}<span className="text-lg text-slate-500">h</span>
               </p>
             </div>
 
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t('reports.spareParts.cost')}</p>
+            <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+              <div className="flex items-center gap-2 mb-3">
+                <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <h5 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Total Cost</h5>
               </div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(report.sparePartOrders.totalCost)}
               </p>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Order Status Breakdown */}
-        {Object.keys(report.sparePartOrders.byStatus).length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {Object.entries(report.sparePartOrders.byStatus).map(([status, count]) => (
-              <div key={status} className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
-                <p className="text-xs text-slate-600 dark:text-slate-400 capitalize mb-1">{status.replace('_', ' ')}</p>
-                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{count}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Order Status Breakdown */}
+      {Object.keys(report.sparePartOrders.byStatus).length > 0 && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Order Status Breakdown
+            </CardTitle>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Distribution of spare part orders by status
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(report.sparePartOrders.byStatus).map(([status, count]) => (
+                <div key={status} className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg text-center border border-slate-200 dark:border-slate-700">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 capitalize mb-2">{status.replace('_', ' ')}</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{count}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

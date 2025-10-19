@@ -3,159 +3,189 @@
 import { MonthlyReport } from '@/lib/types/report';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, MapPin, FileText } from 'lucide-react';
-import { 
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Cell
-} from 'recharts';
-import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { useLanguage } from '@/hooks/useLanguage';
 
 interface JobOrdersSummaryProps {
   report: MonthlyReport;
 }
 
 export function JobOrdersSummary({ report }: JobOrdersSummaryProps) {
-  const { t } = useLanguage();
 
-  const chartConfig = {
-    count: {
-      label: t('reports.jobOrders.jobOrders'),
-      color: "#8b5cf6",
-    }
-  };
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-      <CardHeader className="pb-6 space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-500/10 rounded-xl">
-            <Package className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div>
-            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              Job Orders
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
+          <Package className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+            Job Orders Summary
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            {report.period.monthName} {report.period.year} • {report.jobOrders.total} total orders
+          </p>
+        </div>
+      </div>
+
+      {/* Key Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Orders</p>
+                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{report.jobOrders.total}</p>
+              </div>
+              <FileText className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Equipment Items</p>
+                <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{report.jobOrders.totalEquipmentItems}</p>
+              </div>
+              <Package className="h-8 w-8 text-emerald-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-violet-600 dark:text-violet-400">Active Locations</p>
+                <p className="text-3xl font-bold text-violet-700 dark:text-violet-300">{report.jobOrders.mostActiveSublocations.length}</p>
+              </div>
+              <MapPin className="h-8 w-8 text-violet-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Most Active Sublocations */}
+      {report.jobOrders.mostActiveSublocations.length > 0 && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-indigo-500" />
+              Most Active Locations
             </CardTitle>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {report.period.monthName} {report.period.year}
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Locations with the most job orders this month
             </p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{report.jobOrders.total}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('reports.jobOrders.totalOrders')}</p>
-          </div>
-          
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <Package className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{report.jobOrders.totalEquipmentItems}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('reports.jobOrders.equipmentItems')}</p>
-          </div>
-
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <MapPin className="h-5 w-5 text-violet-600 dark:text-violet-400 mb-2" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{report.jobOrders.mostActiveSublocations.length}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('reports.jobOrders.locationsServed')}</p>
-          </div>
-        </div>
-
-        {/* Most Active Sublocations */}
-        {report.jobOrders.mostActiveSublocations.length > 0 && (
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <MapPin className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-base">
-                Most Active Locations
-              </h4>
+          </CardHeader>
+          <CardContent>
+            
+            {/* Compact scrollable horizontal bars showing all locations */}
+            <div className="max-h-96 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+              {report.jobOrders.mostActiveSublocations.map((item, index) => {
+                const maxCount = Math.max(...report.jobOrders.mostActiveSublocations.map(l => l.count));
+                const percentage = (item.count / maxCount) * 100;
+                const barWidth = Math.max(percentage, 5); // Smaller minimum width for better space usage
+                
+                // Color coding based on activity level
+                let barColor = '#a5b4fc'; // Light indigo for low
+                let activityText = 'Low';
+                
+                if (item.count >= 5) {
+                  barColor = '#6366f1'; // Dark indigo for high
+                  activityText = 'High';
+                } else if (item.count >= 3) {
+                  barColor = '#818cf8'; // Medium indigo for medium
+                  activityText = 'Med';
+                }
+                
+                return (
+                  <div key={index} className="flex items-center gap-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors">
+                    <div className="w-32 text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                      {item.sublocation}
+                    </div>
+                    <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-500 ease-out"
+                        style={{ 
+                          width: `${barWidth}%`,
+                          backgroundColor: barColor
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 w-20">
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {item.count}
+                      </span>
+                      <span 
+                        className="text-xs px-1.5 py-0.5 rounded text-white font-medium"
+                        style={{ backgroundColor: barColor }}
+                      >
+                        {activityText}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
-              <div className="min-w-[600px]">
-                <ChartContainer config={chartConfig} className="h-[320px] w-full">
-                  <BarChart data={report.jobOrders.mostActiveSublocations.slice(0, 10)} margin={{ top: 30, right: 20, left: 20, bottom: 100 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" vertical={false} />
-                    <XAxis 
-                      dataKey="sublocation"
-                      className="text-xs text-slate-600 dark:text-slate-400 font-medium"
-                      tickLine={false}
-                      axisLine={false}
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      interval={0}
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis 
-                      className="text-xs text-slate-600 dark:text-slate-400"
-                      tickLine={false}
-                      axisLine={false}
-                      label={{ value: 'Job Orders', angle: -90, position: 'insideLeft', className: 'text-xs text-slate-600 dark:text-slate-400 fill-slate-600 dark:fill-slate-400' }}
-                    />
-                    <ChartTooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-white dark:bg-slate-800 p-4 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg shadow-xl max-w-xs">
-                              <p className="font-bold text-slate-900 dark:text-slate-100 text-base mb-2 break-words">{data.sublocation}</p>
-                              <p className="text-sm text-slate-700 dark:text-slate-300">
-                                <span className="font-semibold">Job Orders:</span> {data.count}
-                              </p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar
-                      dataKey="count"
-                      fill="#8b5cf6"
-                      radius={[8, 8, 0, 0]}
-                      label={{
-                        position: 'top',
-                        className: 'fill-slate-700 dark:fill-slate-300 font-bold text-sm',
-                        formatter: (value: number) => value
-                      }}
-                    >
-                      {report.jobOrders.mostActiveSublocations.slice(0, 10).map((entry, index) => {
-                        const maxCount = Math.max(...report.jobOrders.mostActiveSublocations.map(l => l.count));
-                        const intensity = (entry.count / maxCount);
-                        const color = intensity > 0.7 ? '#6366f1' : intensity > 0.4 ? '#818cf8' : '#a5b4fc';
-                        return <Cell key={`cell-${index}`} fill={color} />;
-                      })}
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
+            
+            {/* Compact legend and summary */}
+            <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg border border-indigo-200 dark:border-indigo-800">
+              <div className="flex items-start gap-2">
+                <div className="text-indigo-600 dark:text-indigo-400 mt-0.5">📍</div>
+                <div className="flex-1">
+                  <p className="text-sm text-indigo-900 dark:text-indigo-100 font-medium mb-2">
+                    Location Activity Summary
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-xs mb-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">High (5+ orders)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">Medium (3-4 orders)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-indigo-400"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">Low (1-2 orders)</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-indigo-700 dark:text-indigo-300">
+                    Showing {report.jobOrders.mostActiveSublocations.length} locations with job orders. 
+                    {report.jobOrders.mostActiveSublocations.length > 10 && ' Scroll to see all locations.'}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>📍 Locations with high job order activity</span>
-                <span className="hidden sm:block">← Scroll to see more locations →</span>
-              </div>
-            </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Status Breakdown */}
-        {Object.keys(report.jobOrders.byStatus).length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {Object.entries(report.jobOrders.byStatus).map(([status, count]) => (
-              <div key={status} className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
-                <p className="text-xs text-slate-600 dark:text-slate-400 capitalize mb-1">{status.replace('_', ' ')}</p>
-                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{count}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Status Breakdown */}
+      {Object.keys(report.jobOrders.byStatus).length > 0 && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Order Status Breakdown
+            </CardTitle>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Distribution of job orders by status
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(report.jobOrders.byStatus).map(([status, count]) => (
+                <div key={status} className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg text-center border border-slate-200 dark:border-slate-700">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 capitalize mb-2">{status.replace('_', ' ')}</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{count}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
