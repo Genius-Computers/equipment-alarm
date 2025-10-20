@@ -1,8 +1,15 @@
 import { getDb } from './connection';
 
 // Ensure all database tables exist with proper schema
+// Guard so we only run this once per serverless boot (prevents timeouts on Vercel)
+let schemaInitialized = false;
+let schemaInitPromise: Promise<void> | null = null;
+
 export const ensureSchema = async () => {
+  if (schemaInitialized) return;
+  if (schemaInitPromise) return schemaInitPromise;
   const sql = getDb();
+  schemaInitPromise = (async () => {
   
   // Enable required extensions
   await sql`create extension if not exists pgcrypto`;
@@ -149,6 +156,13 @@ export const ensureSchema = async () => {
 
   // Apply schema migrations
   await applySchemaMigrations(sql);
+  schemaInitialized = true;
+  })();
+  try {
+    await schemaInitPromise;
+  } finally {
+    schemaInitPromise = null;
+  }
 };
 
 // Apply incremental schema changes (migrations)
