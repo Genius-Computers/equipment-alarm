@@ -62,7 +62,11 @@
     "typescript": "^5"
   },
   "overrides": {
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "lucide-react": "^0.542.0",
+    "@stackframe/stack": {
+      "lucide-react": "^0.542.0"
+    }
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
