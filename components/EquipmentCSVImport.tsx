@@ -47,7 +47,19 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
   const [uploading, setUploading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [previewCounts, setPreviewCounts] = useState<{ total: number; toUpdate: number; toInsert: number } | null>(null);
-  const pendingPayloadRef = useRef<any[] | null>(null);
+  type ImportRow = {
+    name: string;
+    partNumber: string;
+    model: string;
+    manufacturer: string;
+    serialNumber: string;
+    location: string;
+    subLocation: string;
+    status: string;
+    lastMaintenance: string;
+    maintenanceInterval: string;
+  };
+  const pendingPayloadRef = useRef<ImportRow[] | null>(null);
 
   const handleClick = () => inputRef.current?.click();
 
