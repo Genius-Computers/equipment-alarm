@@ -36,13 +36,31 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
   }));
 
   // Prepare chart data for priority with better colors and labels
-  const priorityData = Object.entries(report.serviceRequests.byPriority).map(([priority, count]) => ({
-    priority: priority.charAt(0).toUpperCase() + priority.slice(1),
-    count,
-    color: priority.toLowerCase() === 'high' ? '#ef4444' :
-           priority.toLowerCase() === 'medium' ? '#f59e0b' :
-           priority.toLowerCase() === 'low' ? '#10b981' : '#6b7280'
-  }));
+  const totalPriorityCount = Object.values(report.serviceRequests.byPriority || {}).reduce(
+    (sum, c) => sum + Number(c || 0),
+    0
+  );
+  const priorityData = Object.entries(report.serviceRequests.byPriority).map(([priority, count]) => {
+    const priorityLower = priority.toLowerCase();
+    const translatedPriority = 
+      priorityLower === 'high' ? t('priority.high') :
+      priorityLower === 'medium' ? t('priority.med') :
+      priorityLower === 'low' ? t('priority.low') :
+      priorityLower === 'urgent' ? t('priority.urgent') :
+      priority.charAt(0).toUpperCase() + priority.slice(1);
+    const numericCount = Number(count || 0);
+    const percentage = totalPriorityCount > 0 ? numericCount / totalPriorityCount : 0;
+    
+    return {
+      priority: translatedPriority,
+      count: numericCount,
+      color: priorityLower === 'high' ? '#ef4444' :
+             priorityLower === 'urgent' ? '#dc2626' :
+             priorityLower === 'medium' ? '#f59e0b' :
+             priorityLower === 'low' ? '#10b981' : '#6b7280',
+      percentage
+    };
+  });
 
 
   // Calculate completion rate
@@ -208,15 +226,15 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ priority, count, percent }) => 
-                        `${priority}: ${count} (${(percent * 100).toFixed(0)}%)`
+                      label={({ payload }) => 
+                        `${payload.count} (${Math.round((payload.percentage || 0) * 100)}%)`
                       }
                       outerRadius={100}
                       innerRadius={40}
                       fill="#8884d8"
                       dataKey="count"
                       paddingAngle={5}
-                      className="text-sm font-medium"
+                      className="text-xs font-medium"
                     >
                       {priorityData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -228,8 +246,8 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
                           const data = payload[0].payload;
                           return (
                             <div className="bg-white dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
-                              <p className="font-semibold text-slate-900 dark:text-slate-100">{data.priority} Priority</p>
-                              <p className="text-slate-600 dark:text-slate-400">{data.count} requests</p>
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{data.priority}</p>
+                              <p className="text-slate-600 dark:text-slate-400">{data.count} {t('reports.serviceRequests.requests')} ({Math.round((data.percentage || 0) * 100)}%)</p>
                             </div>
                           );
                         }
@@ -238,6 +256,20 @@ export function ServiceRequestsAnalysis({ report }: ServiceRequestsAnalysisProps
                     />
                   </PieChart>
                 </ResponsiveContainer>
+              </div>
+              {/* Legend */}
+              <div className="flex flex-wrap justify-center gap-3 mt-4">
+                {priorityData.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      {item.priority}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>

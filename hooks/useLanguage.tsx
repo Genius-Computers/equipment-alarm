@@ -25,6 +25,7 @@ const translations = {
     
     // Equipment Card
     "equipment.name": "Equipment/Device Name",
+    "equipment.label": "Equipment/Device",
     "equipment.upToDate": "Up to Date",
     "equipment.dueSoon": "Due Soon", 
     "equipment.overdue": "Overdue",
@@ -164,6 +165,11 @@ const translations = {
     "priority.medium": "Medium",
     "priority.high": "High",
     "priority.urgent": "Urgent",
+    
+    // Service Request Status Labels
+    "serviceRequest.needsApproval": "Needs Approval",
+    "serviceRequest.awaitingApproval": "Awaiting Approval",
+    "serviceRequest.overdue": "Overdue",
 
     // Service Request
     "serviceRequest.title": "Service Request",
@@ -743,6 +749,7 @@ const translations = {
     
     // Equipment Card
     "equipment.name": "الاسم",
+    "equipment.label": "المعدات/الجهاز",
     "equipment.upToDate": "محدث",
     "equipment.dueSoon": "مستحق قريباً",
     "equipment.overdue": "متأخر",
@@ -882,6 +889,11 @@ const translations = {
     "priority.medium": "متوسطة",
     "priority.high": "عالية",
     "priority.urgent": "عاجلة",
+    
+    // Service Request Status Labels
+    "serviceRequest.needsApproval": "يحتاج موافقة",
+    "serviceRequest.awaitingApproval": "بانتظار الموافقة",
+    "serviceRequest.overdue": "متأخر",
 
     // Service Request
     "serviceRequest.title": "طلب خدمة",

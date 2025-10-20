@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2, ClipboardList, CheckCircle, MapPin, Box, MoveRight } from "lucide-react";
 import { toast } from "sonner";
 import { ServiceRequestType, ServiceRequestPriority, Equipment } from "@/lib/types";
+import { useLanguage } from "@/hooks/useLanguage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +49,7 @@ interface Technician {
 export default function ReviewJobOrderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   
   const equipmentIdsParam = searchParams.get('equipmentIds');
   
@@ -693,7 +695,11 @@ export default function ReviewJobOrderPage() {
                   {requestType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </Badge>
                 <Badge variant={priority === 'high' ? 'destructive' : priority === 'low' ? 'secondary' : 'default'} className="text-xs">
-                  {priority.toUpperCase()} Priority
+                  {priority === 'low' ? t('priority.low') :
+                   priority === 'medium' ? t('priority.medium') :
+                   priority === 'high' ? t('priority.high') :
+                   priority === 'urgent' ? t('priority.urgent') :
+                   priority}
                 </Badge>
               </div>
             </div>

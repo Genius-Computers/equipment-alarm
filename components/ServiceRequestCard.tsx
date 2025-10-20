@@ -86,16 +86,22 @@ export default function ServiceRequestCard({
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
             <span className="capitalize">{request.requestType.replaceAll("_", " ")}</span>
-            <Badge variant="secondary">{request.priority}</Badge>
+            <Badge variant="secondary">
+              {request.priority === 'low' ? t('priority.low') :
+               request.priority === 'medium' ? t('priority.medium') :
+               request.priority === 'high' ? t('priority.high') :
+               request.priority === 'urgent' ? t('priority.urgent') :
+               request.priority}
+            </Badge>
             {isOverdue ? (
-              <span title="Overdue">
+              <span title={t('serviceRequest.overdue')}>
                 <Flag className="h-4 w-4 text-red-600" />
               </span>
             ) : null}
             {needsApproval && (
-              <span title="Awaiting Approval" className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-md text-xs font-semibold animate-pulse">
+              <span title={t('serviceRequest.awaitingApproval')} className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-md text-xs font-semibold animate-pulse">
                 <Bell className="h-4 w-4" />
-                Needs Approval
+                {t('serviceRequest.needsApproval')}
               </span>
             )}
           </div>
@@ -108,7 +114,7 @@ export default function ServiceRequestCard({
             {t("serviceRequest.workStatus")}: {request.workStatus}
           </Badge>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Equipment/Device:</span>
+            <span className="text-xs text-muted-foreground">{t("equipment.label")}:</span>
             <span className="text-sm font-medium">{request.equipment?.name || request.equipmentId}</span>
           </div>
           {technicianLabel ? (

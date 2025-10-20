@@ -87,24 +87,24 @@ export default function AppSidebar() {
             )}
             <SidebarSeparator />
             {role !== "end_user" && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/attendance")}>
-                  <Link href="/attendance">
-                    <ClipboardCheck />
-                    <span>{t("attendance.title")}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
-            {(role === "admin" || role === "admin_x" || role === "supervisor") && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/reports")}>
-                  <Link href="/reports/monthly">
-                    <FileText />
-                    <span>Monthly Reports</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/attendance")}>
+                    <Link href="/attendance">
+                      <ClipboardCheck />
+                      <span>{t("attendance.title")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/reports")}>
+                    <Link href="/reports/monthly">
+                      <FileText />
+                      <span>{t("reports.title")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
             )}
             {canManageUsers(role) && (
               <SidebarMenuItem>
