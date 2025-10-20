@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 interface EquipmentCSVImportProps {
   onImported?: () => void;
+  showNote?: boolean;
 }
 
 // Mapping of user-friendly names to database field names
@@ -41,7 +42,7 @@ const USER_FRIENDLY_NAMES = {
   maintenanceInterval: "Maintenance Interval",
 };
 
-const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
+const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportProps) => {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -240,9 +241,11 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
           {uploading ? t("csv.importing") : t("csv.import")}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground mt-2">
-        <span className="font-medium">Note:</span> Locations must be present in the Locations module for CSV imports. CSV imports now update existing equipment by Tag Number.
-      </p>
+      {showNote && (
+        <p className="text-xs text-muted-foreground mt-2">
+          <span className="font-medium">Note:</span> Locations must be present in the Locations module for CSV imports. CSV imports now update existing equipment by Tag Number.
+        </p>
+      )}
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>

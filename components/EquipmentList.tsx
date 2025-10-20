@@ -246,10 +246,15 @@ const EquipmentList = ({
                 // Note: searchTerm is not a direct filter but could be used for filtering
               }}
             />
-            <EquipmentCSVImport onImported={onRefresh} />
+            <EquipmentCSVImport onImported={onRefresh} showNote={false} />
           </div>
         </div>
       </div>
+
+      {/* CSV note moved outside toolbar to avoid flex scaling issues */}
+      <p className="text-xs text-muted-foreground">
+        <span className="font-medium">Note:</span> Locations must be present in the Locations module for CSV imports. CSV imports now update existing equipment by Tag Number.
+      </p>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
