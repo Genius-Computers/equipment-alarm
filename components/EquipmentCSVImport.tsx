@@ -241,7 +241,7 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground mt-2">
-        <span className="font-medium">Note:</span> Locations must be present in the Locations module for csv imports (e.g., &ldquo;College of Medicine&rdquo;). Sub Location is a free text field (e.g., &ldquo;Room 201&rdquo;).
+        <span className="font-medium">Note:</span> Locations must be present in the Locations module for CSV imports. CSV imports now update existing equipment by Tag Number.
       </p>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
