@@ -44,7 +44,7 @@ export const ensureSchema = async () => {
       deleted_by text,
 
       name text not null,
-      part_number text,
+      part_number text not null,
       model text,
       manufacturer text,
       serial_number text,
@@ -176,6 +176,21 @@ const applySchemaMigrations = async (sql: ReturnType<typeof getDb>) => {
       add column if not exists status text not null default 'Working',
       add column if not exists sub_location text,
       add column if not exists location_id uuid references locations(id)`;
+
+  // Enforce NOT NULL on part_number (best-effort; ignore if existing rows violate)
+  try {
+    await sql`alter table equipment alter column part_number set not null`;
+  } catch {
+    // Ignore if existing nulls prevent this; API will enforce
+  }
+
+  // Enforce uniqueness (case-insensitive, excluding soft-deleted) via unique index
+  // Note: Expression index used to ensure case-insensitive uniqueness
+  await sql`
+    create unique index if not exists equipment_part_number_unique_idx
+    on equipment (lower(part_number))
+    where deleted_at is null
+  `;
 
   // Add new columns to service_request table if they do not exist
   await sql`

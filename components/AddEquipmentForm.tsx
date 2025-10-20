@@ -407,12 +407,13 @@ const EquipmentForm = ({
           </div>
 
           <div className="flex flex-col gap-1">
-            <Label htmlFor="partNumber">Tag Number</Label>
+            <Label htmlFor="partNumber">Tag Number <span className="text-destructive">*</span></Label>
             <Input
               id="partNumber"
               value={formData.partNumber}
               onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
               placeholder="e.g., TAG-001"
+              required
             />
           </div>
 

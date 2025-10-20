@@ -157,36 +157,72 @@ export const bulkInsertEquipment = async (
   const lastMaintenance = inputs.map((i) => i.last_maintenance ?? null);
   const maintenanceIntervals = inputs.map((i) => i.maintenance_interval ?? null);
 
+  // Upsert by tag number (part_number), update fields if existing and not deleted
   const rows = await sql`
-    insert into equipment (
-      created_at, created_by,
-      name, part_number, model, manufacturer, serial_number,
-      location, sub_location, location_id, status,
-      last_maintenance, maintenance_interval
+    with incoming as (
+      select
+        now() as created_at, ${actorId} as created_by,
+        t.name, t.part_number, t.model, t.manufacturer, t.serial_number,
+        t.location, t.sub_location, t.location_id::uuid as location_id, t.status,
+        t.last_maintenance, t.maintenance_interval
+      from unnest(
+        ${names}::text[],
+        ${partNumbers}::text[],
+        ${models}::text[],
+        ${manufacturers}::text[],
+        ${serialNumbers}::text[],
+        ${locations}::text[],
+        ${subLocations}::text[],
+        ${locationIds}::text[],
+        ${statuses}::text[],
+        ${lastMaintenance}::text[],
+        ${maintenanceIntervals}::text[]
+      ) as t(
+        name, part_number, model, manufacturer, serial_number,
+        location, sub_location, location_id, status,
+        last_maintenance, maintenance_interval
+      )
+    ), updated as (
+      update equipment e
+      set
+        updated_at = now(),
+        updated_by = ${actorId},
+        name = i.name,
+        model = i.model,
+        manufacturer = i.manufacturer,
+        serial_number = i.serial_number,
+        location = i.location,
+        sub_location = i.sub_location,
+        location_id = i.location_id,
+        status = i.status,
+        last_maintenance = i.last_maintenance,
+        maintenance_interval = i.maintenance_interval
+      from incoming i
+      where lower(e.part_number) = lower(i.part_number)
+        and e.deleted_at is null
+      returning e.*
+    ), inserted as (
+      insert into equipment (
+        created_at, created_by,
+        name, part_number, model, manufacturer, serial_number,
+        location, sub_location, location_id, status,
+        last_maintenance, maintenance_interval
+      )
+      select
+        i.created_at, i.created_by,
+        i.name, i.part_number, i.model, i.manufacturer, i.serial_number,
+        i.location, i.sub_location, i.location_id, i.status,
+        i.last_maintenance, i.maintenance_interval
+      from incoming i
+      where not exists (
+        select 1 from equipment e
+        where e.deleted_at is null and lower(e.part_number) = lower(i.part_number)
+      )
+      returning *
     )
-    select
-      now(), ${actorId},
-      t.name, t.part_number, t.model, t.manufacturer, t.serial_number,
-      t.location, t.sub_location, t.location_id::uuid, t.status,
-      t.last_maintenance, t.maintenance_interval
-    from unnest(
-      ${names}::text[],
-      ${partNumbers}::text[],
-      ${models}::text[],
-      ${manufacturers}::text[],
-      ${serialNumbers}::text[],
-      ${locations}::text[],
-      ${subLocations}::text[],
-      ${locationIds}::text[],
-      ${statuses}::text[],
-      ${lastMaintenance}::text[],
-      ${maintenanceIntervals}::text[]
-    ) as t(
-      name, part_number, model, manufacturer, serial_number,
-      location, sub_location, location_id, status,
-      last_maintenance, maintenance_interval
-    )
-    returning *`;
+    select * from updated
+    union all
+    select * from inserted`;
   return rows as unknown as DbEquipment[];
 };
 

@@ -64,6 +64,10 @@ export async function POST(req: NextRequest) {
     }
     
     const body = await req.json();
+    // Require tag number
+    if (!body.partNumber || !body.partNumber.toString().trim()) {
+      return NextResponse.json({ error: 'Tag Number (partNumber) is required' }, { status: 400 });
+    }
     
     // Validate that location exists in the locations table (if provided)
     if (body.location && body.location.trim()) {
@@ -81,11 +85,20 @@ export async function POST(req: NextRequest) {
       body.locationId = location.id;
     }
     
-    const newRow = await insertEquipment(
-      camelToSnakeCase(body) as Parameters<typeof insertEquipment>[0],
-      user.id,
-    );
-    return NextResponse.json({ data: snakeToCamelCase(newRow) }, { status: 201 });
+    try {
+      const newRow = await insertEquipment(
+        camelToSnakeCase(body) as Parameters<typeof insertEquipment>[0],
+        user.id,
+      );
+      return NextResponse.json({ data: snakeToCamelCase(newRow) }, { status: 201 });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Unique constraint violation handling
+      if (/unique/i.test(msg) && /part_number/i.test(msg)) {
+        return NextResponse.json({ error: 'Tag Number already exists. Use CSV import to update by tag.' }, { status: 409 });
+      }
+      throw e;
+    }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });

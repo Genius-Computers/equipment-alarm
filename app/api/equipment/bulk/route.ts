@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentServerUser } from '@/lib/auth';
 import { camelToSnakeCase } from '@/lib/utils';
-import { bulkInsertEquipment, bulkSoftDeleteEquipment, listAllLocations } from '@/lib/db';
+import { bulkInsertEquipment, bulkSoftDeleteEquipment, listAllLocations, getDb } from '@/lib/db';
 import { DbEquipment } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const items = Array.isArray(body?.items) ? body.items : [];
+    const dryRun = Boolean(body?.dryRun);
     if (items.length === 0) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
@@ -68,6 +69,28 @@ export async function POST(req: NextRequest) {
         error: `CSV import rejected: The following locations do not exist in the Locations module. Please create them first:\n\n${uniqueMissing.map(name => `• ${name}`).join('\n')}`,
         missingLocations: uniqueMissing
       }, { status: 400 });
+    }
+
+    // If dryRun requested, compute how many will update vs insert by tag number
+    if (dryRun) {
+      const sql = getDb();
+      const partNumbers = processedItems
+        .map((i) => (i as { partNumber?: string }).partNumber || '')
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
+      const uniqueParts = Array.from(new Set(partNumbers.map((p) => p.toLowerCase())));
+
+      const rows = uniqueParts.length > 0 ? await sql`
+        select lower(part_number) as pn
+        from equipment
+        where deleted_at is null
+          and lower(part_number) = any(${uniqueParts}::text[])
+      ` as Array<{ pn: string }> : [];
+      const existing = new Set(rows.map((r) => r.pn));
+      const toUpdate = partNumbers.filter((p) => existing.has(p.toLowerCase())).length;
+      const total = processedItems.length;
+      const toInsert = Math.max(0, total - toUpdate);
+      return NextResponse.json({ preview: { total, toUpdate, toInsert } });
     }
 
     const snakeItems = processedItems.map((i: Record<string, unknown>) => camelToSnakeCase(i)) as Array<Omit<DbEquipment, 'id' | 'created_by' | 'updated_by' | 'deleted_by' | 'created_at' | 'updated_at' | 'deleted_at'>>;

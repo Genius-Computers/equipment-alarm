@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/hooks/useLanguage";
 import { parseCSV, stringifyCSV } from "@/lib/csv";
 import { Upload, Loader2, Download } from "lucide-react";
@@ -26,7 +27,7 @@ const FIELD_MAPPINGS: Record<string, string> = {
   "Maintenance Interval": "maintenanceInterval",
 };
 
-const REQUIRED_FIELDS = ["name", "location"];
+const REQUIRED_FIELDS = ["name", "location", "partNumber"];
 const USER_FRIENDLY_NAMES = {
   name: "Equipment Name",
   partNumber: "Tag Number",
@@ -44,6 +45,9 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previewCounts, setPreviewCounts] = useState<{ total: number; toUpdate: number; toInsert: number } | null>(null);
+  const pendingPayloadRef = useRef<any[] | null>(null);
 
   const handleClick = () => inputRef.current?.click();
 
@@ -147,6 +151,31 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
         maintenanceInterval: r.maintenanceInterval ?? "",
       }));
 
+      // First, request a dry-run preview to show update vs insert counts
+      const previewRes = await fetch("/api/equipment/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: payload, dryRun: true }),
+      });
+      if (!previewRes.ok) {
+        const data = await previewRes.json().catch(() => ({}));
+        const errorMsg = data?.error || "Failed to preview CSV import";
+        if (data?.missingLocations && Array.isArray(data.missingLocations)) {
+          toast(t("toast.error"), { description: errorMsg, duration: 10000 });
+        } else {
+          toast(t("toast.error"), { description: errorMsg });
+        }
+        return;
+      }
+      const preview = await previewRes.json();
+      if (preview?.preview) {
+        setPreviewCounts(preview.preview);
+        pendingPayloadRef.current = payload;
+        setConfirmOpen(true);
+        return; // wait for user confirmation
+      }
+      
+      // Fallback if preview is unavailable, proceed as before
       const res = await fetch("/api/equipment/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -155,13 +184,8 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         const errorMsg = data?.error || "Failed to import CSV";
-        
-        // Show more detailed error for missing locations
         if (data?.missingLocations && Array.isArray(data.missingLocations)) {
-          toast(t("toast.error"), { 
-            description: errorMsg,
-            duration: 10000, // Show longer for important validation errors
-          });
+          toast(t("toast.error"), { description: errorMsg, duration: 10000 });
         } else {
           toast(t("toast.error"), { description: errorMsg });
         }
@@ -207,6 +231,58 @@ const EquipmentCSVImport = ({ onImported }: EquipmentCSVImportProps) => {
       <p className="text-xs text-muted-foreground mt-2">
         <span className="font-medium">Note:</span> Locations must be present in the Locations module for csv imports (e.g., &ldquo;College of Medicine&rdquo;). Sub Location is a free text field (e.g., &ldquo;Room 201&rdquo;).
       </p>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm CSV Import</AlertDialogTitle>
+            <AlertDialogDescription>
+              {previewCounts ? (
+                <>
+                  You are about to import {previewCounts.total} row(s).<br />
+                  {previewCounts.toUpdate} will update existing equipment by Tag Number, {previewCounts.toInsert} will be inserted as new.
+                </>
+              ) : (
+                "Proceed with import?"
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                try {
+                  const payload = pendingPayloadRef.current;
+                  if (!payload) return;
+                  const res = await fetch("/api/equipment/bulk", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ items: payload }),
+                  });
+                  if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    const errorMsg = data?.error || "Failed to import CSV";
+                    if (data?.missingLocations && Array.isArray(data.missingLocations)) {
+                      toast(t("toast.error"), { description: errorMsg, duration: 10000 });
+                    } else {
+                      toast(t("toast.error"), { description: errorMsg });
+                    }
+                    return;
+                  }
+                  toast(t("toast.success"), { description: t("csv.imported") });
+                  onImported?.();
+                } finally {
+                  setPreviewCounts(null);
+                  pendingPayloadRef.current = null;
+                  setConfirmOpen(false);
+                }
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
