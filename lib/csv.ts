@@ -49,14 +49,21 @@ export function parseCSV(text: string): CSVRecord[] {
   };
 
   const headers = parseLine(lines[0]).map((h) => h.trim());
-  return lines.slice(1).map((l) => {
+
+  const records: CSVRecord[] = [];
+  for (const l of lines.slice(1)) {
     const values = parseLine(l);
+    // Skip rows where all fields are empty to avoid phantom rows (e.g., lines with only commas)
+    const isAllEmpty = values.every((v) => (v ?? "").trim() === "");
+    if (isAllEmpty) continue;
+
     const rec: CSVRecord = {};
     headers.forEach((h, idx) => {
       rec[h] = values[idx]?.trim?.() ?? "";
     });
-    return rec;
-  });
+    records.push(rec);
+  }
+  return records;
 }
 
 export function normalizeBoolean(input: string | boolean | undefined): boolean {
