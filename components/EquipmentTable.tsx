@@ -83,7 +83,7 @@ const EquipmentTable = ({
 
             return (
               <Fragment key={e.id}>
-                <tr onClick={deleteMode ? undefined : () => router.push(`/equipments/${e.id}`)} className={deleteMode ? "border-t" : "border-t hover:bg-muted/30"}>
+                <tr onClick={deleteMode ? undefined : () => router.push(e.partNumber ? `/equipments/tag/${encodeURIComponent(e.partNumber)}` : `/equipments/${e.id}`)} className={deleteMode ? "border-t" : "border-t hover:bg-muted/30"}>
                   {deleteMode && (
                     <td className={cellClass + " w-10"} onClick={(e) => e.stopPropagation()}>
                       <Checkbox

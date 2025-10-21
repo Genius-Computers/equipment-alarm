@@ -25,7 +25,7 @@ export default function EquipmentResultCard({ equipment }: EquipmentResultCardPr
   const e = equipment;
   return (
     <Link
-      href={`/equipments/${e.id}`}
+      href={e.partNumber ? `/equipments/tag/${encodeURIComponent(e.partNumber)}` : `/equipments/${e.id}`}
       className="group rounded-xl border p-4 hover:bg-muted/40 hover:shadow-sm hover:border-primary/30 transition-colors"
     >
       <div className="flex items-start justify-between">

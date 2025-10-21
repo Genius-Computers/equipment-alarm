@@ -236,6 +236,17 @@ export const getEquipmentById = async (id: string): Promise<DbEquipment | null> 
   return (rows && rows.length > 0 ? (rows[0] as unknown as DbEquipment) : null);
 }
 
+export const getEquipmentIdByPartNumber = async (partNumber: string): Promise<string | null> => {
+  const sql = getDb();
+  const rows = await sql`
+    select id
+    from equipment e
+    where e.deleted_at is null and lower(trim(e.part_number)) = lower(trim(${partNumber}))
+    limit 1
+  ` as Array<{ id: string }>;
+  return rows && rows.length > 0 ? rows[0].id : null;
+}
+
 export const getUniqueSubLocationsByLocation = async (location: string): Promise<string[]> => {
   const sql = getDb();
   

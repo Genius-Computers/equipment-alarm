@@ -47,7 +47,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
   const { profile } = useSelfProfile();
   const daysUntil = getDaysUntilMaintenance(equipment);
   const pathname = usePathname();
-  const href = `/equipments/${equipment.id}`;
+  const href = equipment.partNumber ? `/equipments/tag/${encodeURIComponent(equipment.partNumber)}` : `/equipments/${equipment.id}`;
   const isSameRoute = pathname === href;
   const canDelete = canApprove(profile?.role);
 

@@ -221,7 +221,7 @@ export default function LocationDetailPage() {
                       <Card 
                         key={item.id} 
                         className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => router.push(`/equipments/${item.id}`)}
+                        onClick={() => router.push(item.partNumber ? `/equipments/tag/${encodeURIComponent(item.partNumber)}` : `/equipments/${item.id}`)}
                       >
                         <div>
                           <h4 className="font-semibold">{item.name}</h4>

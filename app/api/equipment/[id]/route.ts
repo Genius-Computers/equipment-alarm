@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateEquipment, softDeleteEquipment, getEquipmentWithLocationInfo, listAllLocations } from '@/lib/db';
 import { snakeToCamelCase, deriveMaintenanceInfo } from '@/lib/utils';
-import { getCurrentServerUser } from '@/lib/auth';
+import { getCurrentServerUser, getUserRole } from '@/lib/auth';
+import { type UserRole } from '@/lib/types/user';
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -11,6 +12,15 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const body = await req.json();
+
+    // Restrict tag number edits to admin, supervisor, admin_x
+    if (typeof body.partNumber === 'string') {
+      const role = getUserRole(user) as UserRole | null;
+      const allowed: ReadonlyArray<UserRole> = ['admin', 'supervisor', 'admin_x'];
+      if (!role || !allowed.includes(role)) {
+        return NextResponse.json({ error: 'Forbidden: insufficient role to change Tag Number' }, { status: 403 });
+      }
+    }
 
     // Validate that location exists in the locations table (if provided)
     // Always validate and update locationId when location is provided

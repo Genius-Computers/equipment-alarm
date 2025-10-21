@@ -11,6 +11,7 @@ export {
   bulkSoftDeleteEquipment,
   bulkInsertEquipment,
   getEquipmentById,
+  getEquipmentIdByPartNumber,
   getUniqueSubLocationsByLocation,
   getEquipmentWithLocationInfo,
 } from './equipment';
