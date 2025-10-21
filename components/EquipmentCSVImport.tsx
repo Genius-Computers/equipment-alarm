@@ -243,7 +243,7 @@ const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportP
       </div>
       {showNote && (
         <p className="text-xs text-muted-foreground mt-2">
-          <span className="font-medium">Note:</span> Locations must be present in the Locations module for CSV imports. CSV imports now update existing equipment by Tag Number.
+          <span className="font-medium">Note:</span> Locations must be present in the Locations module for CSV imports. CSV imports now update existing equipments by Tag Number.
         </p>
       )}
 
