@@ -34,7 +34,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
     };
 
-    const targetRole = ((target as any)?.serverMetadata?.role ?? (target as any)?.clientReadOnlyMetadata?.role) as string | undefined;
+    const getRoleFromUserMeta = (u: { serverMetadata?: Record<string, unknown> | null; clientReadOnlyMetadata?: Record<string, unknown> | null; }): string | undefined => {
+      const r1 = u.serverMetadata?.['role'];
+      if (typeof r1 === 'string') return r1;
+      const r2 = u.clientReadOnlyMetadata?.['role'];
+      if (typeof r2 === 'string') return r2;
+      return undefined;
+    };
+
+    const targetRole = getRoleFromUserMeta(target as unknown as { serverMetadata?: Record<string, unknown> | null; clientReadOnlyMetadata?: Record<string, unknown> | null; });
     const requesterRank = roleToRank(role);
     const targetRank = roleToRank(targetRole);
 
