@@ -12,7 +12,7 @@ export const canManageUsers = (role: string | null | undefined): boolean => role
 
 export const canAssignSupervisorRole = (role: string | null | undefined): boolean => role === "admin_x" || role === "supervisor";
 
-export const canAssignAdminXRole = (role: string | null | undefined): boolean => role === "admin_x" || role === "supervisor";
+export const canAssignAdminXRole = (role: string | null | undefined): boolean => role === "admin_x";
 
 export const canAssignRole = (requesterRole: string | null | undefined, targetRole: string | null | undefined): boolean => {
   // Only admin, admin_x and supervisors can manage users

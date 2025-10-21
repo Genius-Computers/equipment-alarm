@@ -22,7 +22,36 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    // Check if requester can assign the target role
+    // RBAC: Hierarchical protections
+    const roleToRank = (r: string | null | undefined): number => {
+      switch (r) {
+        case 'admin_x': return 4;
+        case 'supervisor': return 3;
+        case 'admin': return 2;
+        case 'technician': return 1;
+        case 'end_user': return 0;
+        default: return -1;
+      }
+    };
+
+    const targetRole = ((target as any)?.serverMetadata?.role ?? (target as any)?.clientReadOnlyMetadata?.role) as string | undefined;
+    const requesterRank = roleToRank(role);
+    const targetRank = roleToRank(targetRole);
+
+    // Prevent modifying users with equal or higher rank
+    if (requesterRank <= targetRank) {
+      return NextResponse.json({ error: 'Forbidden: insufficient privilege to modify this user' }, { status: 403 });
+    }
+
+    // Prevent assigning a role higher than the requester's own
+    if (nextRole != null) {
+      const nextRank = roleToRank(nextRole);
+      if (nextRank > requesterRank) {
+        return NextResponse.json({ error: 'Forbidden: cannot assign a role higher than your own' }, { status: 403 });
+      }
+    }
+
+    // Check if requester can assign the target role (special top-role rules)
     if (nextRole && !canAssignRole(role, nextRole)) {
       return NextResponse.json({ 
         error: 'Insufficient permissions to assign this role. Only Admin X and Supervisors can assign Supervisor role.' 
