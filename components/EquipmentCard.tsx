@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { canApprove } from "@/lib/types/user";
+import EquipmentQRCode from "@/components/EquipmentQRCode";
 
 interface EquipmentCardProps {
   equipment: JEquipment;
@@ -142,6 +143,7 @@ const EquipmentCard = ({ equipment, onEditEquipment, onDeleteEquipment, disabled
           </div>
 
           <div className="flex gap-2 pt-2">
+            <EquipmentQRCode equipmentId={equipment.id} tagNumber={equipment.partNumber} equipmentName={equipment.name} />
             {onEditEquipment && (
               <EquipmentForm
                 mode="edit"
