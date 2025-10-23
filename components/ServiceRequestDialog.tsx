@@ -69,6 +69,9 @@ const ServiceRequestDialog = ({
   const { createRequest, updateDetails } = useServiceRequests({ autoRefresh: false });
   const { profile } = useSelfProfile();
   const isApprover = isApproverRole(profile?.role);
+  const role = profile?.role || null;
+  const approved = existing?.approvalStatus === ServiceRequestApprovalStatus.APPROVED;
+  const canEditDetails = !existing ? true : (isApprover ? true : Boolean(approved));
 
   // Fetch preview ticket ID when dialog opens (server authoritative)
   useEffect(() => {
@@ -212,6 +215,9 @@ const ServiceRequestDialog = ({
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      if (existing && !canEditDetails) {
+        return;
+      }
       if (existing) {
         const body = isApprover
           ? {
@@ -269,7 +275,11 @@ const ServiceRequestDialog = ({
       open={open}
       onOpenChange={(v) => {
         setOpen(v);
-        if (!v) setSection("basic");
+        if (v) {
+          setSection(isApprover ? "basic" : "details");
+        } else {
+          setSection("basic");
+        }
       }}>
       <DialogTrigger asChild>
         <div className="flex gap-2">
@@ -305,6 +315,11 @@ const ServiceRequestDialog = ({
             ) : null}
           </DialogTitle>
           <DialogDescription>{t("serviceRequest.description")}</DialogDescription>
+          {existing && !approved && role === 'admin' && (
+            <div className="mt-2 p-3 rounded-md border bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100 text-xs">
+              This request is pending supervisor approval.
+            </div>
+          )}
           {!existing && previewTicketId && (
             <div className="mt-2 flex items-center gap-2">
               <span className="text-sm font-medium">{t("serviceRequest.ticketId")}:</span>
@@ -455,6 +470,7 @@ const ServiceRequestDialog = ({
                   onChange={(e) => setForm((s) => ({ ...s, problemDescription: e.target.value }))}
                   placeholder={t("serviceRequest.problemPlaceholder")}
                   className="min-h-24"
+                  disabled={!canEditDetails}
                 />
               </div>
             )}
@@ -468,6 +484,7 @@ const ServiceRequestDialog = ({
                     onChange={(e) => setForm((s) => ({ ...s, technicalAssessment: e.target.value }))}
                     placeholder={t("serviceRequest.assessmentPlaceholder")}
                     className="min-h-20"
+                    disabled={!canEditDetails}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -477,6 +494,7 @@ const ServiceRequestDialog = ({
                     onChange={(e) => setForm((s) => ({ ...s, recommendation: e.target.value }))}
                     placeholder={t("serviceRequest.recommendationPlaceholder")}
                     className="min-h-20"
+                    disabled={!canEditDetails}
                   />
                 </div>
               </div>
@@ -497,6 +515,7 @@ const ServiceRequestDialog = ({
                       setSparePartChanged(false);
                     }
                   }}
+                  disabled={!canEditDetails}
                 />
                 <label htmlFor="spare-parts-needed" className="text-sm font-medium cursor-pointer">
                   Spare Parts Needed
@@ -547,7 +566,7 @@ const ServiceRequestDialog = ({
                           }
                         }
                       }}
-                      disabled={sparePartsLoading}>
+                      disabled={sparePartsLoading || !canEditDetails}>
                       <SelectTrigger>
                         <SelectValue placeholder={sparePartsLoading ? "Loading spare parts..." : "Select spare part"} />
                       </SelectTrigger>
@@ -559,6 +578,7 @@ const ServiceRequestDialog = ({
                             placeholder="Type to filter spare parts..."
                             className="h-8"
                             onClick={(e) => e.stopPropagation()}
+                            disabled={!canEditDetails}
                           />
                         </div>
                         <SelectItem value="__custom__">Custom (not from inventory)</SelectItem>
@@ -834,7 +854,7 @@ const ServiceRequestDialog = ({
               <Button variant="outline" onClick={() => setOpen(false)} disabled={loading || isBlockingLoading}>
                 {t("form.cancel")}
               </Button>
-              <Button onClick={handleSubmit} disabled={!isValid || loading || isBlockingLoading} className="gap-2">
+              <Button onClick={handleSubmit} disabled={!isValid || loading || isBlockingLoading || (existing && !canEditDetails)} className="gap-2">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {t("form.save")}
               </Button>
