@@ -30,6 +30,9 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const openedAtRef = useRef<number>(0);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const [focusMarker, setFocusMarker] = useState<{ x: number; y: number } | null>(null);
+  const [zoom, setZoom] = useState<number | null>(null);
+  const [zoomRange, setZoomRange] = useState<{ min: number; max: number; step: number } | null>(null);
+  const [torchOn, setTorchOn] = useState<boolean>(false);
   const ignoreFirstRef = useRef<boolean>(false); // no longer used for gating; kept to avoid rework
 
   // Basic barcode detection via fast key events while the dialog is open
@@ -101,6 +104,11 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
           if (caps.zoom && typeof caps.zoom.min === "number" && typeof caps.zoom.max === "number") {
             const z = caps.zoom.min + (caps.zoom.max - caps.zoom.min) * 0.35;
             (advanced as any).zoom = Math.min(caps.zoom.max, Math.max(caps.zoom.min, z));
+            setZoomRange({ min: caps.zoom.min, max: caps.zoom.max, step: caps.zoom.step || 0.1 });
+            setZoom(z);
+          }
+          if (caps.torch === true) {
+            (advanced as any).torch = torchOn;
           }
           if (Object.keys(advanced).length > 0) {
             await track.applyConstraints({ advanced: [advanced] } as any);
@@ -149,6 +157,9 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
       media?.getTracks().forEach((t) => t.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
       videoTrackRef.current = null;
+      setZoomRange(null);
+      setZoom(null);
+      setTorchOn(false);
     };
   }, [scanOpen, onSearchChange]);
 
@@ -238,6 +249,42 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
                     }}
                   />
                 ) : null}
+              </div>
+              {/* Controls: Zoom & Torch */}
+              <div className="mt-3 flex items-center gap-3">
+                {zoomRange ? (
+                  <div className="flex-1">
+                    <div className="text-xs text-muted-foreground mb-1">Zoom</div>
+                    <input
+                      type="range"
+                      min={zoomRange.min}
+                      max={zoomRange.max}
+                      step={zoomRange.step}
+                      value={zoom ?? zoomRange.min}
+                      onChange={async (e) => {
+                        const z = Number(e.target.value);
+                        setZoom(z);
+                        const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void> };
+                        try { await track?.applyConstraints?.({ advanced: [{ zoom: z }] } as any); } catch {}
+                      }}
+                    />
+                  </div>
+                ) : null}
+
+                <Button
+                  type="button"
+                  variant={torchOn ? "default" : "outline"}
+                  onClick={async () => {
+                    const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void>; getCapabilities?: () => any };
+                    const caps = (track?.getCapabilities?.() || {}) as any;
+                    if (!caps.torch) return;
+                    const next = !torchOn;
+                    setTorchOn(next);
+                    try { await track.applyConstraints({ advanced: [{ torch: next }] } as any); } catch {}
+                  }}
+                >
+                  {torchOn ? t("Torch On") : t("Torch Off")}
+                </Button>
               </div>
               {/* Hidden text input to support mobile/USB scanners that require a focused field */}
               <input
