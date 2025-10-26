@@ -28,6 +28,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const closingRef = useRef(false);
   const lastAppliedRef = useRef<string | null>(null);
   const openedAtRef = useRef<number>(0);
+  const ignoreFirstRef = useRef<boolean>(false);
 
   // Basic barcode detection via fast key events while the dialog is open
   useEffect(() => {
@@ -62,6 +63,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
       closingRef.current = false;
       setBuffer("");
       openedAtRef.current = Date.now();
+      ignoreFirstRef.current = true;
       inputRef.current?.focus();
     }
   }, [scanOpen]);
@@ -93,7 +95,12 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
             const value = (result.getText?.() || "").trim();
             const tooSoon = Date.now() - openedAtRef.current < 600; // debounce first frame
             const isSameAsLast = value && lastAppliedRef.current && value === lastAppliedRef.current;
-            if (value.length > 0 && !closingRef.current && !(tooSoon && isSameAsLast)) {
+            if (ignoreFirstRef.current) {
+              // Drop the very first decode after opening to avoid stale frames
+              ignoreFirstRef.current = false;
+              return;
+            }
+            if (value.length > 0 && !closingRef.current && !isSameAsLast) {
               closingRef.current = true;
               onSearchChange(value);
               lastAppliedRef.current = value;
