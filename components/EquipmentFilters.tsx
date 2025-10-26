@@ -26,6 +26,8 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const closingRef = useRef(false);
+  const lastAppliedRef = useRef<string | null>(null);
+  const openedAtRef = useRef<number>(0);
 
   // Basic barcode detection via fast key events while the dialog is open
   useEffect(() => {
@@ -39,6 +41,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
         const value = buffer.trim();
         if (value.length > 0) {
           onSearchChange(value);
+          lastAppliedRef.current = value;
           setBuffer("");
           setScanOpen(false);
         }
@@ -58,6 +61,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
       // Focus hidden input for mobile scanners that require focus
       closingRef.current = false;
       setBuffer("");
+      openedAtRef.current = Date.now();
       inputRef.current?.focus();
     }
   }, [scanOpen]);
@@ -84,9 +88,12 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
         reader.decodeFromVideoDevice(undefined, videoRef.current as HTMLVideoElement, (result) => {
           if (result) {
             const value = (result.getText?.() || "").trim();
-            if (value.length > 0 && !closingRef.current) {
+            const tooSoon = Date.now() - openedAtRef.current < 600; // debounce first frame
+            const isSameAsLast = value && lastAppliedRef.current && value === lastAppliedRef.current;
+            if (value.length > 0 && !closingRef.current && !(tooSoon && isSameAsLast)) {
               closingRef.current = true;
               onSearchChange(value);
+              lastAppliedRef.current = value;
               setBuffer("");
               // Small delay to allow UI settle before closing
               setTimeout(() => setScanOpen(false), 50);
