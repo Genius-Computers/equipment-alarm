@@ -25,6 +25,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const inputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const closingRef = useRef(false);
 
   // Basic barcode detection via fast key events while the dialog is open
   useEffect(() => {
@@ -32,7 +33,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
     const handler = (e: KeyboardEvent) => {
       const now = Date.now();
       lastKeyTimeRef.current = now;
-      if (e.key === "Enter" || e.key === "Tab") {
+      if ((e.key === "Enter" || e.key === "Tab") && buffer.trim().length > 0) {
         // Commit immediately on typical scanner terminators
         e.preventDefault();
         const value = buffer.trim();
@@ -55,6 +56,8 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   useEffect(() => {
     if (scanOpen) {
       // Focus hidden input for mobile scanners that require focus
+      closingRef.current = false;
+      setBuffer("");
       inputRef.current?.focus();
     }
   }, [scanOpen]);
@@ -81,10 +84,12 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
         reader.decodeFromVideoDevice(undefined, videoRef.current as HTMLVideoElement, (result) => {
           if (result) {
             const value = (result.getText?.() || "").trim();
-            if (value.length > 0) {
+            if (value.length > 0 && !closingRef.current) {
+              closingRef.current = true;
               onSearchChange(value);
-              setBuffer("")
-              setScanOpen(false);
+              setBuffer("");
+              // Small delay to allow UI settle before closing
+              setTimeout(() => setScanOpen(false), 50);
             }
           }
         });
