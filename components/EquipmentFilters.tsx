@@ -28,7 +28,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const closingRef = useRef(false);
   const lastAppliedRef = useRef<string | null>(null);
   const openedAtRef = useRef<number>(0);
-  const ignoreFirstRef = useRef<boolean>(false);
+  const ignoreFirstRef = useRef<boolean>(false); // no longer used for gating; kept to avoid rework
 
   // Basic barcode detection via fast key events while the dialog is open
   useEffect(() => {
@@ -63,7 +63,6 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
       closingRef.current = false;
       setBuffer("");
       openedAtRef.current = Date.now();
-      ignoreFirstRef.current = true;
       inputRef.current?.focus();
     }
   }, [scanOpen]);
@@ -87,29 +86,33 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
-        // Ensure we start a fresh decode session
+        // Start decoding a bit AFTER the video is actually playing to avoid cached first frames
         const r = codeReaderRef.current as unknown as { reset?: () => void };
         r?.reset?.();
-        reader.decodeFromVideoDevice(undefined, videoRef.current as HTMLVideoElement, (result) => {
-          if (result) {
-            const value = (result.getText?.() || "").trim();
-            const tooSoon = Date.now() - openedAtRef.current < 600; // debounce first frame
-            const isSameAsLast = value && lastAppliedRef.current && value === lastAppliedRef.current;
-            if (ignoreFirstRef.current) {
-              // Drop the very first decode after opening to avoid stale frames
-              ignoreFirstRef.current = false;
-              return;
-            }
-            if (value.length > 0 && !closingRef.current && !isSameAsLast) {
-              closingRef.current = true;
-              onSearchChange(value);
-              lastAppliedRef.current = value;
-              setBuffer("");
-              // Small delay to allow UI settle before closing
-              setTimeout(() => setScanOpen(false), 50);
-            }
-          }
-        });
+        const startDecode = () => {
+          setTimeout(() => {
+            reader.decodeFromVideoDevice(undefined, videoRef.current as HTMLVideoElement, (result) => {
+              if (result) {
+                const value = (result.getText?.() || "").trim();
+                if (value.length > 0 && !closingRef.current) {
+                  closingRef.current = true;
+                  onSearchChange(value);
+                  lastAppliedRef.current = value;
+                  setBuffer("");
+                  setTimeout(() => setScanOpen(false), 50);
+                }
+              }
+            });
+          }, 350);
+        };
+        if (videoRef.current?.readyState && videoRef.current.readyState >= 2) {
+          startDecode();
+        } else if (videoRef.current) {
+          videoRef.current.onplaying = () => {
+            if (videoRef.current) videoRef.current.onplaying = null;
+            startDecode();
+          };
+        }
       } catch {
         // Camera might be blocked; rely on keyboard wedge fallback
       }
