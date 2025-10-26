@@ -127,7 +127,18 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
           className="pl-10 rtl:pl-4 rtl:pr-10 pr-10 rtl:pl-10"
         />
         {/* Scanner button - trailing side: right for LTR, left for RTL */}
-        <Dialog open={scanOpen} onOpenChange={setScanOpen}>
+        <Dialog
+          open={scanOpen}
+          onOpenChange={(v) => {
+            setScanOpen(v);
+            if (v) {
+              // Reset search and last scanned state on open to avoid reusing previous value
+              onSearchChange("");
+              lastAppliedRef.current = null;
+              setBuffer("");
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button
               type="button"
