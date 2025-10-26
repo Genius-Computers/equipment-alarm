@@ -85,6 +85,9 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
+        // Ensure we start a fresh decode session
+        const r = codeReaderRef.current as unknown as { reset?: () => void };
+        r?.reset?.();
         reader.decodeFromVideoDevice(undefined, videoRef.current as HTMLVideoElement, (result) => {
           if (result) {
             const value = (result.getText?.() || "").trim();
@@ -132,9 +135,8 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
           onOpenChange={(v) => {
             setScanOpen(v);
             if (v) {
-              // Reset search and last scanned state on open to avoid reusing previous value
+              // Reset search text and input buffer, keep lastAppliedRef to ignore immediate repeats
               onSearchChange("");
-              lastAppliedRef.current = null;
               setBuffer("");
             }
           }}
