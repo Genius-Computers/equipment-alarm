@@ -28,6 +28,8 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const closingRef = useRef(false);
   const lastAppliedRef = useRef<string | null>(null);
   const openedAtRef = useRef<number>(0);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
+  const [focusMarker, setFocusMarker] = useState<{ x: number; y: number } | null>(null);
   const ignoreFirstRef = useRef<boolean>(false); // no longer used for gating; kept to avoid rework
 
   // Basic barcode detection via fast key events while the dialog is open
@@ -81,10 +83,30 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
       try {
         const reader = new BrowserMultiFormatReader();
         codeReaderRef.current = reader;
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
+        }
+        videoTrackRef.current = stream.getVideoTracks()[0] || null;
+
+        // Try to set helpful initial constraints (continuous focus / slight zoom) if supported
+        try {
+          const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void>; getCapabilities?: () => any };
+          const caps = (track?.getCapabilities?.() || {}) as any;
+          const advanced: Record<string, unknown> = {};
+          if (Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
+            (advanced as any).focusMode = "continuous";
+          }
+          if (caps.zoom && typeof caps.zoom.min === "number" && typeof caps.zoom.max === "number") {
+            const z = caps.zoom.min + (caps.zoom.max - caps.zoom.min) * 0.35;
+            (advanced as any).zoom = Math.min(caps.zoom.max, Math.max(caps.zoom.min, z));
+          }
+          if (Object.keys(advanced).length > 0) {
+            await track.applyConstraints({ advanced: [advanced] } as any);
+          }
+        } catch {
+          // Best-effort; ignore if not supported
         }
         // Start decoding a bit AFTER the video is actually playing to avoid cached first frames
         const r = codeReaderRef.current as unknown as { reset?: () => void };
@@ -126,6 +148,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
       const media = videoRef.current?.srcObject as MediaStream | null;
       media?.getTracks().forEach((t) => t.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
+      videoTrackRef.current = null;
     };
   }, [scanOpen, onSearchChange]);
 
@@ -170,8 +193,51 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
               <p className="text-sm text-muted-foreground mb-2">
                 {t("Aim your scanner at the barcode or camera.")}
               </p>
-              <div className="w-full flex justify-center">
-                <video ref={videoRef} className="rounded-md w-full max-w-sm bg-black/50" muted playsInline />
+              <div className="w-full flex justify-center relative">
+                <video
+                  ref={videoRef}
+                  className="rounded-md w-full max-w-sm bg-black/50"
+                  muted
+                  playsInline
+                  onClick={(e) => {
+                    // Map click to normalized [0,1] coordinates and request focus/POI if supported
+                    const video = videoRef.current;
+                    const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void>; getCapabilities?: () => any };
+                    if (!video || !track?.applyConstraints) return;
+                    const rect = (e.target as HTMLVideoElement).getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width;
+                    const y = (e.clientY - rect.top) / rect.height;
+                    setFocusMarker({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                    setTimeout(() => setFocusMarker(null), 600);
+                    try {
+                      const caps = (track.getCapabilities?.() || {}) as any;
+                      const adv: any = {};
+                      if (Array.isArray(caps.focusMode) && caps.focusMode.includes("single-shot")) {
+                        adv.focusMode = "single-shot";
+                      } else if (Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
+                        adv.focusMode = "continuous";
+                      }
+                      if (caps.pointsOfInterest) {
+                        adv.pointsOfInterest = [{ x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) }];
+                      }
+                      track.applyConstraints({ advanced: [adv] } as any).catch(() => {});
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                />
+                {focusMarker ? (
+                  <div
+                    className="absolute pointer-events-none border-2 border-white/80 rounded-md"
+                    style={{
+                      left: Math.max(0, focusMarker.x - 24),
+                      top: Math.max(0, focusMarker.y - 24),
+                      width: 48,
+                      height: 48,
+                      boxShadow: "0 0 0 1px rgba(0,0,0,0.4)",
+                    }}
+                  />
+                ) : null}
               </div>
               {/* Hidden text input to support mobile/USB scanners that require a focused field */}
               <input
