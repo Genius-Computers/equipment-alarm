@@ -6,6 +6,7 @@ import { Filter, Search, ScanLine } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { EquipmentMaintenanceStatus } from "@/lib/types";
 import { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +23,8 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const [buffer, setBuffer] = useState("");
   const lastKeyTimeRef = useRef<number>(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
 
   // Basic barcode detection via fast key events while the dialog is open
   useEffect(() => {
@@ -56,6 +59,51 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
     }
   }, [scanOpen]);
 
+  // Camera scanner setup/teardown
+  useEffect(() => {
+    if (!scanOpen) {
+      // stop reader if open
+      try {
+        const r = codeReaderRef.current as unknown as { reset?: () => void };
+        r?.reset?.();
+      } catch {}
+      return;
+    }
+    const setup = async () => {
+      try {
+        const reader = new BrowserMultiFormatReader();
+        codeReaderRef.current = reader;
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        reader.decodeFromVideoDevice(undefined, videoRef.current as HTMLVideoElement, (result) => {
+          if (result) {
+            const value = (result.getText?.() || "").trim();
+            if (value.length > 0) {
+              onSearchChange(value);
+              setBuffer("")
+              setScanOpen(false);
+            }
+          }
+        });
+      } catch {
+        // Camera might be blocked; rely on keyboard wedge fallback
+      }
+    };
+    void setup();
+    return () => {
+      try {
+        const r = codeReaderRef.current as unknown as { reset?: () => void };
+        r?.reset?.();
+      } catch {}
+      const media = videoRef.current?.srcObject as MediaStream | null;
+      media?.getTracks().forEach((t) => t.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+    };
+  }, [scanOpen, onSearchChange]);
+
   return (
     <div className="flex flex-col sm:flex-row gap-4">
       <div className="relative flex-1">
@@ -85,8 +133,11 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
             </DialogHeader>
             <div className="p-2">
               <p className="text-sm text-muted-foreground mb-2">
-                {t("Aim your scanner at the barcode.")}
+                {t("Aim your scanner at the barcode or camera.")}
               </p>
+              <div className="w-full flex justify-center">
+                <video ref={videoRef} className="rounded-md w-full max-w-sm bg-black/50" muted playsInline />
+              </div>
               {/* Hidden text input to support mobile/USB scanners that require a focused field */}
               <input
                 ref={inputRef}
