@@ -53,23 +53,36 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     // Determine which fields are being updated
     const providedKeys = Object.keys(body ?? {});
-    const nonStatusKeys = [
-      'equipmentId',
-      'assignedTechnicianId',
-      'requestType',
-      'scheduledAt',
-      'problemDescription',
-      'technicalAssessment',
-      'recommendation',
-      'sparePartsNeeded',
-    ];
-    const includesNonStatus = providedKeys.some((k) => nonStatusKeys.includes(k));
+    // Distinguish editable groups
+    const basicKeys = ['equipmentId', 'assignedTechnicianId', 'requestType', 'scheduledAt'];
+    const technicianDetailKeys = ['problemDescription', 'technicalAssessment', 'recommendation', 'sparePartsNeeded'];
+    const includesBasic = providedKeys.some((k) => basicKeys.includes(k));
+    const includesTechDetails = providedKeys.some((k) => technicianDetailKeys.includes(k));
     const includesApproval = providedKeys.includes('approvalStatus');
     const includesWork = providedKeys.includes('workStatus');
 
-    // Rule: non-status fields editable only while both approval & work are pending
-    if (includesNonStatus && (current.approval_status !== ServiceRequestApprovalStatus.PENDING || current.work_status !== ServiceRequestWorkStatus.PENDING)) {
-      return NextResponse.json({ error: 'Details can only be edited while request is pending' }, { status: 409 });
+    // RBAC helper for approver roles (supervisor, admin_x)
+    let isApproverUser = false;
+    try {
+      ensureRole(user, APPROVER_ROLES);
+      isApproverUser = true;
+    } catch {
+      // not an approver
+      isApproverUser = false;
+    }
+
+    // Basic fields (assignment/schedule/type) may only change while both statuses are pending
+    if (includesBasic && (current.approval_status !== ServiceRequestApprovalStatus.PENDING || current.work_status !== ServiceRequestWorkStatus.PENDING)) {
+      return NextResponse.json({ error: 'Basic fields can only be edited while request is pending' }, { status: 409 });
+    }
+
+    // Technician details can be edited while work is pending, and either approval is approved OR user is approver
+    if (includesTechDetails) {
+      const workPending = current.work_status === ServiceRequestWorkStatus.PENDING;
+      const approvalAllows = current.approval_status === ServiceRequestApprovalStatus.APPROVED || isApproverUser;
+      if (!workPending || !approvalAllows) {
+        return NextResponse.json({ error: 'Details can only be edited when work is pending and after approval' }, { status: 409 });
+      }
     }
 
     // Rule: approval status transition allowed only from pending
