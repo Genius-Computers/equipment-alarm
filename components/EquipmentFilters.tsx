@@ -33,7 +33,18 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
   const [zoom, setZoom] = useState<number | null>(null);
   const [zoomRange, setZoomRange] = useState<{ min: number; max: number; step: number } | null>(null);
   const [torchOn, setTorchOn] = useState<boolean>(false);
-  const ignoreFirstRef = useRef<boolean>(false); // no longer used for gating; kept to avoid rework
+  // Helpers for safer constraints without using `any`
+  type ExtendedCapabilities = MediaTrackCapabilities & { focusMode?: string[]; zoom?: { min: number; max: number; step?: number }; torch?: boolean; pointsOfInterest?: boolean };
+  type ExtTrack = MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void>; getCapabilities?: () => ExtendedCapabilities };
+  const getTrack = (): ExtTrack | null => (videoTrackRef.current as ExtTrack | null);
+  const applyAdvanced = async (track: ExtTrack | null, obj: Partial<{ focusMode: string; zoom: number; torch: boolean; pointsOfInterest: Array<{ x: number; y: number }> }>) => {
+    try {
+      const constraints: MediaTrackConstraints = { advanced: [obj as unknown as MediaTrackConstraintSet] } as MediaTrackConstraints;
+      await track?.applyConstraints?.(constraints);
+    } catch {
+      // ignore
+    }
+  };
 
   // Basic barcode detection via fast key events while the dialog is open
   useEffect(() => {
@@ -95,23 +106,24 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
 
         // Try to set helpful initial constraints (continuous focus / slight zoom) if supported
         try {
-          const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void>; getCapabilities?: () => any };
-          const caps = (track?.getCapabilities?.() || {}) as any;
-          const advanced: Record<string, unknown> = {};
-          if (Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
-            (advanced as any).focusMode = "continuous";
+          const track = getTrack();
+          const caps = (track?.getCapabilities?.() as unknown) as ExtendedCapabilities | undefined;
+          const advanced: Partial<{ focusMode: string; zoom: number; torch: boolean }> = {};
+          if (caps && Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
+            advanced.focusMode = "continuous";
           }
-          if (caps.zoom && typeof caps.zoom.min === "number" && typeof caps.zoom.max === "number") {
-            const z = caps.zoom.min + (caps.zoom.max - caps.zoom.min) * 0.35;
-            (advanced as any).zoom = Math.min(caps.zoom.max, Math.max(caps.zoom.min, z));
-            setZoomRange({ min: caps.zoom.min, max: caps.zoom.max, step: caps.zoom.step || 0.1 });
+          const zcap = caps?.zoom as { min: number; max: number; step?: number } | undefined;
+          if (zcap && typeof zcap.min === "number" && typeof zcap.max === "number") {
+            const z = zcap.min + (zcap.max - zcap.min) * 0.35;
+            advanced.zoom = Math.min(zcap.max, Math.max(zcap.min, z));
+            setZoomRange({ min: zcap.min, max: zcap.max, step: zcap.step || 0.1 });
             setZoom(z);
           }
-          if (caps.torch === true) {
-            (advanced as any).torch = torchOn;
+          if ((caps as unknown as { torch?: boolean })?.torch === true) {
+            advanced.torch = torchOn;
           }
           if (Object.keys(advanced).length > 0) {
-            await track.applyConstraints({ advanced: [advanced] } as any);
+            await applyAdvanced(track, advanced);
           }
         } catch {
           // Best-effort; ignore if not supported
@@ -210,10 +222,10 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
                   className="rounded-md w-full max-w-sm bg-black/50"
                   muted
                   playsInline
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     // Map click to normalized [0,1] coordinates and request focus/POI if supported
                     const video = videoRef.current;
-                    const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void>; getCapabilities?: () => any };
+                    const track = getTrack();
                     if (!video || !track?.applyConstraints) return;
                     const rect = (e.target as HTMLVideoElement).getBoundingClientRect();
                     const x = (e.clientX - rect.left) / rect.width;
@@ -221,17 +233,17 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
                     setFocusMarker({ x: e.clientX - rect.left, y: e.clientY - rect.top });
                     setTimeout(() => setFocusMarker(null), 600);
                     try {
-                      const caps = (track.getCapabilities?.() || {}) as any;
-                      const adv: any = {};
-                      if (Array.isArray(caps.focusMode) && caps.focusMode.includes("single-shot")) {
+                      const caps = (track.getCapabilities?.() as unknown) as ExtendedCapabilities | undefined;
+                      const adv: Partial<{ focusMode: string; pointsOfInterest: Array<{ x: number; y: number }> }> = {};
+                      if (caps && Array.isArray(caps.focusMode) && caps.focusMode.includes("single-shot")) {
                         adv.focusMode = "single-shot";
-                      } else if (Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
+                      } else if (caps && Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
                         adv.focusMode = "continuous";
                       }
-                      if (caps.pointsOfInterest) {
+                      if ((caps as unknown as { pointsOfInterest?: boolean })?.pointsOfInterest) {
                         adv.pointsOfInterest = [{ x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) }];
                       }
-                      track.applyConstraints({ advanced: [adv] } as any).catch(() => {});
+                      await applyAdvanced(track, adv);
                     } catch {
                       // ignore
                     }
@@ -264,8 +276,7 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
                       onChange={async (e) => {
                         const z = Number(e.target.value);
                         setZoom(z);
-                        const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void> };
-                        try { await track?.applyConstraints?.({ advanced: [{ zoom: z }] } as any); } catch {}
+                        await applyAdvanced(getTrack(), { zoom: z });
                       }}
                     />
                   </div>
@@ -275,12 +286,12 @@ const EquipmentFilters = ({ searchTerm, statusFilter, onSearchChange, onStatusCh
                   type="button"
                   variant={torchOn ? "default" : "outline"}
                   onClick={async () => {
-                    const track = videoTrackRef.current as unknown as MediaStreamTrack & { applyConstraints?: (c: MediaTrackConstraints) => Promise<void>; getCapabilities?: () => any };
-                    const caps = (track?.getCapabilities?.() || {}) as any;
-                    if (!caps.torch) return;
+                    const track = getTrack();
+                    const caps = (track?.getCapabilities?.() as unknown) as ExtendedCapabilities | undefined;
+                    if (!((caps as unknown as { torch?: boolean })?.torch)) return;
                     const next = !torchOn;
                     setTorchOn(next);
-                    try { await track.applyConstraints({ advanced: [{ torch: next }] } as any); } catch {}
+                    await applyAdvanced(track, { torch: next });
                   }}
                 >
                   {torchOn ? t("Torch On") : t("Torch Off")}
