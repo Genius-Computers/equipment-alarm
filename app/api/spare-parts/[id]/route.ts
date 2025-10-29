@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateSparePart, softDeleteSparePart, getDb, ensureSchema } from '@/lib/db';
+import { updateSparePart, softDeleteSparePart, getDb } from '@/lib/db';
 import { snakeToCamelCase } from '@/lib/utils';
 import { getCurrentServerUser } from '@/lib/auth';
 import { DbSparePart } from '@/lib/types';
@@ -15,7 +15,6 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     // Fetch current spare part to merge partial updates
     const sql = getDb();
-    await ensureSchema();
     const [current] = await sql`
       select * from spare_parts
       where id = ${id} and deleted_at is null

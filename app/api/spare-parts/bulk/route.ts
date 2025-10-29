@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, ensureSchema } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getCurrentServerUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
     }
 
     const sql = getDb();
-    await ensureSchema();
 
     const names = items.map((i) => i.name ?? "");
     const serialNumbers = items.map((i) => i.serialNumber ?? null);
