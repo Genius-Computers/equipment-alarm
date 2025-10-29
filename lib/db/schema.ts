@@ -155,7 +155,7 @@ export const ensureSchema = async () => {
     )`;
 
   // Apply schema migrations
-  await applySchemaMigrations(sql);
+  // await applySchemaMigrations(sql);
   schemaInitialized = true;
   })();
   try {
@@ -165,67 +165,68 @@ export const ensureSchema = async () => {
   }
 };
 
+//Uncomment this to apply incremental schema changes
 // Apply incremental schema changes (migrations)
-const applySchemaMigrations = async (sql: ReturnType<typeof getDb>) => {
-  // Add new columns to equipment table if they do not exist
-  await sql`
-    alter table equipment
-      add column if not exists model text,
-      add column if not exists manufacturer text,
-      add column if not exists serial_number text,
-      add column if not exists status text not null default 'Working',
-      add column if not exists sub_location text,
-      add column if not exists location_id uuid references locations(id)`;
+// const applySchemaMigrations = async (sql: ReturnType<typeof getDb>) => {
+//   // Add new columns to equipment table if they do not exist
+//   await sql`
+//     alter table equipment
+//       add column if not exists model text,
+//       add column if not exists manufacturer text,
+//       add column if not exists serial_number text,
+//       add column if not exists status text not null default 'Working',
+//       add column if not exists sub_location text,
+//       add column if not exists location_id uuid references locations(id)`;
 
-  // Enforce NOT NULL on part_number (best-effort; ignore if existing rows violate)
-  try {
-    await sql`alter table equipment alter column part_number set not null`;
-  } catch {
-    // Ignore if existing nulls prevent this; API will enforce
-  }
+//   // Enforce NOT NULL on part_number (best-effort; ignore if existing rows violate)
+//   try {
+//     await sql`alter table equipment alter column part_number set not null`;
+//   } catch {
+//     // Ignore if existing nulls prevent this; API will enforce
+//   }
 
-  // Enforce uniqueness (case-insensitive, excluding soft-deleted) via unique index
-  // Note: Expression index used to ensure case-insensitive uniqueness
-  await sql`
-    create unique index if not exists equipment_part_number_unique_idx
-    on equipment (lower(part_number))
-    where deleted_at is null
-  `;
+//   // Enforce uniqueness (case-insensitive, excluding soft-deleted) via unique index
+//   // Note: Expression index used to ensure case-insensitive uniqueness
+//   await sql`
+//     create unique index if not exists equipment_part_number_unique_idx
+//     on equipment (lower(part_number))
+//     where deleted_at is null
+//   `;
 
-  // Add new columns to service_request table if they do not exist
-  await sql`
-    alter table service_request
-      add column if not exists ticket_id text,
-      add column if not exists approval_note text
-  `;
+//   // Add new columns to service_request table if they do not exist
+//   await sql`
+//     alter table service_request
+//       add column if not exists ticket_id text,
+//       add column if not exists approval_note text
+//   `;
   
-  // Remove NOT NULL constraint from assigned_technician_id to allow unassigned requests
-  try {
-    await sql`alter table service_request alter column assigned_technician_id drop not null`;
-  } catch {
-    // Ignore if constraint doesn't exist
-  }
+//   // Remove NOT NULL constraint from assigned_technician_id to allow unassigned requests
+//   try {
+//     await sql`alter table service_request alter column assigned_technician_id drop not null`;
+//   } catch {
+//     // Ignore if constraint doesn't exist
+//   }
 
-  // Add name_ar column to locations if it doesn't exist
-  await sql`
-    alter table locations
-      add column if not exists name_ar text
-  `;
+//   // Add name_ar column to locations if it doesn't exist
+//   await sql`
+//     alter table locations
+//       add column if not exists name_ar text
+//   `;
 
-  // Make log_in_time nullable in attendance table
-  try {
-    await sql`
-      alter table attendance
-        alter column log_in_time drop not null
-    `;
-  } catch (error) {
-    // Ignore error if column is already nullable
-    console.log('[DB] log_in_time column already nullable or error:', error);
-  }
+//   // Make log_in_time nullable in attendance table
+//   try {
+//     await sql`
+//       alter table attendance
+//         alter column log_in_time drop not null
+//     `;
+//   } catch (error) {
+//     // Ignore error if column is already nullable
+//     console.log('[DB] log_in_time column already nullable or error:', error);
+//   }
   
-  // Add supplier column to spare_parts if it doesn't exist
-  await sql`
-    alter table spare_parts
-      add column if not exists supplier text
-  `;
-};
+//   // Add supplier column to spare_parts if it doesn't exist
+//   await sql`
+//     alter table spare_parts
+//       add column if not exists supplier text
+//   `;
+// };
