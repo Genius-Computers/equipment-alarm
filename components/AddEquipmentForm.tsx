@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
 import { Equipment, SparePart } from "@/lib/types";
+import { normalizeMaintenanceInterval } from "@/lib/utils";
 
 interface EquipmentFormProps {
   onSubmitEquipment: (equipment: Omit<Equipment, "id"> | Equipment) => void;
@@ -221,6 +222,9 @@ const EquipmentForm = ({
       }
 
       const lastDate = formData.lastMaintenance ? new Date(formData.lastMaintenance).toISOString() : undefined;
+      const normalizedInterval = formData.maintenanceInterval 
+        ? normalizeMaintenanceInterval(formData.maintenanceInterval)
+        : undefined;
       
       if (mode === "edit" && equipment) {
         // Edit mode: preserve the equipment ID
@@ -236,7 +240,7 @@ const EquipmentForm = ({
           subLocation: formData.subLocation,
           status: formData.status,
           lastMaintenance: lastDate,
-          maintenanceInterval: formData.maintenanceInterval || undefined,
+          maintenanceInterval: normalizedInterval,
         });
       } else {
         // Add mode: create new equipment
@@ -251,7 +255,7 @@ const EquipmentForm = ({
           subLocation: formData.subLocation,
           status: formData.status,
           lastMaintenance: lastDate,
-          maintenanceInterval: formData.maintenanceInterval || undefined,
+          maintenanceInterval: normalizedInterval,
         });
       }
 
@@ -515,19 +519,15 @@ const EquipmentForm = ({
               <Label htmlFor="maintenanceInterval">
                 {t("form.maintenanceInterval")}
               </Label>
-              <Select onValueChange={(value) => setFormData({ ...formData, maintenanceInterval: value })} value={formData.maintenanceInterval}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("form.selectInterval")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1 week">{t("form.everyWeek")}</SelectItem>
-                  <SelectItem value="2 weeks">{t("form.every2Weeks")}</SelectItem>
-                  <SelectItem value="1 month">{t("form.everyMonth")}</SelectItem>
-                  <SelectItem value="3 months">{t("form.every3Months")}</SelectItem>
-                  <SelectItem value="6 months">{t("form.every6Months")}</SelectItem>
-                  <SelectItem value="1 year">{t("form.everyYear")}</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="maintenanceInterval"
+                value={formData.maintenanceInterval}
+                onChange={(e) => setFormData({ ...formData, maintenanceInterval: e.target.value })}
+                placeholder="e.g., 1 month, 3 months, 1 year"
+              />
+              <p className="text-xs text-muted-foreground">
+                Examples: 1 week, 2 weeks, 1-12 months, 1 year
+              </p>
             </div>
             <div className="flex flex-col gap-1">
               <Label htmlFor="lastMaintenance">{t("form.lastMaintenanceDate")}</Label>

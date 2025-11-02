@@ -108,9 +108,51 @@ export const MAINTENANCE_INTERVAL_DAYS_MAP: Record<string, number> = {
   '1 week': 7,
   '2 weeks': 14,
   '1 month': 30,
+  '2 months': 60,
   '3 months': 90,
+  '4 months': 120,
+  '5 months': 150,
   '6 months': 180,
+  '7 months': 210,
+  '8 months': 240,
+  '9 months': 270,
+  '10 months': 300,
+  '11 months': 330,
+  '12 months': 365,
   '1 year': 365,
+}
+
+// Normalize maintenance interval strings from CSV imports
+export function normalizeMaintenanceInterval(interval: string): string {
+  if (!interval) return interval;
+  const trimmed = interval.trim();
+  const lower = trimmed.toLowerCase();
+  
+  // Handle "12 months" -> "1 year" for consistency with existing data
+  if (lower === '12 months') {
+    return '1 year';
+  }
+  
+  // Normalize case for all month intervals for consistency
+  const monthMatch = lower.match(/^(\d+)\s*months?$/);
+  if (monthMatch) {
+    const num = monthMatch[1];
+    return `${num} ${parseInt(num) === 1 ? 'month' : 'months'}`;
+  }
+  
+  // Normalize week intervals
+  const weekMatch = lower.match(/^(\d+)\s*weeks?$/);
+  if (weekMatch) {
+    const num = weekMatch[1];
+    return `${num} ${parseInt(num) === 1 ? 'week' : 'weeks'}`;
+  }
+  
+  // Normalize year intervals
+  if (lower === '1 year') {
+    return '1 year';
+  }
+  
+  return trimmed;
 }
 
 export function deriveMaintenanceInfo(input: { lastMaintenance?: string; maintenanceInterval?: string }): { maintenanceStatus: 'good' | 'due' | 'overdue'; nextMaintenance: string; daysUntil: number } {

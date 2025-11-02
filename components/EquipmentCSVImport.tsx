@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/hooks/useLanguage";
 import { parseCSV, stringifyCSV } from "@/lib/csv";
+import { normalizeMaintenanceInterval } from "@/lib/utils";
 import { Upload, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -161,7 +162,7 @@ const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportP
         subLocation: r.subLocation ?? "",
         status: r.status ?? "Working",
         lastMaintenance: r.lastMaintenance ?? "",
-        maintenanceInterval: r.maintenanceInterval ?? "",
+        maintenanceInterval: normalizeMaintenanceInterval(r.maintenanceInterval ?? ""),
       }));
 
       // First, request a dry-run preview to show update vs insert counts
