@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentServerUser(req);
     ensureRole(user, ['admin', 'admin_x']);
 
-    const body = await req.json().catch(() => ({} as any));
-    const confirm: string | undefined = body?.confirm;
+    const body = await req.json().catch(() => ({}) as Record<string, unknown>);
+    const confirm: string | undefined = body?.confirm as string | undefined;
     const scope: 'all' | 'current-year' = body?.scope === 'current-year' ? 'current-year' : 'all';
 
     if (confirm !== 'RESET') {
