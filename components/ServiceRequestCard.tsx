@@ -11,7 +11,7 @@ import { Wrench, Check, X, Loader2, Pencil, User, Ticket, Flag, Bell } from "luc
 import Link from "next/link";
 import ExpandableText from "@/components/ExpandableText";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+// removed unused AlertDialog imports
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
@@ -38,7 +38,7 @@ function OperationalStatusEditor({
   onComplete?: (id: string) => void;
   onCancel?: (id: string) => void;
   initialEquipmentStatus: string;
-  t: (k: string, o?: any) => string;
+  t: (k: string, o?: Record<string, unknown>) => string;
   updating: boolean;
   setUpdating: (v: boolean) => void;
   setEquipmentStatus: (v: string) => void;
@@ -151,8 +151,6 @@ export default function ServiceRequestCard({
   const [note, setNote] = useState("");
   const [equipmentStatus, setEquipmentStatus] = useState<string>(request.equipment?.status || "");
   const [updatingEquipmentStatus, setUpdatingEquipmentStatus] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"operational" | "under_repair" | "completed" | "cancelled" | null>(null);
   const { profile } = useSelfProfile();
   const role = profile?.role || null;
   const userId = profile?.id || null;
