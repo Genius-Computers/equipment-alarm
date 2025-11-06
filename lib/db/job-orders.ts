@@ -104,7 +104,7 @@ export const submitJobOrder = async (
     
     for (const item of items) {
       try {
-        const problemDescription = `Job Order ${orderNumber} - ${item.equipmentName}${additionalNotes}`;
+        const problemDescription = `${item.equipmentName}${additionalNotes}`;
         
         const result = await sql`
           insert into service_request (

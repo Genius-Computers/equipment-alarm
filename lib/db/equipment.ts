@@ -237,14 +237,20 @@ export const getEquipmentById = async (id: string): Promise<DbEquipment | null> 
 }
 
 export const getEquipmentIdByPartNumber = async (partNumber: string): Promise<string | null> => {
-  const sql = getDb();
-  const rows = await sql`
-    select id
-    from equipment e
-    where e.deleted_at is null and lower(trim(e.part_number)) = lower(trim(${partNumber}))
-    limit 1
-  ` as Array<{ id: string }>;
-  return rows && rows.length > 0 ? rows[0].id : null;
+  try {
+    const sql = getDb();
+    const rows = await sql`
+      select id
+      from equipment e
+      where e.deleted_at is null and lower(trim(e.part_number)) = lower(trim(${partNumber}))
+      limit 1
+    ` as Array<{ id: string }>;
+    return rows && rows.length > 0 ? rows[0].id : null;
+  } catch (error) {
+    // Avoid crashing the page; log and return null so caller can render gracefully
+    console.error('Error connecting to database:', error);
+    return null;
+  }
 }
 
 export const getUniqueSubLocationsByLocation = async (location: string): Promise<string[]> => {

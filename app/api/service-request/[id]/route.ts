@@ -71,9 +71,17 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       isApproverUser = false;
     }
 
-    // Basic fields (assignment/schedule/type) may only change while both statuses are pending
-    if (includesBasic && (current.approval_status !== ServiceRequestApprovalStatus.PENDING || current.work_status !== ServiceRequestWorkStatus.PENDING)) {
-      return NextResponse.json({ error: 'Basic fields can only be edited while request is pending' }, { status: 409 });
+    // Basic fields (assignment/schedule/type)
+    // Policy:
+    // - Non-approvers: may edit ONLY while both approval and work are pending
+    // - Approvers: may edit while work is pending (even if approval is approved). Block after completion
+    if (includesBasic) {
+      const workPending = current.work_status === ServiceRequestWorkStatus.PENDING;
+      const nonApproverAllowed = (current.approval_status === ServiceRequestApprovalStatus.PENDING) && workPending;
+      const approverAllowed = isApproverUser && workPending;
+      if (!(nonApproverAllowed || approverAllowed)) {
+        return NextResponse.json({ error: 'Basic fields can only be edited while work is pending' }, { status: 409 });
+      }
     }
 
     // Technician details can be edited while work is pending, and either approval is approved OR user is approver
@@ -99,9 +107,9 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       }
     }
 
-    // Rule: work status transition allowed only from pending
-    if (includesWork && current.work_status !== ServiceRequestWorkStatus.PENDING) {
-      return NextResponse.json({ error: 'Work status can only change from pending' }, { status: 409 });
+    // Rule: work status can be edited until the request is completed
+    if (includesWork && current.work_status === ServiceRequestWorkStatus.COMPLETED) {
+      return NextResponse.json({ error: 'Work status cannot change after completion' }, { status: 409 });
     }
 
     // Process spare parts and auto-create custom ones in inventory
@@ -140,9 +148,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       console.log('[PATCH ServiceRequest] Finished processing spare parts');
     }
 
+    // Normalize empty string to null for UUID fields
+    const normalizedAssignedTechnicianId = (typeof body.assignedTechnicianId === 'string' && body.assignedTechnicianId.trim() === '')
+      ? null
+      : (body.assignedTechnicianId ?? current.assigned_technician_id);
+
     const payload = {
       equipment_id: body.equipmentId ?? current.equipment_id,
-      assigned_technician_id: body.assignedTechnicianId ?? current.assigned_technician_id,
+      assigned_technician_id: normalizedAssignedTechnicianId,
       request_type: body.requestType ?? current.request_type,
       scheduled_at: body.scheduledAt ?? current.scheduled_at,
       priority: body.priority ?? current.priority,
