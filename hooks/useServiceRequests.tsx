@@ -27,6 +27,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 
 	const [priorityFilter, setPriorityFilter] = useState<"all" | JServiceRequest["priority"] | "overdue">("all");
 	const [approvalFilter, setApprovalFilter] = useState<"all" | JServiceRequest["approvalStatus"]>("all");
+	const [requestTypeFilter, setRequestTypeFilter] = useState<"all" | JServiceRequest["requestType"]>("all");
 
     // Tab scope state and cache per scope
 	const [scope, setScope] = useState<"pending" | "completed">("pending");
@@ -41,15 +42,16 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 			const assignedParam = assignedToMe ? "&assignedTo=me" : "";
 			const pr = encodeURIComponent((priorityFilter === "overdue" ? "all" : (priorityFilter || "all")) as string);
 			const ap = encodeURIComponent(approvalFilter || "all");
+			const rt = encodeURIComponent((requestTypeFilter || "all") as string);
 			const controller = new AbortController();
-			const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}${assignedParam}&priority=${pr}&approval=${ap}` , { cache: "no-store", signal: controller.signal });
+			const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}${assignedParam}&priority=${pr}&approval=${ap}&requestType=${rt}` , { cache: "no-store", signal: controller.signal });
 			if (!res.ok) throw new Error("Failed to load service requests");
 			const json = await res.json();
 			const rows: Array<JServiceRequest> = Array.isArray(json.data) ? json.data : [];
 			setTotal(Number(json?.meta?.total || 0));
 			setRequests(rows);
 			// update cache only for default filter state (no search; all priority/approval)
-			const allowCache = (priorityFilter === "all") && (approvalFilter === "all") && !assignedToMe;
+			const allowCache = (priorityFilter === "all") && (approvalFilter === "all") && !assignedToMe && (requestTypeFilter === "all");
 			if (allowCache) {
 				const key = `${scope}:all`;
 				setCache((prev) => ({ ...prev, [key]: { page, pageSize, total: Number(json?.meta?.total || 0), rows } }));
@@ -60,7 +62,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		} finally {
 			setLoading(false);
 		}
-	}, [page, pageSize, scope, assignedToMe, priorityFilter, approvalFilter]);
+	}, [page, pageSize, scope, assignedToMe, priorityFilter, approvalFilter, requestTypeFilter]);
 
 	const loadForEquipment = useCallback(
 		async (
@@ -99,7 +101,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	useEffect(() => {
 		if (!autoRefresh) return;
 		// hydrate from cache only when no active filters/search
-		const allowCache = (priorityFilter === "all") && (approvalFilter === "all") && !assignedToMe;
+		const allowCache = (priorityFilter === "all") && (approvalFilter === "all") && !assignedToMe && (requestTypeFilter === "all");
 		if (allowCache) {
 			const key = `${scope}:all`;
 			const scoped = cache[key];
@@ -114,7 +116,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		return () => {
 			// no-op
 		};
-	}, [autoRefresh, refresh, scope, page, pageSize, assignedToMe, priorityFilter, approvalFilter]);
+	}, [autoRefresh, refresh, scope, page, pageSize, assignedToMe, priorityFilter, approvalFilter, requestTypeFilter]);
 
 	const createRequest = useCallback(
 		async (input: ServiceRequestCreateInput) => {
@@ -260,6 +262,8 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 		refreshKey,
 		setPriorityFilter,
 		setApprovalFilter,
+		requestTypeFilter,
+		setRequestTypeFilter,
 		setPage,
 		setPageSize,
 		setScope,

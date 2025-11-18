@@ -7,6 +7,7 @@ export {
   listEquipmentPaginated,
   insertEquipment,
   updateEquipment,
+  updateEquipmentLastMaintenance,
   softDeleteEquipment,
   bulkSoftDeleteEquipment,
   bulkInsertEquipment,

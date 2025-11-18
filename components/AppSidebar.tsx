@@ -13,7 +13,7 @@ import {
   SidebarSeparator,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck, MapPin, ClipboardList, FileText } from "lucide-react";
+import { Home, Box, Calendar, Settings as SettingsIcon, Users, Package, ClipboardCheck, MapPin, ClipboardList, FileText, Wrench } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -80,6 +80,14 @@ export default function AppSidebar() {
                     <Link href="/service-requests">
                       <Calendar />
                       <span>{t("sidebar.serviceRequests")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/preventive-maintenance")}>
+                    <Link href="/preventive-maintenance">
+                      <Wrench />
+                      <span>{t("sidebar.preventiveMaintenance")}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

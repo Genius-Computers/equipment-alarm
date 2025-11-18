@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Wrench, Check, X, Loader2, Pencil, User, Ticket, Flag, Bell } from "lucide-react";
+import { Wrench, Check, X, Loader2, Pencil, Eye, User, Ticket, Flag, Bell } from "lucide-react";
 import Link from "next/link";
 import ExpandableText from "@/components/ExpandableText";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -156,6 +156,10 @@ export default function ServiceRequestCard({
   const userId = profile?.id || null;
   const canEditDetails = canEdit; // Only allow editing if user has edit permissions
 
+  const isClosed =
+    request.workStatus === ServiceRequestWorkStatus.COMPLETED ||
+    request.workStatus === ServiceRequestWorkStatus.CANCELLED;
+
   const operationalLabel = equipmentStatus === 'Operational'
     ? t('serviceRequest.operational.operational')
     : (equipmentStatus === 'Under Repair, Waiting for Spare Parts'
@@ -231,9 +235,16 @@ export default function ServiceRequestCard({
           <Badge className="bg-muted text-foreground/80 border border-border capitalize">
             {t("serviceRequest.operational.status")}: {operationalLabel}
           </Badge>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <span className="text-xs text-muted-foreground">{t("equipment.label")}:</span>
             <span className="text-sm font-medium">{request.equipment?.name || request.equipmentId}</span>
+            {request.equipment?.partNumber ? (
+              <>
+                <span className="mx-1 text-xs text-muted-foreground">•</span>
+                <span className="text-xs text-muted-foreground">Tag:</span>
+                <span className="text-xs font-mono">{request.equipment.partNumber}</span>
+              </>
+            ) : null}
           </div>
           {technicianLabel ? (
             <Badge variant="outline" title={t("serviceRequest.assignedTechnician")} className="capitalize">
@@ -395,10 +406,19 @@ export default function ServiceRequestCard({
         <div className="flex gap-2">
           {canEditDetails && !detailsPending && (
             <Link href={`/service-requests/${request.id}/edit`}>
-                <Button size="sm" variant="outline">
-                  <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-                  {t("equipment.edit")}
-                </Button>
+              <Button size="sm" variant="outline">
+                {isClosed ? (
+                  <>
+                    <Eye className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                    {t("serviceRequest.view")}
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+                    {t("equipment.edit")}
+                  </>
+                )}
+              </Button>
             </Link>
           )}
         </div>

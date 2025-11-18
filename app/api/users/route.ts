@@ -72,12 +72,12 @@ export async function GET(req: NextRequest) {
 
     const role = (requester?.serverMetadata?.role ?? requester?.clientReadOnlyMetadata?.role) as string | undefined;
 
-    // Allow any authenticated user to list technicians (role === 'technician' or 'admin')
+    // Allow any authenticated user to list technicians (only 'technician' role for PM assignments)
     if (onlyTechnicians) {
       const users = await stackServerApp.listUsers({ limit: 100 });
       const data = users
         .map((u) => (formatStackUserLight(u)))
-        .filter((u) => u && (u.role === 'technician' || u.role === 'admin'));
+        .filter((u) => u && u.role === 'technician');
       return NextResponse.json({ data });
     }
 

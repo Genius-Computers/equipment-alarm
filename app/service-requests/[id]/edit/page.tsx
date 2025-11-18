@@ -14,11 +14,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Wrench, Loader2, ArrowLeft, PrinterIcon } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
-import { ServiceRequestPriority, ServiceRequestType } from "@/lib/types";
+import { ServiceRequestPriority, ServiceRequestType, ServiceRequestWorkStatus } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { isApproverRole } from "@/lib/types/user";
+import PreventiveMaintenanceForm from "@/components/PreventiveMaintenanceForm";
+import type { PmDetails } from "@/lib/types/preventive-maintenance";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function EditServiceRequestPage() {
 	const params = useParams();
@@ -37,7 +40,12 @@ export default function EditServiceRequestPage() {
 	const role = profile?.role || null;
 
 	const [section, setSection] = useState<"basic" | "details">(isApprover ? "basic" : "details");
-	const canEditDetails = request ? (isApprover ? true : Boolean(approved)) : false;
+	// PM requests are auto-approved - technicians can edit immediately
+	const isPmRequest = request?.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE;
+	const isCompletedOrCancelled =
+		request?.workStatus === ServiceRequestWorkStatus.COMPLETED ||
+		request?.workStatus === ServiceRequestWorkStatus.CANCELLED;
+	const canEditDetails = request ? (!isCompletedOrCancelled && (isApprover ? true : (isPmRequest ? true : Boolean(approved)))) : false;
 
 	const [form, setForm] = useState({
 		requestType: ServiceRequestType.PREVENTIVE_MAINTENANCE,
@@ -48,6 +56,7 @@ export default function EditServiceRequestPage() {
 		technicalAssessment: "",
 		recommendation: "",
 	});
+	const [pmDetails, setPmDetails] = useState<PmDetails>({ technicianName: "", qualitative: [], quantitative: [] });
 
 	type Technician = { id: string; displayName?: string | null; email?: string | null };
 	const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -66,6 +75,7 @@ export default function EditServiceRequestPage() {
 	const [originalSparePartValues, setOriginalSparePartValues] = useState<{ manufacturer?: string; serialNumber?: string; source?: string }>({});
 	const [sparePartChanged, setSparePartChanged] = useState(false);
 	const [updatingSparePart, setUpdatingSparePart] = useState(false);
+	const [selfAssignOpen, setSelfAssignOpen] = useState(false);
 
 	const isValid = useMemo(() => {
 		// For approvers editing basic fields, do NOT require a technician assignment
@@ -87,6 +97,27 @@ export default function EditServiceRequestPage() {
 				const j = await res.json();
 				const r: JServiceRequest = j?.data;
 				setRequest(r);
+				// Prompt self-assign for technicians on unassigned, pending PM requests only
+				if (
+					r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE &&
+					!r.assignedTechnicianId &&
+					r.workStatus === ServiceRequestWorkStatus.PENDING &&
+					profile?.role === "technician"
+				) {
+					setSelfAssignOpen(true);
+				}
+				// Initialize PM details (preserve if present). Do NOT auto-fill technician name unless already on the request.
+				setPmDetails((prev) => ({
+					technicianName:
+						r.pmDetails?.technicianName ||
+						prev.technicianName ||
+						(r.assignedTechnicianId
+							? ((r.technician as any)?.displayName || (r.technician as any)?.email || "")
+							: ""),
+					notes: r.pmDetails?.notes || "",
+					qualitative: Array.isArray(r.pmDetails?.qualitative) ? r.pmDetails!.qualitative : [],
+					quantitative: Array.isArray(r.pmDetails?.quantitative) ? r.pmDetails!.quantitative : [],
+				}));
 				setForm({
 					requestType: r.requestType,
 					scheduledAt: (r.scheduledAt || "").slice(0, 16),
@@ -106,8 +137,8 @@ export default function EditServiceRequestPage() {
 				setLoading(false);
 			}
 		};
-		if (id) void fetchData();
-	}, [id, t]);
+		if (id && profile?.role) void fetchData();
+	}, [id, t, profile?.role]);
 
 	useEffect(() => {
 		const loadTechnicians = async () => {
@@ -158,12 +189,14 @@ export default function EditServiceRequestPage() {
 					technicalAssessment: form.technicalAssessment,
 					recommendation: form.recommendation,
 					sparePartsNeeded: parts,
+					pmDetails: request.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ? pmDetails : undefined,
 				}
 				: {
 					problemDescription: form.problemDescription,
 					technicalAssessment: form.technicalAssessment,
 					recommendation: form.recommendation,
 					sparePartsNeeded: sparePartsNeeded ? parts : [],
+					pmDetails: request.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ? pmDetails : undefined,
 				};
 			await updateDetails(request.id, body);
 			toast(t("toast.success"), { description: t("toast.serviceRequestUpdated") });
@@ -253,8 +286,8 @@ export default function EditServiceRequestPage() {
 					</div>
 				) : (
 					<div className="space-y-6">
-						{/* Show message for non-approvers when approval is pending */}
-						{!canEditDetails && request && request.approvalStatus === "pending" && (
+						{/* Show message for non-approvers when approval is pending (not for PM requests - they're auto-approved) */}
+						{!canEditDetails && request && request.approvalStatus === "pending" && !isPmRequest && (
 							<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md">
 								<p className="text-sm text-amber-900 dark:text-amber-100">
 									<strong>Awaiting Approval:</strong> This service request is pending supervisor approval. You can edit details once it has been approved.
@@ -301,26 +334,49 @@ export default function EditServiceRequestPage() {
 										<Label>{t("serviceRequest.scheduledAt")}</Label>
 										<Input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm((s) => ({ ...s, scheduledAt: e.target.value }))} />
 									</div>
-									<div className="flex flex-col gap-2">
-										<Label>{t("serviceRequest.assignedTechnician")}</Label>
-										<Select value={form.assignedTechnicianId} onValueChange={(v) => setForm((s) => ({ ...s, assignedTechnicianId: v === "__unassigned__" ? "" : v }))} disabled={techLoading}>
-											<SelectTrigger>
-												<SelectValue placeholder={t("serviceRequest.selectTechnician")} />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="__unassigned__" className="text-amber-700 font-medium">Unassigned</SelectItem>
-												{technicians.map((tech) => (
-													<SelectItem key={tech.id} value={tech.id}>{tech.displayName || tech.email || tech.id}</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-									</div>
+									{/* For PM requests, only show assignment field if not a PM request, or show as read-only for supervisors */}
+									{!isPmRequest ? (
+										<div className="flex flex-col gap-2">
+											<Label>{t("serviceRequest.assignedTechnician")}</Label>
+											<Select value={form.assignedTechnicianId} onValueChange={(v) => setForm((s) => ({ ...s, assignedTechnicianId: v === "__unassigned__" ? "" : v }))} disabled={techLoading}>
+												<SelectTrigger>
+													<SelectValue placeholder={t("serviceRequest.selectTechnician")} />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="__unassigned__" className="text-amber-700 font-medium">Unassigned</SelectItem>
+													{technicians.map((tech) => (
+														<SelectItem key={tech.id} value={tech.id}>{tech.displayName || tech.email || tech.id}</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									) : (
+										<div className="flex flex-col gap-2">
+											<Label>{t("serviceRequest.assignedTechnician")}</Label>
+											<Input 
+												value={request.assignedTechnicianId ? ((request.technician as any)?.displayName || (request.technician as any)?.email || request.assignedTechnicianId) : "Unassigned"} 
+												disabled 
+												className="bg-muted"
+											/>
+											<p className="text-xs text-muted-foreground">Only technicians can be assigned to preventive maintenance requests</p>
+										</div>
+									)}
+								</div>
 									</div>
 							)}
 
 						{/* Details section */}
-						{request && section === "details" && (
+						{request && section === "details" && request.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE && (
+							<div className="space-y-4">
+								<PreventiveMaintenanceForm
+									equipment={request.equipment}
+									value={pmDetails}
+									onChange={setPmDetails}
+									editable={canEditDetails}
+								/>
+							</div>
+						)}
+						{request && section === "details" && request.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE && (
 							<div className="space-y-4">
 								<div className="flex flex-col gap-2">
 									<Label>{t("serviceRequest.problemDescription")}</Label>
@@ -539,15 +595,56 @@ export default function EditServiceRequestPage() {
 				)}
 
 				<div className="flex items-center justify-end gap-2 pt-6 border-t">
-					<Button variant="outline" onClick={() => router.push("/service-requests")} disabled={saving || isBlockingLoading}>{t("form.cancel")}</Button>
-					<Button onClick={handleSave} disabled={!isValid || saving || isBlockingLoading || !canEditDetails} className="gap-2">
-						{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-						{t("form.save")}
+					<Button
+						variant="outline"
+						onClick={() => router.push("/service-requests")}
+						disabled={saving || isBlockingLoading}
+					>
+						{t("form.cancel")}
 					</Button>
+					{canEditDetails && (
+						<Button
+							onClick={handleSave}
+							disabled={!isValid || saving || isBlockingLoading}
+							className="gap-2"
+						>
+							{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+							{t("form.save")}
+						</Button>
+					)}
 				</div>
 			</main>
+			<Dialog open={selfAssignOpen} onOpenChange={setSelfAssignOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Assign yourself to this preventive maintenance?</DialogTitle>
+					</DialogHeader>
+					<div className="text-sm text-muted-foreground">
+						This request is unassigned. You can self-assign to take ownership.
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setSelfAssignOpen(false)}>Not now</Button>
+						<Button onClick={async () => {
+							try {
+								if (!request || !profile?.id) return;
+								await updateDetails(request.id, { assignedTechnicianId: profile.id });
+								setSelfAssignOpen(false);
+								// refresh local state
+								setRequest((r) => r ? ({ ...r, assignedTechnicianId: profile.id, technician: { ...(r.technician || {}), id: profile.id, displayName: profile.displayName, email: profile.email } as any }) : r);
+								// reflect assigned technician in PM details (for display/print only)
+								setPmDetails((prev) => ({
+									...prev,
+									technicianName: profile.displayName || profile.email || prev.technicianName || "",
+								}));
+								toast(t("toast.success"), { description: "You are now assigned to this request" });
+							} catch {
+								toast(t("toast.error"), { description: "Failed to self-assign" });
+							}
+						}}>Assign me</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
-
 

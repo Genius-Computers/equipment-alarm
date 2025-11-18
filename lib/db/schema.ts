@@ -82,6 +82,12 @@ export const ensureSchema = async () => {
       approval_note text
     )`;
 
+  // Add Preventive Maintenance details column (idempotent)
+  await sql`
+    alter table service_request
+      add column if not exists pm_details jsonb
+  `;
+
   // Create spare_parts table
   await sql`
     create table if not exists spare_parts (
@@ -162,6 +168,20 @@ export const ensureSchema = async () => {
     await schemaInitPromise;
   } finally {
     schemaInitPromise = null;
+  }
+};
+
+// Ensure PM details column exists (runs independently of schema initialization guard)
+export const ensurePmDetailsColumn = async () => {
+  const sql = getDb();
+  try {
+    await sql`
+      alter table service_request
+        add column if not exists pm_details jsonb
+    `;
+  } catch (error) {
+    // Ignore if column already exists or table doesn't exist yet
+    console.log('[DB] pm_details column migration:', error instanceof Error ? error.message : 'Unknown error');
   }
 };
 

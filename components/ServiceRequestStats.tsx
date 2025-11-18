@@ -11,9 +11,11 @@ import { ClipboardList, Wrench, PackagePlus, Search, MoreHorizontal, User } from
 interface ServiceRequestStatsProps {
   scope: "pending" | "completed";
   refreshTrigger?: number; // Add a trigger to force refresh
+  activeType?: "all" | ServiceRequestType;
+  onTypeChange?: (type: "all" | ServiceRequestType) => void;
 }
 
-export default function ServiceRequestStats({ scope, refreshTrigger }: ServiceRequestStatsProps) {
+export default function ServiceRequestStats({ scope, refreshTrigger, activeType = "all", onTypeChange }: ServiceRequestStatsProps) {
   const { t } = useLanguage();
   const user = useUser();
   const [stats, setStats] = useState<{
@@ -80,42 +82,54 @@ export default function ServiceRequestStats({ scope, refreshTrigger }: ServiceRe
     );
   }
 
-  const statCards = [
+  const statCards: Array<{
+    label: string;
+    value: number;
+    icon: typeof ClipboardList;
+    color: string;
+    type: "all" | ServiceRequestType | "assigned";
+  }> = [
     {
       label: t("serviceRequest.stats.total"),
       value: stats.total,
       icon: ClipboardList,
       color: "text-blue-600 dark:text-blue-400",
+      type: "all",
     },
     {
       label: t("serviceRequest.stats.preventive"),
       value: stats.preventiveMaintenance,
       icon: Wrench,
       color: "text-green-600 dark:text-green-400",
+      type: ServiceRequestType.PREVENTIVE_MAINTENANCE,
     },
     {
       label: t("serviceRequest.stats.corrective"),
       value: stats.correctiveMaintenance,
       icon: Wrench,
       color: "text-orange-600 dark:text-orange-400",
+      type: ServiceRequestType.CORRECTIVE_MAINTENANCE,
     },
     {
       label: t("serviceRequest.stats.install"),
       value: stats.install,
       icon: PackagePlus,
       color: "text-purple-600 dark:text-purple-400",
+      type: ServiceRequestType.INSTALL,
     },
     {
       label: t("serviceRequest.stats.assess"),
       value: stats.assess,
       icon: Search,
       color: "text-cyan-600 dark:text-cyan-400",
+      type: ServiceRequestType.ASSESS,
     },
     {
       label: t("serviceRequest.stats.other"),
       value: stats.other,
       icon: MoreHorizontal,
       color: "text-gray-600 dark:text-gray-400",
+      type: ServiceRequestType.OTHER,
     },
   ];
 
@@ -127,13 +141,36 @@ export default function ServiceRequestStats({ scope, refreshTrigger }: ServiceRe
       value: stats.assignedToMe,
       icon: User,
       color: "text-indigo-600 dark:text-indigo-400",
+      type: "assigned",
     });
   }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {statCards.map((stat, index) => (
-        <Card key={index} className="p-4">
+        <Card
+          key={index}
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            if (stat.type === "assigned") return;
+            const nextType = stat.type === "all" ? "all" : stat.type;
+            onTypeChange?.(nextType);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (stat.type === "assigned") return;
+              const nextType = stat.type === "all" ? "all" : stat.type;
+              onTypeChange?.(nextType);
+            }
+          }}
+          className={`p-4 cursor-pointer transition-colors ${
+            stat.type !== "assigned" && activeType === (stat.type === "all" ? "all" : stat.type)
+              ? "border-primary bg-primary/5"
+              : ""
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">{stat.label}</p>

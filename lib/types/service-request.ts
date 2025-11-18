@@ -1,6 +1,7 @@
 import { DbBaseAudit } from "./database";
 import { Equipment } from "./equipment";
 import { User } from "./user";
+import type { PmDetails } from "./preventive-maintenance";
 
 export interface SparePartNeeded {
     sparePartId?: string;
@@ -55,6 +56,7 @@ export interface ServiceRequest {
     recommendation?: string;
     sparePartsNeeded?: SparePartNeeded[];
     approvalNote?: string;
+    pmDetails?: PmDetails;
 }
 
 export interface JServiceRequest extends ServiceRequest {
@@ -76,4 +78,5 @@ export interface DbServiceRequest extends DbBaseAudit {
     spare_parts_needed?: SparePartNeeded[];
     ticket_id?: string;
     approval_note?: string;
+    pm_details?: PmDetails;
 }

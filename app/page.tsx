@@ -155,7 +155,7 @@ const Page = () => {
               description: t("dashboard.maintenanceOverdueDesc"),
               icon: <AlertCircle className="h-6 w-6 cursor-pointer text-red-600" />,
               cta: (
-                <Link href={"/equipments?status=overdue"} className="w-full">
+                <Link href={"/preventive-maintenance"} className="w-full">
                   <Button variant="outline" className="w-full">
                     {t("common.open")}
                   </Button>

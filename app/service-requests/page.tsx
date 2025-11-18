@@ -27,6 +27,8 @@ const Page = () => {
 		setPriorityFilter,
 		assignedToMe,
 		setAssignedToMe,
+		requestTypeFilter,
+		setRequestTypeFilter,
 		scope,
 		setScope,
 		updatingById,
@@ -77,7 +79,14 @@ const Page = () => {
 					</div>
 				)}
 
-				<ServiceRequestStats scope={scope} refreshTrigger={refreshKey} />
+				<ServiceRequestStats
+					scope={scope}
+					refreshTrigger={refreshKey}
+					activeType={requestTypeFilter}
+					onTypeChange={(type) => {
+						setRequestTypeFilter(type);
+					}}
+				/>
 
 				<ServiceRequestFilters
 					priority={priorityFilter}
