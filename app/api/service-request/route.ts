@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
     const equipmentId = searchParams.get('equipmentId') || undefined;
     const priority = searchParams.get('priority') || undefined; // expected: 'low' | 'medium' | 'high' | 'all'
     let approval = searchParams.get('approval') || undefined; // expected: 'pending' | 'approved' | 'rejected' | 'all'
+    const requestType = searchParams.get('requestType') || undefined; // expected: ServiceRequestType or 'all'
     
     // Role-based filtering: Technicians only see approved requests
     const userRole = getUserRole(user);
@@ -43,8 +44,8 @@ export async function GET(req: NextRequest) {
     }
     // Supervisors and admins see all requests (no override)
     
-    console.log('[Service Request GET] Fetching with params:', { page, pageSize, scope, priority, approval, assignedTo: assignedToParam, userRole });
-    const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval);
+    console.log('[Service Request GET] Fetching with params:', { page, pageSize, scope, priority, approval, requestType, assignedTo: assignedToParam, userRole });
+    const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval, requestType);
     console.log('[Service Request GET] Found:', rows.length, 'rows, total:', total);
 
     // Fetch only needed technicians, in parallel

@@ -102,6 +102,21 @@ export const updateEquipment = async (
   return row as unknown as DbEquipment;
 };
 
+export const updateEquipmentLastMaintenance = async (
+  id: string,
+  lastMaintenance: string,
+  actorId: string,
+) => {
+  const sql = getDb();
+  await sql`
+    update equipment set
+      updated_by = ${actorId},
+      updated_at = now(),
+      last_maintenance = ${lastMaintenance}
+    where id = ${id} and deleted_at is null
+  `;
+};
+
 export const softDeleteEquipment = async (
   id: string,
   actorId: string,

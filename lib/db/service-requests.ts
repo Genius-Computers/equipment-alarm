@@ -11,12 +11,13 @@ export const listServiceRequestPaginated = async (
   equipmentId?: string,
   priority?: string,
   approval?: string,
+  requestType?: string,
 ): Promise<{ rows: (DbServiceRequest & { equipment: DbEquipment | null })[]; total: number }> => {
   const sql = getDb();
   const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
   const limit = Math.max(1, Number(pageSize));
   
-  console.log('[DB listServiceRequestPaginated] Called with:', { page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval });
+  console.log('[DB listServiceRequestPaginated] Called with:', { page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval, requestType });
 
   const scopeFilter = scope === 'pending'
     ? sql`(sr.approval_status = 'pending' or (sr.approval_status = 'approved' and sr.work_status = 'pending'))`
@@ -31,6 +32,7 @@ export const listServiceRequestPaginated = async (
     ? sql`(sr.work_status = 'pending' and (sr.scheduled_at)::timestamptz < (now() - interval '5 days'))`
     : sql`true`;
   const approvalFilter = approval && approval !== 'all' ? sql`sr.approval_status = ${approval}` : sql`true`;
+  const requestTypeFilter = requestType && requestType !== 'all' ? sql`sr.request_type = ${requestType}` : sql`true`;
 
   const countRows = await sql`
     select count(*)::int as count
@@ -42,6 +44,7 @@ export const listServiceRequestPaginated = async (
       and ${priorityFilter}
       and ${approvalFilter}
       and ${overdueFilter}
+      and ${requestTypeFilter}
   `;
   const total = (countRows?.[0]?.count as number) ?? 0;
 
@@ -56,6 +59,7 @@ export const listServiceRequestPaginated = async (
       and ${priorityFilter}
       and ${approvalFilter}
       and ${overdueFilter}
+      and ${requestTypeFilter}
     order by sr.created_at desc nulls last
     limit ${limit} offset ${offset}
   `;
@@ -132,13 +136,13 @@ export const insertServiceRequest = async (
       equipment_id, assigned_technician_id, request_type, scheduled_at,
       priority, approval_status, work_status,
       problem_description, technical_assessment, recommendation,
-      spare_parts_needed, ticket_id
+      spare_parts_needed, ticket_id, pm_details
     ) values (
       ${explicitId}, ${createdAt}, ${actorId},
       ${input.equipment_id}, ${input.assigned_technician_id}, ${input.request_type}, ${input.scheduled_at},
       ${input.priority}, ${input.approval_status}, ${input.work_status},
       ${input.problem_description}, ${input.technical_assessment}, ${input.recommendation},
-      ${toJsonbParam(input.spare_parts_needed)}::jsonb, ${ticketId}
+      ${toJsonbParam(input.spare_parts_needed)}::jsonb, ${ticketId}, ${toJsonbParam(input.pm_details)}::jsonb
     ) returning *`;
   return row;
 };
@@ -166,7 +170,8 @@ export const updateServiceRequest = async (
         technical_assessment = ${input.technical_assessment},
         recommendation = ${input.recommendation},
         spare_parts_needed = ${toJsonbParam(input.spare_parts_needed)}::jsonb,
-        approval_note = ${input.approval_note}
+        approval_note = ${input.approval_note},
+        pm_details = ${toJsonbParam(input.pm_details)}::jsonb
       where id = ${id}
       returning *
     )

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServiceRequestById, updateServiceRequest, findOrCreateSparePart } from '@/lib/db';
-import { snakeToCamelCase, formatStackUserLight } from '@/lib/utils';
-import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from '@/lib/types';
+import { getServiceRequestById, updateServiceRequest, findOrCreateSparePart, updateEquipmentLastMaintenance } from '@/lib/db';
+import { ensurePmDetailsColumn } from '@/lib/db/schema';
+import { snakeToCamelCase, formatStackUserLight, getTodaySaudiDate } from '@/lib/utils';
+import { ServiceRequestApprovalStatus, ServiceRequestType, ServiceRequestWorkStatus } from '@/lib/types';
 import { ensureRole, getCurrentServerUser } from '@/lib/auth';
 import { APPROVER_ROLES } from '@/lib/types/user';
 import { stackServerApp } from '@/stack';
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Ensure pm_details column exists before proceeding
+    await ensurePmDetailsColumn();
 
     const { id } = await context.params;
     const row = await getServiceRequestById(id);
@@ -43,6 +47,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    // Ensure pm_details column exists before proceeding
+    await ensurePmDetailsColumn();
+    
     const { id } = await context.params;
     const body = await req.json();
 
@@ -55,7 +63,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const providedKeys = Object.keys(body ?? {});
     // Distinguish editable groups
     const basicKeys = ['equipmentId', 'assignedTechnicianId', 'requestType', 'scheduledAt'];
-    const technicianDetailKeys = ['problemDescription', 'technicalAssessment', 'recommendation', 'sparePartsNeeded'];
+    const technicianDetailKeys = ['problemDescription', 'technicalAssessment', 'recommendation', 'sparePartsNeeded', 'pmDetails'];
     const includesBasic = providedKeys.some((k) => basicKeys.includes(k));
     const includesTechDetails = providedKeys.some((k) => technicianDetailKeys.includes(k));
     const includesApproval = providedKeys.includes('approvalStatus');
@@ -75,19 +83,42 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     // Policy:
     // - Non-approvers: may edit ONLY while both approval and work are pending
     // - Approvers: may edit while work is pending (even if approval is approved). Block after completion
+    // - Special case: for preventive maintenance requests, allow technicians to self-assign while work is pending
     if (includesBasic) {
       const workPending = current.work_status === ServiceRequestWorkStatus.PENDING;
-      const nonApproverAllowed = (current.approval_status === ServiceRequestApprovalStatus.PENDING) && workPending;
+      const isPmRequest = current.request_type === ServiceRequestType.PREVENTIVE_MAINTENANCE;
+
+      let nonApproverAllowed = false;
+
+      if (isPmRequest) {
+        const isSelfAssign =
+          Object.prototype.hasOwnProperty.call(body, 'assignedTechnicianId') &&
+          typeof body.assignedTechnicianId === 'string' &&
+          body.assignedTechnicianId === user.id;
+        const wasUnassigned = !current.assigned_technician_id;
+        // Allow technicians (non-approvers) to self-assign unassigned PM requests while work is pending
+        nonApproverAllowed = workPending && isSelfAssign && wasUnassigned;
+      } else {
+        nonApproverAllowed =
+          current.approval_status === ServiceRequestApprovalStatus.PENDING && workPending;
+      }
+
       const approverAllowed = isApproverUser && workPending;
+
       if (!(nonApproverAllowed || approverAllowed)) {
-        return NextResponse.json({ error: 'Basic fields can only be edited while work is pending' }, { status: 409 });
+        return NextResponse.json(
+          { error: 'Basic fields can only be edited while work is pending' },
+          { status: 409 },
+        );
       }
     }
 
     // Technician details can be edited while work is pending, and either approval is approved OR user is approver
+    // PM requests are auto-approved - technicians can edit immediately
     if (includesTechDetails) {
       const workPending = current.work_status === ServiceRequestWorkStatus.PENDING;
-      const approvalAllows = current.approval_status === ServiceRequestApprovalStatus.APPROVED || isApproverUser;
+      const isPmRequest = current.request_type === ServiceRequestType.PREVENTIVE_MAINTENANCE;
+      const approvalAllows = isPmRequest || current.approval_status === ServiceRequestApprovalStatus.APPROVED || isApproverUser;
       if (!workPending || !approvalAllows) {
         return NextResponse.json({ error: 'Details can only be edited when work is pending and after approval' }, { status: 409 });
       }
@@ -110,6 +141,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     // Rule: work status can be edited until the request is completed
     if (includesWork && current.work_status === ServiceRequestWorkStatus.COMPLETED) {
       return NextResponse.json({ error: 'Work status cannot change after completion' }, { status: 409 });
+    }
+
+    // Rule: Only supervisors can complete PM requests
+    if (includesWork && body.workStatus === ServiceRequestWorkStatus.COMPLETED) {
+      const isPmRequest = current.request_type === ServiceRequestType.PREVENTIVE_MAINTENANCE;
+      if (isPmRequest && !isApproverUser) {
+        return NextResponse.json({ error: 'Only supervisors can complete preventive maintenance requests' }, { status: 403 });
+      }
     }
 
     // Process spare parts and auto-create custom ones in inventory
@@ -166,9 +205,20 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       recommendation: body.recommendation ?? current.recommendation,
       spare_parts_needed: processedSpareParts,
       approval_note: body.approvalNote ?? current.approval_note,
+      pm_details: body.pmDetails ?? current.pm_details,
     } as const;
 
+    const willCompleteNow =
+      includesWork &&
+      body.workStatus === ServiceRequestWorkStatus.COMPLETED &&
+      current.work_status !== ServiceRequestWorkStatus.COMPLETED;
+
     const row = await updateServiceRequest(id, payload as Parameters<typeof updateServiceRequest>[1], user.id);
+
+    if (willCompleteNow) {
+      const lastMaintenance = getTodaySaudiDate();
+      await updateEquipmentLastMaintenance(row.equipment_id, lastMaintenance, user.id);
+    }
     // enrich technician
     let technician: unknown = null;
     if (row.assigned_technician_id) {
