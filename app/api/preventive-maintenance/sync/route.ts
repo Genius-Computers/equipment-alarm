@@ -213,7 +213,8 @@ export async function POST(req: NextRequest) {
 			const row = await insertServiceRequest(
 				{
 					equipment_id: eq.id,
-					assigned_technician_id: null,
+					// Start unassigned; allow technicians to self-assign later
+					assigned_technician_id: undefined,
 					request_type: ServiceRequestType.PREVENTIVE_MAINTENANCE,
 					scheduled_at: new Date().toISOString(),
 					priority: ServiceRequestPriority.MEDIUM,
