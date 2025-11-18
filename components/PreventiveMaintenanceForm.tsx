@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { JEquipment } from "@/lib/types/equipment";
+import type { Equipment } from "@/lib/types/equipment";
 import type { PmDetails, PmQualitativeRow, PmQuantitativeRow } from "@/lib/types/preventive-maintenance";
 import { deriveMaintenanceInfo, formatSaudiDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 
 export interface PreventiveMaintenanceFormProps {
-	equipment: JEquipment;
+	equipment: Equipment;
 	value: PmDetails;
 	onChange: (next: PmDetails) => void;
 	editable?: boolean;
