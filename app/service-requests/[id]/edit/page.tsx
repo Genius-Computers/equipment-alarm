@@ -37,7 +37,6 @@ export default function EditServiceRequestPage() {
 	const [saving, setSaving] = useState(false);
 	const [request, setRequest] = useState<JServiceRequest | null>(null);
 	const approved = request?.approvalStatus === "approved";
-	const role = profile?.role || null;
 
 	const [section, setSection] = useState<"basic" | "details">(isApprover ? "basic" : "details");
 	// PM requests are auto-approved - technicians can edit immediately
@@ -112,7 +111,7 @@ export default function EditServiceRequestPage() {
 						r.pmDetails?.technicianName ||
 						prev.technicianName ||
 						(r.assignedTechnicianId
-							? ((r.technician as any)?.displayName || (r.technician as any)?.email || "")
+							? (r.technician?.displayName || r.technician?.email || "")
 							: ""),
 					notes: r.pmDetails?.notes || "",
 					qualitative: Array.isArray(r.pmDetails?.qualitative) ? r.pmDetails!.qualitative : [],
@@ -354,7 +353,13 @@ export default function EditServiceRequestPage() {
 										<div className="flex flex-col gap-2">
 											<Label>{t("serviceRequest.assignedTechnician")}</Label>
 											<Input 
-												value={request.assignedTechnicianId ? ((request.technician as any)?.displayName || (request.technician as any)?.email || request.assignedTechnicianId) : "Unassigned"} 
+												value={
+													request.assignedTechnicianId
+														? (request.technician?.displayName ||
+															request.technician?.email ||
+															request.assignedTechnicianId)
+														: "Unassigned"
+												} 
 												disabled 
 												className="bg-muted"
 											/>
@@ -630,7 +635,20 @@ export default function EditServiceRequestPage() {
 								await updateDetails(request.id, { assignedTechnicianId: profile.id });
 								setSelfAssignOpen(false);
 								// refresh local state
-								setRequest((r) => r ? ({ ...r, assignedTechnicianId: profile.id, technician: { ...(r.technician || {}), id: profile.id, displayName: profile.displayName, email: profile.email } as any }) : r);
+								setRequest((r) =>
+									r
+										? ({
+												...r,
+												assignedTechnicianId: profile.id,
+												technician: {
+													...(r.technician || {}),
+													id: profile.id,
+													displayName: profile.displayName,
+													email: profile.email,
+												} as JServiceRequest["technician"],
+										  })
+										: r,
+								);
 								// reflect assigned technician in PM details (for display/print only)
 								setPmDetails((prev) => ({
 									...prev,
