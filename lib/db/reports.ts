@@ -126,8 +126,15 @@ export const getEquipmentStats = async (filters: ReportFilters): Promise<Equipme
   const maintenanceResults = await sql`
     SELECT 
       COUNT(CASE WHEN last_maintenance IS NULL THEN 1 END) as due,
-      COUNT(CASE WHEN last_maintenance IS NOT NULL AND 
-        (CURRENT_DATE - last_maintenance::date) > 365 THEN 1 END) as overdue
+      COUNT(
+        CASE 
+          WHEN last_maintenance IS NOT NULL
+            -- Only consider values that look like a valid ISO date (YYYY-MM-DD)
+            AND last_maintenance ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+            AND (CURRENT_DATE - last_maintenance::date) > 365 
+          THEN 1 
+        END
+      ) as overdue
     FROM equipment e
     WHERE e.deleted_at IS NULL
     ${filters.locationId ? sql`AND (e.location_id = ${filters.locationId} OR e.location = (SELECT campus FROM locations WHERE id = ${filters.locationId}))` : sql``}
