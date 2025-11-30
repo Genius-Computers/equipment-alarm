@@ -51,6 +51,7 @@ export default function ServiceRequestStats({ scope, refreshTrigger, activeType 
         const requests: JServiceRequest[] = json.data || [];
 
         // Calculate statistics
+        const myId = user?.id;
         const newStats = {
           total: requests.length,
           preventiveMaintenance: requests.filter(r => r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE).length,
@@ -58,7 +59,12 @@ export default function ServiceRequestStats({ scope, refreshTrigger, activeType 
           install: requests.filter(r => r.requestType === ServiceRequestType.INSTALL).length,
           assess: requests.filter(r => r.requestType === ServiceRequestType.ASSESS).length,
           other: requests.filter(r => r.requestType === ServiceRequestType.OTHER).length,
-          assignedToMe: requests.filter(r => r.assignedTechnicianId === user?.id).length,
+          assignedToMe: myId
+            ? requests.filter(r =>
+                r.assignedTechnicianId === myId ||
+                (Array.isArray(r.assignedTechnicianIds) && r.assignedTechnicianIds.includes(myId))
+              ).length
+            : 0,
         };
 
         setStats(newStats);

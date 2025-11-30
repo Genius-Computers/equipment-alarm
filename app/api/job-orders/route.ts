@@ -56,8 +56,9 @@ export async function POST(req: NextRequest) {
       equipmentIds, 
       requestType, 
       priority, 
-      scheduledAt, 
+      scheduledAt,
       assignedTechnicianId,
+      assignedTechnicianIds: rawAssignedTechnicianIds,
       notes
     } = body;
 
@@ -134,6 +135,13 @@ export async function POST(req: NextRequest) {
     }
 
     const itemsJson = JSON.stringify(items);
+
+    // Normalize technicians: support both legacy single assignedTechnicianId and new assignedTechnicianIds[]
+    const normalizedAssignedTechnicianIds: string[] = Array.isArray(rawAssignedTechnicianIds)
+      ? rawAssignedTechnicianIds.filter((id: unknown) => typeof id === 'string' && id.trim().length > 0)
+      : (typeof assignedTechnicianId === 'string' && assignedTechnicianId !== 'unassigned' && assignedTechnicianId.trim().length > 0
+        ? [assignedTechnicianId]
+        : []);
     
     // Create job order directly as submitted (using first ticket number for order ID)
     // Retry up to 3 times if we hit a duplicate key error
@@ -167,7 +175,7 @@ export async function POST(req: NextRequest) {
       requestType,
       priority,
       scheduledAt,
-      assignedTechnicianId,
+      assignedTechnicianIds: normalizedAssignedTechnicianIds,
       notes,
     });
 

@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServiceRequestById, updateServiceRequest, findOrCreateSparePart, updateEquipmentLastMaintenance } from '@/lib/db';
+import {
+  getServiceRequestById,
+  updateServiceRequest,
+  findOrCreateSparePart,
+  updateEquipmentLastMaintenance,
+} from '@/lib/db';
 import { ensurePmDetailsColumn } from '@/lib/db/schema';
 import { snakeToCamelCase, formatStackUserLight, getTodaySaudiDate } from '@/lib/utils';
 import { ServiceRequestApprovalStatus, ServiceRequestType, ServiceRequestWorkStatus } from '@/lib/types';
@@ -23,17 +28,37 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     if (!row) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    // Enrich technician
+    // Enrich technician(s)
     let technician: unknown = null;
+    const technicians: unknown[] = [];
+
+    const allTechIds = new Set<string>();
     if (row.assigned_technician_id) {
+      allTechIds.add(row.assigned_technician_id);
+    }
+    const extraIds = Array.isArray((row as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids)
+      ? (row as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids!
+      : [];
+    for (const id of extraIds) {
+      if (id) allTechIds.add(id);
+    }
+
+    for (const id of allTechIds) {
       try {
-        const u = await stackServerApp.getUser(row.assigned_technician_id);
-        technician = formatStackUserLight(u);
+        const u = await stackServerApp.getUser(id);
+        const formatted = formatStackUserLight(u);
+        if (formatted) {
+          if (!technician) {
+            technician = formatted;
+          }
+          technicians.push(formatted);
+        }
       } catch {
         // ignore
       }
     }
-    const data = { ...snakeToCamelCase(row), technician };
+
+    const data = { ...snakeToCamelCase(row), technician, technicians: technicians.length > 0 ? technicians : undefined };
     return NextResponse.json({ data });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
@@ -59,6 +84,15 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
+    // Determine assignment information (single and multiple technicians)
+    const extraAssignedIds = Array.isArray(
+      (current as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids,
+    )
+      ? ((current as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids as string[])
+      : [];
+    const isAssignedTechnician =
+      current.assigned_technician_id === user.id || extraAssignedIds.includes(user.id);
+
     // Determine which fields are being updated
     const providedKeys = Object.keys(body ?? {});
     // Distinguish editable groups
@@ -68,6 +102,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const includesTechDetails = providedKeys.some((k) => technicianDetailKeys.includes(k));
     const includesApproval = providedKeys.includes('approvalStatus');
     const includesWork = providedKeys.includes('workStatus');
+    const includesExtraTechnicians = providedKeys.includes('assignedTechnicianIds');
 
     // RBAC helper for approver roles (supervisor, admin_x)
     let isApproverUser = false;
@@ -81,9 +116,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     // Basic fields (assignment/schedule/type)
     // Policy:
-    // - Non-approvers: may edit ONLY while both approval and work are pending
-    // - Approvers: may edit while work is pending (even if approval is approved). Block after completion
-    // - Special case: for preventive maintenance requests, allow technicians to self-assign while work is pending
+    // - Non-approvers:
+    //   - For regular (non-PM) requests: may edit ONLY after the request is approved,
+    //     while work is pending, and only if they are assigned to the request.
+    //   - For PM requests: may self-assign an unassigned request while work is pending.
+    // - Approvers: may edit while work is pending (even if approval is already approved). Block after completion.
     if (includesBasic) {
       const workPending = current.work_status === ServiceRequestWorkStatus.PENDING;
       const isPmRequest = current.request_type === ServiceRequestType.PREVENTIVE_MAINTENANCE;
@@ -99,8 +136,21 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         // Allow technicians (non-approvers) to self-assign unassigned PM requests while work is pending
         nonApproverAllowed = workPending && isSelfAssign && wasUnassigned;
       } else {
-        nonApproverAllowed =
-          current.approval_status === ServiceRequestApprovalStatus.PENDING && workPending;
+        // Regular (non-PM): technicians can only edit after supervisor/admin_x approval.
+        // Special case: allow self-assign on approved, unassigned requests while work is pending.
+        const isSelfAssignRegular =
+          Object.prototype.hasOwnProperty.call(body, 'assignedTechnicianId') &&
+          typeof body.assignedTechnicianId === 'string' &&
+          body.assignedTechnicianId === user.id &&
+          !current.assigned_technician_id;
+
+        const isApproved = current.approval_status === ServiceRequestApprovalStatus.APPROVED;
+
+        if (isSelfAssignRegular) {
+          nonApproverAllowed = isApproved && workPending;
+        } else {
+          nonApproverAllowed = isApproved && workPending && isAssignedTechnician;
+        }
       }
 
       const approverAllowed = isApproverUser && workPending;
@@ -113,14 +163,27 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       }
     }
 
-    // Technician details can be edited while work is pending, and either approval is approved OR user is approver
-    // PM requests are auto-approved - technicians can edit immediately
+    // Technician details can be edited while work is pending, and either approval is approved OR user is approver.
+    // PM requests are auto-approved - technicians can edit immediately.
+    // Additionally, for non-approvers we require the user to be an assigned technician on the request.
     if (includesTechDetails) {
       const workPending = current.work_status === ServiceRequestWorkStatus.PENDING;
       const isPmRequest = current.request_type === ServiceRequestType.PREVENTIVE_MAINTENANCE;
       const approvalAllows = isPmRequest || current.approval_status === ServiceRequestApprovalStatus.APPROVED || isApproverUser;
+      const actorAllowed = isApproverUser || isAssignedTechnician;
+
+      if (!actorAllowed) {
+        return NextResponse.json(
+          { error: 'Only assigned technicians or supervisors can edit service request details' },
+          { status: 403 },
+        );
+      }
+
       if (!workPending || !approvalAllows) {
-        return NextResponse.json({ error: 'Details can only be edited when work is pending and after approval' }, { status: 409 });
+        return NextResponse.json(
+          { error: 'Details can only be edited when work is pending and after approval' },
+          { status: 409 },
+        );
       }
     }
 
@@ -138,9 +201,50 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       }
     }
 
-    // Rule: work status can be edited until the request is completed
+    // Rule: work status can be edited until the request is completed.
     if (includesWork && current.work_status === ServiceRequestWorkStatus.COMPLETED) {
       return NextResponse.json({ error: 'Work status cannot change after completion' }, { status: 409 });
+    }
+
+    // Additional RBAC: only assigned technicians and approvers can change work status at all.
+    if (includesWork) {
+      const actorAllowed = isApproverUser || isAssignedTechnician;
+      if (!actorAllowed) {
+        return NextResponse.json(
+          { error: 'Only assigned technicians or supervisors can update work status' },
+          { status: 403 },
+        );
+      }
+    }
+
+    // RBAC for editing additional technicians (assignedTechnicianIds)
+    if (includesExtraTechnicians) {
+      const workPending = current.work_status === ServiceRequestWorkStatus.PENDING;
+      const isPmRequest = current.request_type === ServiceRequestType.PREVENTIVE_MAINTENANCE;
+      const isApproved = current.approval_status === ServiceRequestApprovalStatus.APPROVED;
+
+      if (!workPending) {
+        return NextResponse.json(
+          { error: 'Technicians can only be updated while work is pending' },
+          { status: 409 },
+        );
+      }
+
+      const actorAllowed = isApproverUser || isAssignedTechnician;
+      if (!actorAllowed) {
+        return NextResponse.json(
+          { error: 'Only assigned technicians or supervisors can modify technicians' },
+          { status: 403 },
+        );
+      }
+
+      // For regular (non-PM) requests, enforce approval before technicians can be updated by non-approvers
+      if (!isPmRequest && !isApproved && !isApproverUser) {
+        return NextResponse.json(
+          { error: 'Technicians can only be updated after approval' },
+          { status: 409 },
+        );
+      }
     }
 
     // Rule: Only supervisors can complete PM requests
@@ -192,9 +296,38 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       ? null
       : (body.assignedTechnicianId ?? current.assigned_technician_id);
 
+    // Compute next set of assigned technician IDs (primary + additional)
+    const currentAssignedIds = Array.isArray(
+      (current as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids,
+    )
+      ? ((current as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids as string[])
+      : [];
+
+    let nextAssignedTechnicianIds: string[] = [];
+
+    if (Array.isArray(body.assignedTechnicianIds)) {
+      nextAssignedTechnicianIds = (body.assignedTechnicianIds as unknown[] as string[]).filter(
+        (id) => typeof id === 'string' && id.trim().length > 0,
+      );
+    } else {
+      nextAssignedTechnicianIds = [...currentAssignedIds];
+    }
+
+    // Ensure the primary technician is always the first element (when present)
+    const primaryTechnicianId =
+      normalizedAssignedTechnicianId ??
+      current.assigned_technician_id ??
+      (currentAssignedIds.length > 0 ? currentAssignedIds[0] : null);
+
+    if (primaryTechnicianId) {
+      nextAssignedTechnicianIds = nextAssignedTechnicianIds.filter((id) => id !== primaryTechnicianId);
+      nextAssignedTechnicianIds.unshift(primaryTechnicianId);
+    }
+
     const payload = {
       equipment_id: body.equipmentId ?? current.equipment_id,
       assigned_technician_id: normalizedAssignedTechnicianId,
+      assigned_technician_ids: nextAssignedTechnicianIds,
       request_type: body.requestType ?? current.request_type,
       scheduled_at: body.scheduledAt ?? current.scheduled_at,
       priority: body.priority ?? current.priority,

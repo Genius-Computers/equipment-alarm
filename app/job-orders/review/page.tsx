@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, ClipboardList, CheckCircle, MapPin, Box, MoveRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Loader2, ClipboardList, CheckCircle, MapPin, Box, MoveRight, Users } from "lucide-react";
 import { toast } from "sonner";
 import { ServiceRequestType, ServiceRequestPriority, Equipment } from "@/lib/types";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -62,10 +63,10 @@ export default function ReviewJobOrderPage() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   
   // Form fields for service request details
-  const [requestType, setRequestType] = useState<ServiceRequestType>(ServiceRequestType.PREVENTIVE_MAINTENANCE);
+  const [requestType, setRequestType] = useState<ServiceRequestType>(ServiceRequestType.CORRECTIVE_MAINTENANCE);
   const [priority, setPriority] = useState<ServiceRequestPriority>(ServiceRequestPriority.MEDIUM);
   const [scheduledAt, setScheduledAt] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [assignedTechnicianId, setAssignedTechnicianId] = useState<string>("unassigned");
+  const [assignedTechnicianIds, setAssignedTechnicianIds] = useState<string[]>([]);
   const [notes, setNotes] = useState<string>("");
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [pendingSubLocationEdit, setPendingSubLocationEdit] = useState<{
@@ -349,7 +350,7 @@ export default function ReviewJobOrderPage() {
                   requestType,
                   priority,
                   scheduledAt: new Date(scheduledAt).toISOString(),
-                  assignedTechnicianId: assignedTechnicianId !== 'unassigned' ? assignedTechnicianId : undefined,
+                  assignedTechnicianIds,
                   notes: finalNotes,
                 }),
               });
@@ -587,77 +588,131 @@ export default function ReviewJobOrderPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Request Type */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="requestType">
-                  Request Type <span className="text-destructive">*</span>
-                </Label>
-                <Select value={requestType} onValueChange={(v) => setRequestType(v as ServiceRequestType)}>
-                  <SelectTrigger id="requestType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ServiceRequestType.PREVENTIVE_MAINTENANCE}>
-                      Preventive Maintenance
-                    </SelectItem>
-                    <SelectItem value={ServiceRequestType.CORRECTIVE_MAINTENANCE}>
-                      Corrective Maintenance
-                    </SelectItem>
-                    <SelectItem value={ServiceRequestType.INSTALL}>Install</SelectItem>
-                    <SelectItem value={ServiceRequestType.ASSESS}>Assess</SelectItem>
-                    <SelectItem value={ServiceRequestType.OTHER}>Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Priority */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="priority">
-                  Priority <span className="text-destructive">*</span>
-                </Label>
-                <Select value={priority} onValueChange={(v) => setPriority(v as ServiceRequestPriority)}>
-                  <SelectTrigger id="priority">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ServiceRequestPriority.LOW}>Low</SelectItem>
-                    <SelectItem value={ServiceRequestPriority.MEDIUM}>Medium</SelectItem>
-                    <SelectItem value={ServiceRequestPriority.HIGH}>High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Schedule Date */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="scheduledAt">
-                  Schedule Date <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="scheduledAt"
-                  type="date"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Assigned Technician */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="technician">Assigned Technician (Optional)</Label>
-                <Select value={assignedTechnicianId} onValueChange={setAssignedTechnicianId}>
-                  <SelectTrigger id="technician">
-                    <SelectValue placeholder={loadingTechnicians ? "Loading..." : "Select technician (optional)"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">No Assignment</SelectItem>
-                    {technicians.map((tech) => (
-                      <SelectItem key={tech.id} value={tech.id}>
-                        {tech.displayName || tech.email || tech.id}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {/* Left column: Request Type, Priority, Schedule Date */}
+              <div className="space-y-4">
+                {/* Request Type */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="requestType">
+                    Request Type <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={requestType} onValueChange={(v) => setRequestType(v as ServiceRequestType)}>
+                    <SelectTrigger id="requestType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ServiceRequestType.CORRECTIVE_MAINTENANCE}>
+                        Corrective Maintenance
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      <SelectItem value={ServiceRequestType.INSTALL}>Install</SelectItem>
+                      <SelectItem value={ServiceRequestType.ASSESS}>Assess</SelectItem>
+                      <SelectItem value={ServiceRequestType.OTHER}>Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Priority */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="priority">
+                    Priority <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={priority} onValueChange={(v) => setPriority(v as ServiceRequestPriority)}>
+                    <SelectTrigger id="priority">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ServiceRequestPriority.LOW}>Low</SelectItem>
+                      <SelectItem value={ServiceRequestPriority.MEDIUM}>Medium</SelectItem>
+                      <SelectItem value={ServiceRequestPriority.HIGH}>High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Schedule Date */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="scheduledAt">
+                    Schedule Date <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="scheduledAt"
+                    type="date"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Right column: Assigned Technicians (multi-select) */}
+              <div className="flex flex-col gap-2">
+                <Label>Assigned Technicians (Optional)</Label>
+                <div className="space-y-2 rounded-md border p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      Select one or more technicians. Leave empty for no assignment.
+                    </span>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+                    {loadingTechnicians ? (
+                      <div className="text-xs text-muted-foreground">Loading technicians...</div>
+                    ) : technicians.length === 0 ? (
+                      <div className="text-xs text-muted-foreground">No technicians found.</div>
+                    ) : (
+                      technicians.map((tech) => {
+                        const id = tech.id;
+                        const label = tech.displayName || tech.email || tech.id;
+                        const checked = assignedTechnicianIds.includes(id);
+                        return (
+                          <label
+                            key={id}
+                            className="flex items-center gap-2 text-sm cursor-pointer select-none"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(value) => {
+                                setAssignedTechnicianIds((prev) => {
+                                  if (value) {
+                                    if (prev.includes(id)) return prev;
+                                    return [...prev, id];
+                                  }
+                                  return prev.filter((tid) => tid !== id);
+                                });
+                              }}
+                            />
+                            <span>{label}</span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                  {assignedTechnicianIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {assignedTechnicianIds.map((id) => {
+                        const tech = technicians.find((t) => t.id === id);
+                        const label = tech?.displayName || tech?.email || id;
+                        return (
+                          <Badge key={id} variant="outline" className="text-xs">
+                            {label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {assignedTechnicianIds.length > 0 && (
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setAssignedTechnicianIds([])}
+                      >
+                        Clear selection
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -46,6 +46,7 @@ export interface ServiceRequest {
     ticketId?: string;
     equipmentId: string;
     assignedTechnicianId?: string;
+    assignedTechnicianIds?: string[];
     requestType: ServiceRequestType;
     scheduledAt: string;
     priority: ServiceRequestPriority;
@@ -60,13 +61,21 @@ export interface ServiceRequest {
 }
 
 export interface JServiceRequest extends ServiceRequest {
-    equipment: Equipment
+    equipment: Equipment;
+    /**
+     * Primary technician (for backward compatibility with older UI).
+     */
     technician?: User;
+    /**
+     * All assigned technicians (primary first), when available.
+     */
+    technicians?: User[];
 }
 
 export interface DbServiceRequest extends DbBaseAudit {
     equipment_id: string;
     assigned_technician_id?: string;
+    assigned_technician_ids?: string[];
     request_type: ServiceRequestType;
     scheduled_at: string;
     priority: ServiceRequestPriority;

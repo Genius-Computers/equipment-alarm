@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wrench, Loader2, ArrowLeft, PrinterIcon } from "lucide-react";
+import { Wrench, Loader2, ArrowLeft, PrinterIcon, Users } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
 import { ServiceRequestPriority, ServiceRequestType, ServiceRequestWorkStatus } from "@/lib/types";
@@ -22,6 +22,7 @@ import { isApproverRole } from "@/lib/types/user";
 import PreventiveMaintenanceForm from "@/components/PreventiveMaintenanceForm";
 import type { PmDetails } from "@/lib/types/preventive-maintenance";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function EditServiceRequestPage() {
 	const params = useParams();
@@ -75,6 +76,7 @@ export default function EditServiceRequestPage() {
 	const [sparePartChanged, setSparePartChanged] = useState(false);
 	const [updatingSparePart, setUpdatingSparePart] = useState(false);
 	const [selfAssignOpen, setSelfAssignOpen] = useState(false);
+	const [additionalTechnicianIds, setAdditionalTechnicianIds] = useState<string[]>([]);
 
 	const isValid = useMemo(() => {
 		// For approvers editing basic fields, do NOT require a technician assignment
@@ -96,12 +98,22 @@ export default function EditServiceRequestPage() {
 				const j = await res.json();
 				const r: JServiceRequest = j?.data;
 				setRequest(r);
-				// Prompt self-assign for technicians on unassigned, pending PM requests only
+				// Prompt self-assign for technicians on unassigned, open requests:
+				// - PM requests: always allowed to self-assign while work is pending.
+				// - Regular (non-PM) requests: allowed only after supervisor/admin_x approval.
+				const isTechnician = profile?.role === "technician";
+				const isUnassigned = !r.assignedTechnicianId;
+				const isPending = r.workStatus === ServiceRequestWorkStatus.PENDING;
+				const isApproved = r.approvalStatus === "approved";
+
 				if (
-					r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE &&
-					!r.assignedTechnicianId &&
-					r.workStatus === ServiceRequestWorkStatus.PENDING &&
-					profile?.role === "technician"
+					isTechnician &&
+					isUnassigned &&
+					isPending &&
+					(
+						r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ||
+						(r.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE && isApproved)
+					)
 				) {
 					setSelfAssignOpen(true);
 				}
@@ -117,15 +129,22 @@ export default function EditServiceRequestPage() {
 					qualitative: Array.isArray(r.pmDetails?.qualitative) ? r.pmDetails!.qualitative : [],
 					quantitative: Array.isArray(r.pmDetails?.quantitative) ? r.pmDetails!.quantitative : [],
 				}));
+				// Derive primary and additional technicians from the request
+				const allAssignedIds = Array.isArray(r.assignedTechnicianIds) ? r.assignedTechnicianIds : [];
+				const primaryFromList = allAssignedIds.length > 0 ? allAssignedIds[0] : undefined;
+				const primaryTechnicianId = r.assignedTechnicianId || primaryFromList || "";
+				const extraTechnicianIds = allAssignedIds.filter((id) => id && id !== primaryTechnicianId);
+
 				setForm({
 					requestType: r.requestType,
 					scheduledAt: (r.scheduledAt || "").slice(0, 16),
 					priority: r.priority,
-					assignedTechnicianId: r.assignedTechnicianId || "",
+					assignedTechnicianId: primaryTechnicianId,
 					problemDescription: r.problemDescription || "",
 					technicalAssessment: r.technicalAssessment || "",
 					recommendation: r.recommendation || "",
 				});
+				setAdditionalTechnicianIds(extraTechnicianIds);
 				const existingParts = r.sparePartsNeeded || [];
 				setParts(existingParts);
 				setSparePartsNeeded(existingParts.length > 0);
@@ -173,17 +192,32 @@ export default function EditServiceRequestPage() {
 		if (!sparePartsLoading && availableSpareParts.length === 0) void loadSpareParts();
 	}, [sparePartsLoading, availableSpareParts.length]);
 
+	const buildAssignedTechnicianIdsPayload = () => {
+		if (!request) return undefined;
+		const existingAll = Array.isArray(request.assignedTechnicianIds) ? request.assignedTechnicianIds : [];
+		const primaryFromExisting = request.assignedTechnicianId || existingAll[0];
+		const primary = form.assignedTechnicianId || primaryFromExisting;
+
+		const extras = additionalTechnicianIds.filter((id) => id && id !== primary);
+
+		if (!primary && extras.length === 0) return undefined;
+		if (!primary) return extras;
+		return [primary, ...extras];
+	};
+
 	const handleSave = async () => {
 		if (!request) return;
 		try {
 			setSaving(true);
 			if (!canEditDetails) return;
+			const assignedTechnicianIdsPayload = buildAssignedTechnicianIdsPayload();
 			const body = isApprover
 				? {
 					requestType: form.requestType,
 					scheduledAt: form.scheduledAt,
 					priority: form.priority,
 					assignedTechnicianId: form.assignedTechnicianId,
+					...(assignedTechnicianIdsPayload ? { assignedTechnicianIds: assignedTechnicianIdsPayload } : {}),
 					problemDescription: form.problemDescription,
 					technicalAssessment: form.technicalAssessment,
 					recommendation: form.recommendation,
@@ -195,6 +229,7 @@ export default function EditServiceRequestPage() {
 					technicalAssessment: form.technicalAssessment,
 					recommendation: form.recommendation,
 					sparePartsNeeded: sparePartsNeeded ? parts : [],
+					...(assignedTechnicianIdsPayload ? { assignedTechnicianIds: assignedTechnicianIdsPayload } : {}),
 					pmDetails: request.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ? pmDetails : undefined,
 				};
 			await updateDetails(request.id, body);
@@ -369,6 +404,107 @@ export default function EditServiceRequestPage() {
 								</div>
 									</div>
 							)}
+
+						{/* Technician assignment management (additional technicians) */}
+						{request && section === "details" && !isCompletedOrCancelled && (
+							(() => {
+								if (!profile?.role || !profile?.id) return null;
+								const isSupervisorOrAdmin =
+									profile.role === "admin" || profile.role === "admin_x" || profile.role === "supervisor";
+								const allAssignedIds = Array.isArray(request.assignedTechnicianIds) ? request.assignedTechnicianIds : [];
+								const primaryFromExisting = request.assignedTechnicianId || allAssignedIds[0];
+								const isAssignedTechnician =
+									profile.id === request.assignedTechnicianId ||
+									(Array.isArray(request.assignedTechnicianIds) &&
+										request.assignedTechnicianIds.includes(profile.id));
+
+								// PM requests: no approval gate; Regular: require approval for non-approvers
+								const isRegular = request.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE;
+								const isApproved = request.approvalStatus === "approved";
+
+								const actorAllowed = isSupervisorOrAdmin || isAssignedTechnician;
+								const statusAllows =
+									request.workStatus === ServiceRequestWorkStatus.PENDING &&
+									(!isRegular || isApproved || isSupervisorOrAdmin);
+
+								if (!actorAllowed || !statusAllows) return null;
+
+								return (
+									<div className="space-y-2 rounded-md border p-3 bg-muted/40">
+										<div className="flex items-center gap-2 mb-1">
+											<Users className="h-4 w-4 text-muted-foreground" />
+											<div className="flex flex-col">
+												<span className="text-xs font-medium">
+													{t("serviceRequest.additionalTechnicians") || "Additional technicians"}
+												</span>
+												<span className="text-[11px] text-muted-foreground">
+													Primary technician remains{" "}
+													<strong>
+														{technicians.find((t) => t.id === primaryFromExisting)?.displayName ||
+															technicians.find((t) => t.id === primaryFromExisting)?.email ||
+															primaryFromExisting ||
+															t("serviceRequest.assignedTechnician")}
+													</strong>
+													. Select more technicians to collaborate on this request.
+												</span>
+											</div>
+										</div>
+										<div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+											{techLoading ? (
+												<div className="text-xs text-muted-foreground">Loading technicians...</div>
+											) : technicians.length === 0 ? (
+												<div className="text-xs text-muted-foreground">No technicians found.</div>
+											) : (
+												technicians.map((tech) => {
+													const id = tech.id;
+													const label = tech.displayName || tech.email || tech.id;
+													const isPrimary = primaryFromExisting && id === primaryFromExisting;
+													const checked = isPrimary || additionalTechnicianIds.includes(id);
+													return (
+														<label
+															key={id}
+															className="flex items-center gap-2 text-xs cursor-pointer select-none"
+														>
+															<Checkbox
+																checked={checked}
+																disabled={saving || isPrimary}
+																onCheckedChange={(value) => {
+																	if (isPrimary) return;
+																	setAdditionalTechnicianIds((prev) => {
+																		if (value) {
+																			if (prev.includes(id)) return prev;
+																			return [...prev, id];
+																		}
+																		return prev.filter((tid) => tid !== id);
+																	});
+																}}
+															/>
+															<span className={isPrimary ? "font-semibold" : ""}>
+																{label}
+																{isPrimary ? " (Primary)" : ""}
+															</span>
+														</label>
+													);
+												})
+											)}
+										</div>
+										{additionalTechnicianIds.length > 0 && (
+											<div className="flex flex-wrap gap-1 pt-1">
+												{additionalTechnicianIds.map((id) => {
+													const tech = technicians.find((t) => t.id === id);
+													const label = tech?.displayName || tech?.email || id;
+													return (
+														<Badge key={id} variant="outline" className="text-[11px]">
+															{label}
+														</Badge>
+													);
+												})}
+											</div>
+										)}
+									</div>
+								);
+							})()
+						)}
 
 						{/* Details section */}
 						{request && section === "details" && request.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE && (
@@ -622,7 +758,7 @@ export default function EditServiceRequestPage() {
 			<Dialog open={selfAssignOpen} onOpenChange={setSelfAssignOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Assign yourself to this preventive maintenance?</DialogTitle>
+						<DialogTitle>Assign yourself to this service request?</DialogTitle>
 					</DialogHeader>
 					<div className="text-sm text-muted-foreground">
 						This request is unassigned. You can self-assign to take ownership.

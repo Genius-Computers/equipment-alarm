@@ -25,7 +25,9 @@ export const listServiceRequestPaginated = async (
     ? sql`(sr.approval_status <> 'pending' and sr.work_status <> 'pending')`
     : sql`true`;
 
-  const techFilter = assignedToTechnicianId ? sql`sr.assigned_technician_id = ${assignedToTechnicianId}` : sql`true`;
+  const techFilter = assignedToTechnicianId
+    ? sql`(sr.assigned_technician_id = ${assignedToTechnicianId} or sr.assigned_technician_ids ? ${assignedToTechnicianId})`
+    : sql`true`;
   const equipmentFilter = equipmentId ? sql`sr.equipment_id = ${equipmentId}` : sql`true`;
   const priorityFilter = priority && priority !== 'all' && priority !== 'overdue' ? sql`sr.priority = ${priority}` : sql`true`;
   const overdueFilter = priority === 'overdue'
@@ -133,13 +135,13 @@ export const insertServiceRequest = async (
   const [row] = await sql`
     insert into service_request (
       id, created_at, created_by,
-      equipment_id, assigned_technician_id, request_type, scheduled_at,
+      equipment_id, assigned_technician_id, assigned_technician_ids, request_type, scheduled_at,
       priority, approval_status, work_status,
       problem_description, technical_assessment, recommendation,
       spare_parts_needed, ticket_id, pm_details
     ) values (
       ${explicitId}, ${createdAt}, ${actorId},
-      ${input.equipment_id}, ${input.assigned_technician_id}, ${input.request_type}, ${input.scheduled_at},
+      ${input.equipment_id}, ${input.assigned_technician_id}, ${toJsonbParam(input.assigned_technician_ids)}::jsonb, ${input.request_type}, ${input.scheduled_at},
       ${input.priority}, ${input.approval_status}, ${input.work_status},
       ${input.problem_description}, ${input.technical_assessment}, ${input.recommendation},
       ${toJsonbParam(input.spare_parts_needed)}::jsonb, ${ticketId}, ${toJsonbParam(input.pm_details)}::jsonb
@@ -161,6 +163,7 @@ export const updateServiceRequest = async (
 
         equipment_id = ${input.equipment_id},
         assigned_technician_id = ${input.assigned_technician_id},
+        assigned_technician_ids = ${toJsonbParam(input.assigned_technician_ids)}::jsonb,
         request_type = ${input.request_type},
         scheduled_at = ${input.scheduled_at},
         priority = ${input.priority},

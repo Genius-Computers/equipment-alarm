@@ -69,6 +69,7 @@ export const ensureSchema = async () => {
 
       equipment_id uuid not null,
       assigned_technician_id uuid,
+      assigned_technician_ids jsonb,
       request_type text not null,
       scheduled_at timestamp not null,
       priority text not null,
@@ -86,6 +87,12 @@ export const ensureSchema = async () => {
   await sql`
     alter table service_request
       add column if not exists pm_details jsonb
+  `;
+
+  // Add multiple-technician support column (idempotent)
+  await sql`
+    alter table service_request
+      add column if not exists assigned_technician_ids jsonb
   `;
 
   // Create spare_parts table

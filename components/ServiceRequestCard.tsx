@@ -166,7 +166,26 @@ export default function ServiceRequestCard({
       ? t('serviceRequest.operational.underRepair')
       : '-');
 
-  const technicianLabel = request.technician?.displayName || request.technician?.email || request.assignedTechnicianId;
+  // Build list of technician display names (primary first)
+  const technicianNames: string[] = (() => {
+    const names: string[] = [];
+    if (request.technicians && Array.isArray(request.technicians) && request.technicians.length > 0) {
+      for (const tech of request.technicians) {
+        const label = tech?.displayName || tech?.email || '';
+        if (label && !names.includes(label)) {
+          names.push(label);
+        }
+      }
+    } else if (request.technician) {
+      const label = request.technician.displayName || request.technician.email || '';
+      if (label) names.push(label);
+    }
+    // Fallback to raw ID if nothing else is available
+    if (names.length === 0 && request.assignedTechnicianId) {
+      names.push(request.assignedTechnicianId);
+    }
+    return names;
+  })();
 
   const isOverdue = (() => {
     try {
@@ -246,10 +265,20 @@ export default function ServiceRequestCard({
               </>
             ) : null}
           </div>
-          {technicianLabel ? (
-            <Badge variant="outline" title={t("serviceRequest.assignedTechnician")} className="capitalize">
-              <User className="h-3 w-3" /> {technicianLabel}
-            </Badge>
+          {technicianNames.length > 0 ? (
+            <div className="flex items-center gap-1 flex-wrap">
+              {technicianNames.map((name, idx) => (
+                <Badge
+                  key={`${name}-${idx}`}
+                  variant="outline"
+                  title={t("serviceRequest.assignedTechnician")}
+                  className="capitalize"
+                >
+                  {idx === 0 ? <User className="h-3 w-3 mr-1" /> : null}
+                  {name}
+                </Badge>
+              ))}
+            </div>
           ) : null}
         </div>
       </CardHeader>
@@ -363,8 +392,15 @@ export default function ServiceRequestCard({
               <div className="text-xs text-muted-foreground">{t("serviceRequest.operational.status")}</div>
               {(() => {
                 const isSupervisorOrAdmin = role === 'admin' || role === 'admin_x' || role === 'supervisor';
-                const isAssignedTechnician = Boolean(request.assignedTechnicianId && userId && request.assignedTechnicianId === userId);
-                const noAssignedTechnician = !request.assignedTechnicianId;
+                const isAssignedTechnician = Boolean(
+                  userId &&
+                  (
+                    request.assignedTechnicianId === userId ||
+                    (Array.isArray(request.assignedTechnicianIds) && request.assignedTechnicianIds.includes(userId))
+                  )
+                );
+                const noAssignedTechnician = !request.assignedTechnicianId &&
+                  (!Array.isArray(request.assignedTechnicianIds) || request.assignedTechnicianIds.length === 0);
                 const canChangeOperational = isSupervisorOrAdmin || (role === 'technician' && (isAssignedTechnician || noAssignedTechnician));
                 if (request.workStatus === ServiceRequestWorkStatus.COMPLETED) return false;
                 if (!canChangeOperational) return false;

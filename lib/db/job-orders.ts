@@ -64,7 +64,7 @@ export const submitJobOrder = async (
     requestType: string;
     priority: string;
     scheduledAt: string;
-    assignedTechnicianId?: string;
+    assignedTechnicianIds?: string[];
     notes?: string;
   }
 ): Promise<DbJobOrder | null> => {
@@ -97,9 +97,11 @@ export const submitJobOrder = async (
     const requestType = serviceRequestData?.requestType || 'preventive_maintenance';
     const priority = serviceRequestData?.priority || 'medium';
     const scheduledAt = serviceRequestData?.scheduledAt || new Date().toISOString();
-    const assignedTechnicianId = serviceRequestData?.assignedTechnicianId === 'unassigned' || !serviceRequestData?.assignedTechnicianId 
-      ? null 
-      : serviceRequestData.assignedTechnicianId;
+    const allAssignedTechnicianIds = Array.isArray(serviceRequestData?.assignedTechnicianIds)
+      ? serviceRequestData!.assignedTechnicianIds.filter((id) => typeof id === 'string' && id.trim().length > 0)
+      : [];
+    const assignedTechnicianId = allAssignedTechnicianIds.length > 0 ? allAssignedTechnicianIds[0] : null;
+    const assignedTechnicianIdsJson = allAssignedTechnicianIds.length > 0 ? JSON.stringify(allAssignedTechnicianIds) : null;
     const additionalNotes = serviceRequestData?.notes ? `\n\nNotes: ${serviceRequestData.notes}` : '';
     
     for (const item of items) {
@@ -109,12 +111,12 @@ export const submitJobOrder = async (
         const result = await sql`
           insert into service_request (
             id, created_at, created_by,
-            equipment_id, assigned_technician_id, request_type, scheduled_at,
+            equipment_id, assigned_technician_id, assigned_technician_ids, request_type, scheduled_at,
             priority, approval_status, work_status,
             problem_description, ticket_id
           ) values (
             gen_random_uuid(), now(), ${actorId},
-            ${item.equipmentId}, ${assignedTechnicianId}, ${requestType}, ${scheduledAt},
+            ${item.equipmentId}, ${assignedTechnicianId}, ${assignedTechnicianIdsJson}::jsonb, ${requestType}, ${scheduledAt},
             ${priority}, 'pending', 'pending',
             ${problemDescription}, ${item.ticketNumber}
           )

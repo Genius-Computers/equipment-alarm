@@ -48,8 +48,18 @@ export async function GET(req: NextRequest) {
     const { rows, total } = await listServiceRequestPaginated(page, pageSize, scope, assignedToTechnicianId, equipmentId, priority, approval, requestType);
     console.log('[Service Request GET] Found:', rows.length, 'rows, total:', total);
 
-    // Fetch only needed technicians, in parallel
-    const techIds = Array.from(new Set((rows.map((r) => r.assigned_technician_id).filter(Boolean) as string[])));
+    // Fetch only needed technicians, in parallel (supports multiple assigned technicians)
+    const techIdSet = new Set<string>();
+    for (const r of rows) {
+      if (r.assigned_technician_id) techIdSet.add(r.assigned_technician_id);
+      const extra = Array.isArray((r as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids)
+        ? (r as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids!
+        : [];
+      for (const id of extra) {
+        if (id) techIdSet.add(id);
+      }
+    }
+    const techIds = Array.from(techIdSet);
     const techMap = new Map<string, unknown>();
     await Promise.all(
       techIds.map(async (id) => {
@@ -64,8 +74,30 @@ export async function GET(req: NextRequest) {
 
     const data = rows.map((r) => {
       const base = snakeToCamelCase(r);
-      const technician = r.assigned_technician_id ? techMap.get(r.assigned_technician_id) ?? null : null;
-      return { ...base, technician };
+      const primaryTechnician = r.assigned_technician_id ? techMap.get(r.assigned_technician_id) ?? null : null;
+      const extraIds = Array.isArray((r as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids)
+        ? (r as unknown as { assigned_technician_ids?: string[] }).assigned_technician_ids!
+        : [];
+      const extraTechnicians: unknown[] = [];
+      for (const id of extraIds) {
+        const t = id ? techMap.get(id) : null;
+        if (t) extraTechnicians.push(t);
+      }
+      const technicians: unknown[] = [];
+      if (primaryTechnician) {
+        technicians.push(primaryTechnician);
+      }
+      for (const t of extraTechnicians) {
+        // Avoid duplicate objects if primary is also in extra list
+        if (!technicians.includes(t)) {
+          technicians.push(t);
+        }
+      }
+      return { 
+        ...base, 
+        technician: primaryTechnician, 
+        technicians: technicians.length > 0 ? technicians : undefined,
+      };
     });
 
     return NextResponse.json({ data, meta: { page, pageSize, total, scope: scope ?? 'all' } });
