@@ -435,7 +435,7 @@ export default function EditServiceRequestPage() {
 											<Users className="h-4 w-4 text-muted-foreground" />
 											<div className="flex flex-col">
 												<span className="text-xs font-medium">
-													{t("serviceRequest.additionalTechnicians") || "Additional technicians"}
+													{ "Additional technicians"}
 												</span>
 												<span className="text-[11px] text-muted-foreground">
 													Primary technician remains{" "}
