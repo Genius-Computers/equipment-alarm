@@ -8,6 +8,7 @@ export {
   insertEquipment,
   updateEquipment,
   updateEquipmentLastMaintenance,
+  updateEquipmentStatus,
   softDeleteEquipment,
   bulkSoftDeleteEquipment,
   bulkInsertEquipment,
@@ -21,6 +22,7 @@ export {
 export {
   listServiceRequestPaginated,
   getServiceRequestById,
+  listServiceRequestsForExport,
   getNextTicketId,
   insertServiceRequest,
   updateServiceRequest,
@@ -65,6 +67,7 @@ export {
 // Job orders operations
 export {
   createJobOrder,
+  createJobOrderForCsvImport,
   getJobOrderById,
   submitJobOrder,
   listJobOrdersPaginated,

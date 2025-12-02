@@ -117,6 +117,21 @@ export const updateEquipmentLastMaintenance = async (
   `;
 };
 
+export const updateEquipmentStatus = async (
+  id: string,
+  status: string,
+  actorId: string,
+) => {
+  const sql = getDb();
+  await sql`
+    update equipment set
+      updated_by = ${actorId},
+      updated_at = now(),
+      status = ${status}
+    where id = ${id} and deleted_at is null
+  `;
+};
+
 export const softDeleteEquipment = async (
   id: string,
   actorId: string,
