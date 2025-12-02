@@ -110,10 +110,7 @@ export default function EditServiceRequestPage() {
 					isTechnician &&
 					isUnassigned &&
 					isPending &&
-					(
-						r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ||
-						(r.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE && isApproved)
-					)
+					(r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE || isApproved)
 				) {
 					setSelfAssignOpen(true);
 				}
