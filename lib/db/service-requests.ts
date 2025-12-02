@@ -80,6 +80,51 @@ export const getServiceRequestById = async (id: string): Promise<(DbServiceReque
   return (rows && rows.length > 0 ? (rows[0] as unknown as (DbServiceRequest & { equipment: DbEquipment | null })) : null);
 };
 
+export const listServiceRequestsForExport = async (
+  scope?: 'pending' | 'completed',
+  assignedToTechnicianId?: string,
+  equipmentId?: string,
+  priority?: string,
+  approval?: string,
+  requestType?: string,
+): Promise<(DbServiceRequest & { equipment: DbEquipment | null })[]> => {
+  const sql = getDb();
+
+  const scopeFilter = scope === 'pending'
+    ? sql`(sr.approval_status = 'pending' or (sr.approval_status = 'approved' and sr.work_status = 'pending'))`
+    : scope === 'completed'
+    ? sql`(sr.approval_status <> 'pending' and sr.work_status <> 'pending')`
+    : sql`true`;
+
+  const techFilter = assignedToTechnicianId
+    ? sql`(sr.assigned_technician_id = ${assignedToTechnicianId} or sr.assigned_technician_ids ? ${assignedToTechnicianId})`
+    : sql`true`;
+  const equipmentFilter = equipmentId ? sql`sr.equipment_id = ${equipmentId}` : sql`true`;
+  const priorityFilter = priority && priority !== 'all' && priority !== 'overdue' ? sql`sr.priority = ${priority}` : sql`true`;
+  const overdueFilter = priority === 'overdue'
+    ? sql`(sr.work_status = 'pending' and (sr.scheduled_at)::timestamptz < (now() - interval '5 days'))`
+    : sql`true`;
+  const approvalFilter = approval && approval !== 'all' ? sql`sr.approval_status = ${approval}` : sql`true`;
+  const requestTypeFilter = requestType && requestType !== 'all' ? sql`sr.request_type = ${requestType}` : sql`true`;
+
+  const rows = await sql`
+    select sr.*, to_jsonb(e) as equipment
+    from service_request sr
+    left join equipment e on e.id = sr.equipment_id and e.deleted_at is null
+    where sr.deleted_at is null
+      and ${scopeFilter}
+      and ${techFilter}
+      and ${equipmentFilter}
+      and ${priorityFilter}
+      and ${approvalFilter}
+      and ${overdueFilter}
+      and ${requestTypeFilter}
+    order by sr.ticket_id asc nulls last, sr.created_at asc
+  `;
+
+  return rows as unknown as (DbServiceRequest & { equipment: DbEquipment | null })[];
+};
+
 // Compute next yearly sequential ticket id in format YY-XXXX (e.g., 25-0001, 25-0002)
 // Uses advisory lock to prevent race conditions when generating ticket numbers
 export const getNextTicketId = async (at: Date = new Date()): Promise<string> => {

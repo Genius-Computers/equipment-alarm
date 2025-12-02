@@ -8,12 +8,15 @@ import ServiceRequestStats from "@/components/ServiceRequestStats";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
 import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
 import { Bell } from "lucide-react";
+import ServiceRequestsCSVImport from "@/components/ServiceRequestsCSVImport";
+import ServiceRequestsCSVExport from "@/components/ServiceRequestsCSVExport";
 
 const Page = () => {
 	const user = useUser();
 	const role = user?.clientReadOnlyMetadata?.role as string | undefined;
 	const canApprove = role === "admin" || role === "supervisor";
 	const canEdit = role !== "end_user"; // End users can only view
+	const canImportCsv = role === "admin" || role === "admin_x" || role === "supervisor";
 
 	const {
 		filteredRequests,
@@ -27,6 +30,8 @@ const Page = () => {
 		setPriorityFilter,
 		assignedToMe,
 		setAssignedToMe,
+		approvalFilter,
+		setApprovalFilter,
 		requestTypeFilter,
 		setRequestTypeFilter,
 		scope,
@@ -95,6 +100,20 @@ const Page = () => {
 					assignedToMe={assignedToMe}
 					onAssignedToMeChange={setAssignedToMe}
 				/>
+
+				<div className="flex justify-end gap-2">
+					<ServiceRequestsCSVExport
+						items={filteredRequests}
+						filters={{
+							scope,
+							priority: priorityFilter,
+							approval: approvalFilter,
+							requestType: requestTypeFilter,
+							assignedToMe,
+						}}
+					/>
+					{canImportCsv ? <ServiceRequestsCSVImport onImported={refresh} /> : null}
+				</div>
 
 				{loading ? (
 					<div className="text-sm text-muted-foreground">Updating…</div>

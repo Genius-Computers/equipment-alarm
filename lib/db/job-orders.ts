@@ -1,5 +1,6 @@
 import { getDb } from './connection';
 import { DbJobOrder } from '../types';
+import { getEquipmentWithLocationInfo } from './equipment';
 
 const generateOrderNumber = async (firstTicketNumber: string): Promise<string> => {
   const sql = getDb();
@@ -182,4 +183,57 @@ export const listJobOrdersPaginated = async (
     page,
     pageSize,
   };
+};
+
+export const createJobOrderForCsvImport = async (
+  actorId: string,
+  items: Array<{
+    serviceRequestId: string;
+    ticketId: string;
+    equipmentId: string;
+    equipmentName?: string;
+    tagNumber?: string;
+  }>,
+): Promise<DbJobOrder> => {
+  if (!items || items.length === 0) {
+    throw new Error('No items provided for CSV import job order');
+  }
+
+  const sql = getDb();
+
+  const first = items[0];
+  const equipment = await getEquipmentWithLocationInfo(first.equipmentId);
+
+  const campus: string =
+    (equipment && (equipment as { campus?: string }).campus) ||
+    (equipment && (equipment as { location?: string }).location) ||
+    'Unknown';
+
+  const sublocation: string =
+    (equipment && (equipment as { location_name?: string }).location_name) ||
+    (equipment && (equipment as { sub_location?: string }).sub_location) ||
+    '';
+
+  const orderNumber = await generateOrderNumber(first.ticketId);
+
+  const payload = items.map((item) => ({
+    source: 'csv_import',
+    serviceRequestId: item.serviceRequestId,
+    ticketNumber: item.ticketId,
+    equipmentId: item.equipmentId,
+    equipmentName: item.equipmentName ?? null,
+    partNumber: item.tagNumber ?? null,
+  }));
+
+  const [row] = await sql`
+    insert into job_orders (
+      created_at, created_by,
+      order_number, campus, sublocation, items, status
+    ) values (
+      now(), ${actorId},
+      ${orderNumber}, ${campus}, ${sublocation}, ${JSON.stringify(payload)}::jsonb, 'submitted'
+    ) returning *
+  `;
+
+  return row as unknown as DbJobOrder;
 };
