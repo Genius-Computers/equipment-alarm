@@ -21,7 +21,7 @@ const FIELD_MAPPINGS: Record<string, string> = {
   "Operational Status": "operationalStatus",
 };
 
-const REQUIRED_FIELDS = ["ticketNo", "tagNumber", "requestType", "priority", "schedule"];
+const REQUIRED_FIELDS = ["ticketNo", "tagNumber", "requestType", "schedule"];
 
 const USER_FRIENDLY_NAMES: Record<string, string> = {
   ticketNo: "Ticket No",
@@ -59,7 +59,7 @@ const ServiceRequestsCSVImport = ({ onImported }: ServiceRequestsCSVImportProps)
         [USER_FRIENDLY_NAMES.requestType]: "",
         [USER_FRIENDLY_NAMES.priority]: "medium",
         [USER_FRIENDLY_NAMES.schedule]: "2026-01-01T00:00",
-        [USER_FRIENDLY_NAMES.technician]: "John Doe",
+        [USER_FRIENDLY_NAMES.technician]: "",
         [USER_FRIENDLY_NAMES.status]: "",
         [USER_FRIENDLY_NAMES.operationalStatus]: "Operational",
       },

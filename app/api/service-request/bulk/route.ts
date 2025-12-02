@@ -75,7 +75,8 @@ const mapPriority = (value: unknown): ServiceRequestPriority | null => {
 
 const mapOperationalStatusToEquipmentStatus = (value: unknown): string | null => {
   const s = normalize(value).toLowerCase();
-  if (!s) return null;
+  // Default to Operational when empty / not provided
+  if (!s) return 'Operational';
   if (s === 'operational' || s === 'working') {
     return 'Operational';
   }
@@ -144,7 +145,6 @@ export async function POST(req: NextRequest) {
       const missing: string[] = [];
       if (!tagNumber) missing.push('Tag Number');
       if (!rt) missing.push('Request Type');
-      if (!pr) missing.push('Priority');
       if (!schedule) {
         missing.push('Schedule');
       } else if (!isValidSchedule(schedule)) {
