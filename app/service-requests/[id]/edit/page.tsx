@@ -110,10 +110,7 @@ export default function EditServiceRequestPage() {
 					isTechnician &&
 					isUnassigned &&
 					isPending &&
-					(
-						r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ||
-						(r.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE && isApproved)
-					)
+					(r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE || isApproved)
 				) {
 					setSelfAssignOpen(true);
 				}
@@ -458,7 +455,7 @@ export default function EditServiceRequestPage() {
 												technicians.map((tech) => {
 													const id = tech.id;
 													const label = tech.displayName || tech.email || tech.id;
-													const isPrimary = primaryFromExisting && id === primaryFromExisting;
+													const isPrimary = !!primaryFromExisting && id === primaryFromExisting;
 													const checked = isPrimary || additionalTechnicianIds.includes(id);
 													return (
 														<label
