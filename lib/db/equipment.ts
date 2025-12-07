@@ -4,7 +4,8 @@ import { DbEquipment, DbServiceRequest } from '../types';
 export const listEquipmentPaginated = async (
   page: number = 1,
   pageSize: number = 4,
-  q?: string
+  q?: string,
+  locationId?: string,
 ): Promise<{ rows: (DbEquipment & { latest_pending_service_request: DbServiceRequest | null })[]; total: number }> => {
   const sql = getDb();
   const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
@@ -22,11 +23,16 @@ export const listEquipmentPaginated = async (
       )`
     : sql`true`;
 
+  const locationFilter = locationId
+    ? sql`e.location_id = ${locationId}`
+    : sql`true`;
+
   const countRows = await sql`
     select count(*)::int as count
     from equipment e
     where e.deleted_at is null
       and ${textFilter}
+      and ${locationFilter}
   `;
   const total = (countRows?.[0]?.count as number) ?? 0;
 
@@ -48,6 +54,7 @@ export const listEquipmentPaginated = async (
     ) s on true
     where e.deleted_at is null
       and ${textFilter}
+      and ${locationFilter}
     order by e.name asc
     limit ${limit} offset ${offset}
   `;

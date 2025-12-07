@@ -426,6 +426,12 @@ export default function EditServiceRequestPage() {
 
 								if (!actorAllowed || !statusAllows) return null;
 
+								const primaryTechnicianLabel =
+									technicians.find((t) => t.id === primaryFromExisting)?.displayName ||
+									technicians.find((t) => t.id === primaryFromExisting)?.email ||
+									primaryFromExisting ||
+									t("serviceRequest.assignedTechnician");
+
 								return (
 									<div className="space-y-2 rounded-md border p-3 bg-muted/40">
 										<div className="flex items-center gap-2 mb-1">
@@ -435,14 +441,15 @@ export default function EditServiceRequestPage() {
 													{ "Additional technicians"}
 												</span>
 												<span className="text-[11px] text-muted-foreground">
-													Primary technician remains{" "}
-													<strong>
-														{technicians.find((t) => t.id === primaryFromExisting)?.displayName ||
-															technicians.find((t) => t.id === primaryFromExisting)?.email ||
-															primaryFromExisting ||
-															t("serviceRequest.assignedTechnician")}
-													</strong>
-													. Select more technicians to collaborate on this request.
+													{primaryFromExisting ? (
+														<>
+															Primary technician remains{" "}
+															<strong>{primaryTechnicianLabel}</strong>. Select more technicians to
+															collaborate on this request.
+														</>
+													) : (
+														<>No primary technician is currently assigned. You can still select technicians below to collaborate on this request.</>
+													)}
 												</span>
 											</div>
 										</div>

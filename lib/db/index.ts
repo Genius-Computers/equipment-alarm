@@ -25,6 +25,7 @@ export {
   listServiceRequestsForExport,
   getNextTicketId,
   insertServiceRequest,
+  bulkInsertPmServiceRequests,
   updateServiceRequest,
   getServiceRequestsBySparePartId,
 } from './service-requests';

@@ -15,12 +15,13 @@ export async function GET(req: NextRequest) {
     const pageSize = Number(searchParams.get('pageSize') ?? '10');
     const q = searchParams.get('q') || undefined;
     const status = searchParams.get('status') || undefined; // 'all' | 'good' | 'due' | 'overdue'
+    const locationId = searchParams.get('locationId') || undefined;
 
     // If filtering by derived status, fetch a large chunk and paginate after deriving
     const deriving = Boolean(status && status !== 'all');
     const dbPage = deriving ? 1 : page;
     const dbPageSize = deriving ? 5000 : pageSize; // pragmatic cap
-    const { rows, total } = await listEquipmentPaginated(dbPage, dbPageSize, q);
+    const { rows, total } = await listEquipmentPaginated(dbPage, dbPageSize, q, locationId);
 
     const mapped = rows.map((r) => {
       const camel = snakeToCamelCase(r) as Record<string, unknown>;

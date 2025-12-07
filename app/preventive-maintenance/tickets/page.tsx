@@ -61,7 +61,7 @@ export default function PreventiveMaintenanceTicketsPage() {
 							variant="outline"
 							onClick={() => router.push("/preventive-maintenance")}
 						>
-							View overdue equipment
+							Create tickets by location
 						</Button>
 					) : null}
 				</div>
@@ -95,6 +95,7 @@ export default function PreventiveMaintenanceTicketsPage() {
 		</div>
 	);
 }
+
 
 
 

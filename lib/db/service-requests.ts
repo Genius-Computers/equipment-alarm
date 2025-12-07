@@ -62,7 +62,7 @@ export const listServiceRequestPaginated = async (
       and ${approvalFilter}
       and ${overdueFilter}
       and ${requestTypeFilter}
-    order by sr.created_at desc nulls last
+    order by sr.ticket_id desc nulls last, sr.created_at desc nulls last
     limit ${limit} offset ${offset}
   `;
 
@@ -192,6 +192,78 @@ export const insertServiceRequest = async (
       ${toJsonbParam(input.spare_parts_needed)}::jsonb, ${ticketId}, ${toJsonbParam(input.pm_details)}::jsonb
     ) returning *`;
   return row;
+};
+
+// Bulk-insert preventive maintenance service requests for many equipments in one go.
+// Uses the same yearly ticket id pattern and advisory lock strategy as getNextTicketId,
+// but generates a contiguous range of ticket ids for the batch in a single SQL statement.
+export const bulkInsertPmServiceRequests = async (
+  inputs: Array<{ equipmentId: string; equipmentName: string }>,
+  actorId: string,
+): Promise<Array<{ id: string }>> => {
+  if (!inputs || inputs.length === 0) return [];
+
+  const sql = getDb();
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2); // Last 2 digits of year
+  const yearPrefix = yy;
+  const lockId = parseInt(yearPrefix, 10);
+
+  const equipmentIds = inputs.map((i) => i.equipmentId);
+  const equipmentNames = inputs.map((i) => i.equipmentName);
+  const count = inputs.length;
+
+  await sql`select pg_advisory_lock(${lockId})`;
+
+  try {
+    // Find current max numeric suffix for this year's ticket ids
+    const rows = await sql`
+      select coalesce(max(
+        case 
+          when ticket_id is not null and ticket_id like ${yearPrefix + '-%'}
+          then (split_part(ticket_id, '-', 2))::int
+          else 0
+        end
+      ), 0) as max_suffix
+      from service_request
+    ` as unknown as Array<{ max_suffix: number }>;
+
+    const maxSuffix = (rows?.[0]?.max_suffix ?? 0) as number;
+    const base = Number.isFinite(maxSuffix) ? maxSuffix : 0;
+
+    // Insert all PM service requests in one statement, assigning ticket ids
+    // sequentially starting from base + 1.
+    const inserted = await sql`
+      with numbered as (
+        select
+          unnest(${equipmentIds}::uuid[]) as equipment_id,
+          unnest(${equipmentNames}::text[]) as equipment_name,
+          generate_series(1, ${count}::int) as seq
+      )
+      insert into service_request (
+        id, created_at, created_by,
+        equipment_id, assigned_technician_id, assigned_technician_ids, request_type, scheduled_at,
+        priority, approval_status, work_status,
+        problem_description, technical_assessment, recommendation,
+        spare_parts_needed, ticket_id, pm_details
+      )
+      select
+        gen_random_uuid(), now(), ${actorId},
+        n.equipment_id, null, '[]'::jsonb, 'preventive_maintenance', now(),
+        'medium', 'approved', 'pending',
+        'Preventive maintenance for ' || n.equipment_name,
+        null, null,
+        '[]'::jsonb,
+        ${yearPrefix} || '-' || lpad((${base} + n.seq)::text, 4, '0'),
+        null
+      from numbered n
+      returning id
+    ` as unknown as Array<{ id: string }>;
+
+    return inserted;
+  } finally {
+    await sql`select pg_advisory_unlock(${lockId})`;
+  }
 };
 
 export const updateServiceRequest = async (

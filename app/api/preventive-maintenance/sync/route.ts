@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentServerUser, getUserRole } from '@/lib/auth';
-import { getDb, insertServiceRequest } from '@/lib/db';
-import { ensurePmDetailsColumn } from '@/lib/db/schema';
-import { deriveMaintenanceInfo } from '@/lib/utils';
+import { getDb, bulkInsertPmServiceRequests } from '@/lib/db';
+import { ensureSchema } from '@/lib/db/schema';
 import {
 	ServiceRequestApprovalStatus,
 	ServiceRequestPriority,
@@ -10,31 +9,14 @@ import {
 	ServiceRequestWorkStatus,
 } from '@/lib/types';
 
-type OverdueEquipmentResponseItem = {
-	id: string;
-	name: string;
-	partNumber: string | null;
-	model: string | null;
-	manufacturer: string | null;
-	serialNumber: string | null;
-	location: string | null;
-	subLocation: string | null;
-	locationId: string | null;
-	locationName: string | null;
-	campus: string | null;
-	lastMaintenance: string | null;
-	maintenanceInterval: string | null;
-	nextMaintenance: string;
-	overdueDays: number;
-};
-
 function isPmManagerRole(role: string | null): boolean {
 	return role === 'admin' || role === 'admin_x' || role === 'supervisor';
 }
 
 /**
- * GET: List equipment that are overdue for preventive maintenance and
- * do NOT already have a pending PM service request.
+ * GET handler kept for backward compatibility with older clients.
+ * New PM UI does not rely on interval-based overdue calculations,
+ * so this now returns an empty list for authorized users.
  */
 export async function GET(req: NextRequest) {
 	try {
@@ -44,96 +26,12 @@ export async function GET(req: NextRequest) {
 		}
 
 		const role = getUserRole(user);
-		// Allow technicians and managers to view overdue equipment; block end users
+		// Allow technicians and managers; block end users
 		if (!role || role === 'end_user') {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		const sql = getDb();
-
-		// Fetch equipment with maintenance interval set, including location info
-		const equipmentRows = await sql`
-      select
-        e.id,
-        e.name,
-        e.part_number,
-        e.model,
-        e.manufacturer,
-        e.serial_number,
-        e.location,
-        e.sub_location,
-        e.location_id,
-        e.last_maintenance,
-        e.maintenance_interval,
-        l.name as location_name,
-        l.campus
-      from equipment e
-      left join locations l on e.location_id = l.id and l.deleted_at is null
-      where
-        e.deleted_at is null
-        and e.maintenance_interval is not null
-    ` as Array<{
-			id: string;
-			name: string;
-			part_number: string | null;
-			model: string | null;
-			manufacturer: string | null;
-			serial_number: string | null;
-			location: string | null;
-			sub_location: string | null;
-			location_id: string | null;
-			last_maintenance: string | null;
-			maintenance_interval: string | null;
-			location_name: string | null;
-			campus: string | null;
-		}>;
-
-		const overdue: OverdueEquipmentResponseItem[] = [];
-
-		for (const eq of equipmentRows) {
-			const status = deriveMaintenanceInfo({
-				lastMaintenance: eq.last_maintenance || undefined,
-				maintenanceInterval: eq.maintenance_interval || undefined,
-			});
-
-			if (status.maintenanceStatus !== 'overdue') continue;
-
-			// Check if an open PM request already exists for this equipment
-			const existing = await sql`
-        select id from service_request
-        where deleted_at is null
-          and equipment_id = ${eq.id}
-          and request_type = ${ServiceRequestType.PREVENTIVE_MAINTENANCE}
-          and work_status = ${ServiceRequestWorkStatus.PENDING}
-        limit 1
-      ` as Array<{ id: string }>;
-
-			if (existing && existing.length > 0) {
-				continue;
-			}
-
-			const overdueDays = Math.abs(status.daysUntil);
-
-			overdue.push({
-				id: eq.id,
-				name: eq.name,
-				partNumber: eq.part_number,
-				model: eq.model,
-				manufacturer: eq.manufacturer,
-				serialNumber: eq.serial_number,
-				location: eq.location,
-				subLocation: eq.sub_location,
-				locationId: eq.location_id,
-				locationName: eq.location_name,
-				campus: eq.campus,
-				lastMaintenance: eq.last_maintenance,
-				maintenanceInterval: eq.maintenance_interval,
-				nextMaintenance: status.nextMaintenance,
-				overdueDays,
-			});
-		}
-
-		return NextResponse.json({ data: overdue });
+		return NextResponse.json({ data: [] });
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : 'Unexpected error';
 		return NextResponse.json({ error: message }, { status: 500 });
@@ -141,8 +39,8 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST: Given a set of equipment IDs, create PM service requests
- * (tickets) for those that are overdue and do not already have an open PM.
+ * POST: Given a set of equipment IDs, create PM service requests (tickets)
+ * for those that do not already have an open PM. No interval/overdue checks.
  */
 export async function POST(req: NextRequest) {
 	try {
@@ -156,84 +54,132 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		// Ensure pm_details column exists before proceeding (for future PM forms)
-		await ensurePmDetailsColumn();
+		// Ensure full database schema (including assigned_technician_ids, pm_details, etc.)
+		await ensureSchema();
 
-		const body = (await req.json().catch(() => null)) as { equipmentIds?: string[] } | null;
+		const body = (await req.json().catch(() => null)) as { equipmentIds?: string[]; preview?: boolean } | null;
 		const equipmentIds = Array.isArray(body?.equipmentIds) ? body!.equipmentIds : [];
+		const preview = Boolean(body?.preview);
 
 		if (!equipmentIds.length) {
 			return NextResponse.json({ error: 'equipmentIds array is required' }, { status: 400 });
 		}
 
+		// Hard cap to avoid accidentally creating an extremely large batch
+		if (equipmentIds.length > 1000) {
+			return NextResponse.json(
+				{ error: 'Too many equipment items in one batch. Please split into smaller runs (max 1000).' },
+				{ status: 400 },
+			);
+		}
+
 		const sql = getDb();
 
-		// Fetch only the selected equipment rows
+		// Fetch only the selected equipment rows (no maintenance interval requirement)
 		const equipmentRows = await sql`
-      select id, name, last_maintenance, maintenance_interval
+      select id, name
       from equipment
       where
         deleted_at is null
-        and maintenance_interval is not null
         and id = any(${equipmentIds}::uuid[])
-    ` as Array<{ id: string; name: string; last_maintenance: string | null; maintenance_interval: string | null }>;
+    ` as Array<{ id: string; name: string }>;
 
-		let created = 0;
-		let skippedExisting = 0;
-		const createdRequestIds: string[] = [];
-
-		for (const eq of equipmentRows) {
-			const status = deriveMaintenanceInfo({
-				lastMaintenance: eq.last_maintenance || undefined,
-				maintenanceInterval: eq.maintenance_interval || undefined,
-			});
-
-			// Only create tickets for still-overdue equipment
-			if (status.maintenanceStatus !== 'overdue') {
-				continue;
-			}
-
-			// Check if an open PM request already exists for this equipment
-			const existing = await sql`
-        select id from service_request
-        where deleted_at is null
-          and equipment_id = ${eq.id}
-          and request_type = ${ServiceRequestType.PREVENTIVE_MAINTENANCE}
-          and work_status = ${ServiceRequestWorkStatus.PENDING}
-        limit 1
-      ` as Array<{ id: string }>;
-
-			if (existing && existing.length > 0) {
-				skippedExisting++;
-				continue;
-			}
-
-			// Create new PM service request (no job order, ticket will be assigned automatically)
-			// PM requests are auto-approved - no approval needed for technicians to start work
-			const row = await insertServiceRequest(
-				{
-					equipment_id: eq.id,
-					// Start unassigned; allow technicians to self-assign later
-					assigned_technician_id: undefined,
-					request_type: ServiceRequestType.PREVENTIVE_MAINTENANCE,
-					scheduled_at: new Date().toISOString(),
-					priority: ServiceRequestPriority.MEDIUM,
-					approval_status: ServiceRequestApprovalStatus.APPROVED,
-					work_status: ServiceRequestWorkStatus.PENDING,
-					problem_description: `Preventive maintenance for ${eq.name}`,
-					technical_assessment: null as unknown as undefined,
-					recommendation: null as unknown as undefined,
-					spare_parts_needed: null as unknown as undefined,
-					approval_note: null as unknown as undefined,
-					pm_details: null as unknown as undefined,
-					ticket_id: undefined,
-				},
-				user.id,
-			);
-
-			created++;
-			if (row?.id) createdRequestIds.push(row.id as unknown as string);
+		// Short-circuit if none of the provided IDs resolved to equipment
+		if (!equipmentRows.length) {
+			return NextResponse.json({ data: { created: 0, skippedExisting: 0, createdRequestIds: [] } });
 		}
+
+		// Fetch all existing "open" PM requests for these equipment in a single query.
+		// We align "open" with the same semantics as the Service Requests page's
+		// pending scope: approval_status = 'pending' OR (approval_status = 'approved' AND work_status = 'pending').
+		const existingRows = await sql`
+      select equipment_id
+      from service_request
+      where deleted_at is null
+        and request_type = ${ServiceRequestType.PREVENTIVE_MAINTENANCE}
+        and (
+          approval_status = ${ServiceRequestApprovalStatus.PENDING}
+          or (approval_status = ${ServiceRequestApprovalStatus.APPROVED} and work_status = ${ServiceRequestWorkStatus.PENDING})
+        )
+        and equipment_id = any(${equipmentRows.map((e) => e.id)}::uuid[])
+    ` as Array<{ equipment_id: string }>;
+
+		const existingEquipmentIds = new Set(existingRows.map((r) => r.equipment_id));
+
+		// Partition into equipments that already have an open PM and those that don't
+		let skippedExisting = 0;
+		const toCreate: Array<{ id: string; name: string }> = [];
+		for (const eq of equipmentRows) {
+			if (existingEquipmentIds.has(eq.id)) {
+				skippedExisting++;
+			} else {
+				toCreate.push(eq);
+			}
+		}
+
+		const toCreateCount = toCreate.length;
+
+		// Preview mode: compute ticket range but do not create any tickets
+		if (preview) {
+			if (toCreateCount === 0) {
+				return NextResponse.json({
+					data: {
+						created: 0,
+						skippedExisting,
+						createdRequestIds: [],
+						preview: {
+							countToCreate: 0,
+							firstTicketId: null,
+							lastTicketId: null,
+						},
+					},
+				});
+			}
+
+			const now = new Date();
+			const yy = String(now.getFullYear()).slice(-2);
+			const yearPrefix = yy;
+
+			const rows = await sql`
+        select coalesce(max(
+          case 
+            when ticket_id is not null and ticket_id like ${yearPrefix + '-%'}
+            then (split_part(ticket_id, '-', 2))::int
+            else 0
+          end
+        ), 0) as max_suffix
+        from service_request
+      ` as Array<{ max_suffix: number }>;
+
+			const maxSuffix = (rows?.[0]?.max_suffix ?? 0) as number;
+			const start = (Number.isFinite(maxSuffix) ? maxSuffix : 0) + 1;
+			const end = start + toCreateCount - 1;
+			const formatId = (n: number) => `${yearPrefix}-${String(n).padStart(4, "0")}`;
+
+			const firstTicketId = formatId(start);
+			const lastTicketId = formatId(end);
+
+			return NextResponse.json({
+				data: {
+					created: 0,
+					skippedExisting,
+					createdRequestIds: [],
+					preview: {
+						countToCreate: toCreateCount,
+						firstTicketId,
+						lastTicketId,
+					},
+				},
+			});
+		}
+
+		const inserted = await bulkInsertPmServiceRequests(
+			toCreate.map((eq) => ({ equipmentId: eq.id, equipmentName: eq.name })),
+			user.id,
+		);
+
+		const created = inserted.length;
+		const createdRequestIds = inserted.map((r) => r.id);
 
 		return NextResponse.json({ data: { created, skippedExisting, createdRequestIds } });
 	} catch (error: unknown) {
