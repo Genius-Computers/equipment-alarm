@@ -113,6 +113,30 @@ export const ensureSchema = async () => {
       supplier text
     )`;
 
+  // Indexes for spare_parts (idempotent and safe in production)
+  await sql`
+    create index if not exists idx_spare_parts_deleted_at
+    on spare_parts(deleted_at)
+    where deleted_at is null
+  `;
+
+  await sql`
+    create index if not exists idx_spare_parts_name
+    on spare_parts(lower(name))
+  `;
+
+  await sql`
+    create index if not exists idx_spare_parts_serial_number
+    on spare_parts(lower(serial_number))
+    where serial_number is not null
+  `;
+
+  await sql`
+    create index if not exists idx_spare_parts_manufacturer
+    on spare_parts(lower(manufacturer))
+    where manufacturer is not null
+  `;
+
   // Create spare_part_orders table
   await sql`
     create table if not exists spare_part_orders (

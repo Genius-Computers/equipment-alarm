@@ -26,6 +26,19 @@ type EquipmentItem = {
 	campus: string | null;
 };
 
+type EquipmentApiItem = {
+	id: string;
+	name: string;
+	partNumber?: string | null;
+	model?: string | null;
+	manufacturer?: string | null;
+	serialNumber?: string | null;
+	locationId?: string | null;
+	locationName?: string | null;
+	subLocation?: string | null;
+	campus?: string | null;
+};
+
 type Step = "locations" | "equipment";
 
 export default function PreventiveMaintenanceLocationPage() {
@@ -122,7 +135,7 @@ export default function PreventiveMaintenanceLocationPage() {
 				throw new Error(msg);
 			}
 			const j = await res.json();
-			const data: any[] = Array.isArray(j?.data) ? j.data : [];
+			const data: EquipmentApiItem[] = Array.isArray(j?.data) ? j.data : [];
 			const items: EquipmentItem[] = data.map((e) => ({
 				id: e.id,
 				name: e.name,
