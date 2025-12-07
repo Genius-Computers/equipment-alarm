@@ -114,14 +114,12 @@ export const ensureSchema = async () => {
     where deleted_at is null
   `;
 
-  -- Optimize "overdue" queries: only pending work with past scheduled_at
   await sql`
     create index if not exists idx_service_request_overdue
     on service_request (scheduled_at)
     where deleted_at is null and work_status = 'pending'
   `;
 
-  -- Support JSONB "?" operator on assigned_technician_ids for multi-tech filters
   await sql`
     create index if not exists idx_service_request_assigned_technician_ids
     on service_request using gin (assigned_technician_ids)

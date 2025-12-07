@@ -3,8 +3,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get(`stack-refresh-${process.env.NEXT_PUBLIC_STACK_PROJECT_ID}`);
-
   const pathname = request.nextUrl.pathname;
   const isHandlerRoute = pathname.startsWith('/handler/');
 
@@ -14,9 +12,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For all other routes, require a refresh token cookie and send unauthenticated
+  // Consider the user "authenticated" at middleware level if we see any
+  // Stack-related auth cookie. This is deliberately broad to avoid
+  // false negatives due to project ID or cookie name changes.
+  const hasStackSessionCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith('stack-'));
+
+  // For all other routes, require a Stack auth cookie and send unauthenticated
   // users to the sign-in screen.
-  if (!token) {
+  if (!hasStackSessionCookie) {
     return NextResponse.redirect(new URL('/handler/sign-in', request.url));
   }
 
