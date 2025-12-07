@@ -95,6 +95,38 @@ export const ensureSchema = async () => {
       add column if not exists assigned_technician_ids jsonb
   `;
 
+  // Indexes for service_request (idempotent and safe in production)
+  await sql`
+    create index if not exists idx_service_request_status_created
+    on service_request (approval_status, work_status, request_type, priority, created_at)
+    where deleted_at is null
+  `;
+
+  await sql`
+    create index if not exists idx_service_request_equipment
+    on service_request (equipment_id)
+    where deleted_at is null
+  `;
+
+  await sql`
+    create index if not exists idx_service_request_assigned_technician_id
+    on service_request (assigned_technician_id)
+    where deleted_at is null
+  `;
+
+  -- Optimize "overdue" queries: only pending work with past scheduled_at
+  await sql`
+    create index if not exists idx_service_request_overdue
+    on service_request (scheduled_at)
+    where deleted_at is null and work_status = 'pending'
+  `;
+
+  -- Support JSONB "?" operator on assigned_technician_ids for multi-tech filters
+  await sql`
+    create index if not exists idx_service_request_assigned_technician_ids
+    on service_request using gin (assigned_technician_ids)
+  `;
+
   // Create spare_parts table
   await sql`
     create table if not exists spare_parts (

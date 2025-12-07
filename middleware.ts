@@ -3,22 +3,24 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-    const token = request.cookies.get(`stack-refresh-${process.env.NEXT_PUBLIC_STACK_PROJECT_ID}`);
+  const token = request.cookies.get(`stack-refresh-${process.env.NEXT_PUBLIC_STACK_PROJECT_ID}`);
 
+  const pathname = request.nextUrl.pathname;
+  const isHandlerRoute = pathname.startsWith('/handler/');
 
-    // Allow unauthenticated access to Stack handler routes (e.g., forgot-password, verification)
-    const isHandlerRoute = request.nextUrl.pathname.startsWith('/handler/');
-
-    if (!token && !isHandlerRoute) {
-        return NextResponse.redirect(new URL('/handler/sign-in', request.url));
-    }
-    // if has token and is at login screen then route to home
-
-    if (token && (request.nextUrl.pathname === '/handler/sign-in' || request.nextUrl.pathname === '/handler/sign-up')) {
-        return NextResponse.redirect(new URL('/', request.url));
-    }
-
+  // Let Stack handler routes (sign-in, sign-up, forgot-password, etc.) handle
+  // their own auth logic without our redirects to avoid loops.
+  if (isHandlerRoute) {
     return NextResponse.next();
+  }
+
+  // For all other routes, require a refresh token cookie and send unauthenticated
+  // users to the sign-in screen.
+  if (!token) {
+    return NextResponse.redirect(new URL('/handler/sign-in', request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
