@@ -344,15 +344,7 @@ export const getServiceRequestStats = async (
   // Technicians only ever see approved requests in the UI; mirror that constraint here.
   const roleApprovalFilter = isTechnician ? sql`sr.approval_status = 'approved'` : sql`true`;
 
-  const rows = await sql<{
-    total: number;
-    preventive_maintenance: number;
-    corrective_maintenence: number;
-    install: number;
-    assess: number;
-    other: number;
-    assigned_to_me: number;
-  }>`
+  const rows = await sql`
     select
       count(*)::int as total,
       count(*) filter (where sr.request_type = 'preventive_maintenance')::int as preventive_maintenance,
@@ -373,7 +365,15 @@ export const getServiceRequestStats = async (
     where sr.deleted_at is null
       and ${scopeFilter}
       and ${roleApprovalFilter}
-  `;
+  ` as unknown as Array<{
+    total: number;
+    preventive_maintenance: number;
+    corrective_maintenence: number;
+    install: number;
+    assess: number;
+    other: number;
+    assigned_to_me: number;
+  }>;
 
   const row = rows[0] ?? {
     total: 0,

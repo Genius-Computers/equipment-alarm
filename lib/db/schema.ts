@@ -13,6 +13,7 @@ export const ensureSchema = async () => {
   
   // Enable required extensions
   await sql`create extension if not exists pgcrypto`;
+  await sql`create extension if not exists pg_trgm`;
   
   // Create locations table FIRST (equipment references it)
   await sql`
@@ -61,6 +62,25 @@ export const ensureSchema = async () => {
     create index if not exists idx_equipment_location_id
     on equipment (location_id)
     where deleted_at is null
+  `;
+
+  // Optimize inventory listing & search:
+  // - fast ORDER BY name for non-deleted rows
+  // - trigram indexes for ILIKE '%q%' searches on name / part_number
+  await sql`
+    create index if not exists idx_equipment_not_deleted_name
+    on equipment (name)
+    where deleted_at is null
+  `;
+
+  await sql`
+    create index if not exists idx_equipment_name_trgm
+    on equipment using gin (name gin_trgm_ops)
+  `;
+
+  await sql`
+    create index if not exists idx_equipment_part_number_trgm
+    on equipment using gin (part_number gin_trgm_ops)
   `;
 
   // Create service_request table
