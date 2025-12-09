@@ -4,22 +4,26 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import type { JServiceRequest, ServiceRequest } from "@/lib/types/service-request";
-import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types/service-request";
+import {
+	ServiceRequestApprovalStatus,
+	ServiceRequestWorkStatus,
+	ServiceRequestType,
+} from "@/lib/types/service-request";
 
 export type ServiceRequestCreateInput = Omit<ServiceRequest, "id" | "approvalStatus" | "workStatus"> & {
 	approvalStatus?: ServiceRequestApprovalStatus;
 	workStatus?: ServiceRequestWorkStatus;
 };
 
-export function useServiceRequests(options?: { autoRefresh?: boolean }) {
-    const { autoRefresh = true } = options ?? {};
-    const { t } = useLanguage();
+export function useServiceRequests(options?: { autoRefresh?: boolean; excludePreventive?: boolean }) {
+	const { autoRefresh = true, excludePreventive = false } = options ?? {};
+	const { t } = useLanguage();
 
 	const [requests, setRequests] = useState<Array<JServiceRequest>>([]);
 	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
+	const [pageSize, setPageSize] = useState(50);
 	const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(true);
+	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const [isInserting, setIsInserting] = useState(false);
@@ -29,7 +33,7 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	const [approvalFilter, setApprovalFilter] = useState<"all" | JServiceRequest["approvalStatus"]>("all");
 	const [requestTypeFilter, setRequestTypeFilter] = useState<"all" | JServiceRequest["requestType"]>("all");
 
-    // Tab scope state and cache per scope
+	// Tab scope state and cache per scope
 	const [scope, setScope] = useState<"pending" | "completed">("pending");
 	const [assignedToMe, setAssignedToMe] = useState(false);
 	const [cache, setCache] = useState<Record<string, { page: number; pageSize: number; total: number; rows: Array<JServiceRequest> }>>({});
@@ -40,18 +44,24 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 			setLoading(true);
 			setError(null);
 			const assignedParam = assignedToMe ? "&assignedTo=me" : "";
-			const pr = encodeURIComponent((priorityFilter === "overdue" ? "all" : (priorityFilter || "all")) as string);
+			const pr = encodeURIComponent(
+				(priorityFilter === "overdue" ? "all" : (priorityFilter || "all")) as string,
+			);
 			const ap = encodeURIComponent(approvalFilter || "all");
 			const rt = encodeURIComponent((requestTypeFilter || "all") as string);
 			const controller = new AbortController();
-			const res = await fetch(`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}${assignedParam}&priority=${pr}&approval=${ap}&requestType=${rt}` , { cache: "no-store", signal: controller.signal });
+			const res = await fetch(
+				`/api/service-request?page=${page}&pageSize=${pageSize}&scope=${scope}${assignedParam}&priority=${pr}&approval=${ap}&requestType=${rt}&excludePreventive=${excludePreventive ? "true" : "false"}`,
+				{ cache: "no-store", signal: controller.signal },
+			);
 			if (!res.ok) throw new Error("Failed to load service requests");
 			const json = await res.json();
 			const rows: Array<JServiceRequest> = Array.isArray(json.data) ? json.data : [];
 			setTotal(Number(json?.meta?.total || 0));
 			setRequests(rows);
 			// update cache only for default filter state (no search; all priority/approval)
-			const allowCache = (priorityFilter === "all") && (approvalFilter === "all") && !assignedToMe && (requestTypeFilter === "all");
+			const allowCache =
+				priorityFilter === "all" && approvalFilter === "all" && !assignedToMe && requestTypeFilter === "all";
 			if (allowCache) {
 				const key = `${scope}:all`;
 				setCache((prev) => ({ ...prev, [key]: { page, pageSize, total: Number(json?.meta?.total || 0), rows } }));
@@ -101,7 +111,8 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	useEffect(() => {
 		if (!autoRefresh) return;
 		// hydrate from cache only when no active filters/search
-		const allowCache = (priorityFilter === "all") && (approvalFilter === "all") && !assignedToMe && (requestTypeFilter === "all");
+		const allowCache =
+			priorityFilter === "all" && approvalFilter === "all" && !assignedToMe && requestTypeFilter === "all";
 		if (allowCache) {
 			const key = `${scope}:all`;
 			const scoped = cache[key];
@@ -235,15 +246,23 @@ export function useServiceRequests(options?: { autoRefresh?: boolean }) {
 	);
 
 	const filtered = useMemo(() => {
-		if (priorityFilter !== "overdue") return requests;
+		let base = requests;
+
+		// Optionally hide preventive maintenance tickets entirely from the consumer
+		if (excludePreventive) {
+			base = base.filter((r) => r.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE);
+		}
+
+		if (priorityFilter !== "overdue") return base;
+
 		const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
 		const now = Date.now();
-		return requests.filter((r) => {
+		return base.filter((r) => {
 			const sched = r.scheduledAt ? new Date(r.scheduledAt).getTime() : NaN;
 			if (!Number.isFinite(sched)) return false;
-			return r.workStatus === ServiceRequestWorkStatus.PENDING && (now - sched) > fiveDaysMs;
+			return r.workStatus === ServiceRequestWorkStatus.PENDING && now - sched > fiveDaysMs;
 		});
-	}, [requests, priorityFilter]);
+	}, [requests, priorityFilter, excludePreventive]);
 
 	return {
 		requests,

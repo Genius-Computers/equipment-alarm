@@ -70,17 +70,14 @@ const CustomPagination = ({
             value={pageSize.toString()}
             onValueChange={(value) => onPageSizeChange(parseInt(value))}
           >
-            <SelectTrigger id="page-size" className="w-20">
+            <SelectTrigger id="page-size" className="w-24">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="4">4</SelectItem>
-              <SelectItem value="8">8</SelectItem>
-              <SelectItem value="12">12</SelectItem>
-              <SelectItem value="16">16</SelectItem>
-              <SelectItem value="20">20</SelectItem>
               <SelectItem value="50">50</SelectItem>
               <SelectItem value="100">100</SelectItem>
+              <SelectItem value="200">200</SelectItem>
+              <SelectItem value="500">500</SelectItem>
             </SelectContent>
           </Select>
         </div>

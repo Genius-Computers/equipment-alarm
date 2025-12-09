@@ -10,7 +10,7 @@ export const useSpareParts = () => {
   const [isInserting, setIsInserting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(50);
   const [total, setTotal] = useState(0);
 
   const fetchSpareParts = useCallback(async () => {

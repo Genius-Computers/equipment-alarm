@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { JServiceRequest, ServiceRequestType } from "@/lib/types";
+import { ServiceRequestType } from "@/lib/types";
 import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
 import { ClipboardList, Wrench, PackagePlus, Search, MoreHorizontal, User } from "lucide-react";
@@ -13,11 +14,21 @@ interface ServiceRequestStatsProps {
   refreshTrigger?: number; // Add a trigger to force refresh
   activeType?: "all" | ServiceRequestType;
   onTypeChange?: (type: "all" | ServiceRequestType) => void;
+  assignedToMe?: boolean;
+  onAssignedToMeChange?: (value: boolean) => void;
 }
 
-export default function ServiceRequestStats({ scope, refreshTrigger, activeType = "all", onTypeChange }: ServiceRequestStatsProps) {
+export default function ServiceRequestStats({
+  scope,
+  refreshTrigger,
+  activeType = "all",
+  onTypeChange,
+  assignedToMe = false,
+  onAssignedToMeChange,
+}: ServiceRequestStatsProps) {
   const { t } = useLanguage();
   const user = useUser();
+  const router = useRouter();
   const [stats, setStats] = useState<{
     total: number;
     preventiveMaintenance: number;
@@ -41,33 +52,27 @@ export default function ServiceRequestStats({ scope, refreshTrigger, activeType 
     const fetchStats = async () => {
       setLoading(true);
       try {
-        // Fetch all requests for the current scope
-        // Note: The API already filters by role (technicians only see approved requests)
-        const res = await fetch(`/api/service-request?page=1&pageSize=10000&scope=${scope}`, {
+        // Fetch aggregated stats for the current scope. The API applies role-based visibility.
+        const res = await fetch(`/api/service-request/stats?scope=${scope}`, {
           cache: "no-store",
         });
         if (!res.ok) throw new Error("Failed to fetch statistics");
         const json = await res.json();
-        const requests: JServiceRequest[] = json.data || [];
+        const data = json?.data as
+          | {
+              total: number;
+              preventiveMaintenance: number;
+              correctiveMaintenance: number;
+              install: number;
+              assess: number;
+              other: number;
+              assignedToMe: number;
+            }
+          | undefined;
 
-        // Calculate statistics
-        const myId = user?.id;
-        const newStats = {
-          total: requests.length,
-          preventiveMaintenance: requests.filter(r => r.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE).length,
-          correctiveMaintenance: requests.filter(r => r.requestType === ServiceRequestType.CORRECTIVE_MAINTENANCE).length,
-          install: requests.filter(r => r.requestType === ServiceRequestType.INSTALL).length,
-          assess: requests.filter(r => r.requestType === ServiceRequestType.ASSESS).length,
-          other: requests.filter(r => r.requestType === ServiceRequestType.OTHER).length,
-          assignedToMe: myId
-            ? requests.filter(r =>
-                r.assignedTechnicianId === myId ||
-                (Array.isArray(r.assignedTechnicianIds) && r.assignedTechnicianIds.includes(myId))
-              ).length
-            : 0,
-        };
-
-        setStats(newStats);
+        if (data) {
+          setStats(data);
+        }
       } catch (error) {
         console.error("Error fetching service request stats:", error);
       } finally {
@@ -159,22 +164,45 @@ export default function ServiceRequestStats({ scope, refreshTrigger, activeType 
           role="button"
           tabIndex={0}
           onClick={() => {
-            if (stat.type === "assigned") return;
+            if (stat.type === "assigned") {
+              onAssignedToMeChange?.(!assignedToMe);
+              return;
+            }
+
+            // For preventive maintenance, navigate to the dedicated PM Service Requests page
+            if (stat.type === ServiceRequestType.PREVENTIVE_MAINTENANCE) {
+              router.push("/preventive-maintenance/tickets");
+              return;
+            }
+
             const nextType = stat.type === "all" ? "all" : stat.type;
             onTypeChange?.(nextType);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              if (stat.type === "assigned") return;
+              if (stat.type === "assigned") {
+                onAssignedToMeChange?.(!assignedToMe);
+                return;
+              }
+
+              if (stat.type === ServiceRequestType.PREVENTIVE_MAINTENANCE) {
+                router.push("/preventive-maintenance/tickets");
+                return;
+              }
+
               const nextType = stat.type === "all" ? "all" : stat.type;
               onTypeChange?.(nextType);
             }
           }}
           className={`p-4 cursor-pointer transition-colors ${
-            stat.type !== "assigned" && activeType === (stat.type === "all" ? "all" : stat.type)
-              ? "border-primary bg-primary/5"
-              : ""
+            stat.type === "assigned"
+              ? assignedToMe
+                ? "border-primary bg-primary/5"
+                : ""
+              : activeType === (stat.type === "all" ? "all" : stat.type)
+                ? "border-primary bg-primary/5"
+                : ""
           }`}
         >
           <div className="flex items-center justify-between">

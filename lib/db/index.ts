@@ -28,6 +28,7 @@ export {
   bulkInsertPmServiceRequests,
   updateServiceRequest,
   getServiceRequestsBySparePartId,
+  getServiceRequestStats,
 } from './service-requests';
 
 // Spare parts operations

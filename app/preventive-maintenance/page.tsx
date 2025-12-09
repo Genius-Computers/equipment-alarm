@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +44,7 @@ type Step = "locations" | "equipment";
 
 export default function PreventiveMaintenanceLocationPage() {
 	const { t } = useLanguage();
+	const router = useRouter();
 	const { profile, loading: profileLoading } = useSelfProfile();
 	const role = profile?.role || null;
 
@@ -195,6 +197,21 @@ export default function PreventiveMaintenanceLocationPage() {
 
 	const handleSelectAllEquipment = () => {
 		setSelectedEquipment(new Set(filteredEquipment.map((e) => e.id)));
+	};
+
+	const handleViewPmRequests = () => {
+		// When a location is selected, deep-link to PM tickets filtered by that location.
+		if (step === "equipment" && selectedLocation) {
+			const params = new URLSearchParams({
+				locationId: selectedLocation.id,
+				locationName: selectedLocation.name,
+			});
+			router.push(`/preventive-maintenance/tickets?${params.toString()}`);
+			return;
+		}
+
+		// Fallback: generic PM tickets view
+		router.push("/preventive-maintenance/tickets");
 	};
 
 	// Ticket range preview for current selection
@@ -353,33 +370,41 @@ export default function PreventiveMaintenanceLocationPage() {
 								</p>
 							</div>
 						</div>
-						{step === "equipment" && selectedLocation ? (
-							<div className="flex gap-2">
-								<Button
-									variant="outline"
-									onClick={() => {
-										setStep("locations");
-										setSelectedLocation(null);
-										setEquipment([]);
-										setSelectedEquipment(new Set());
-									}}
-								>
-									Back to locations
-								</Button>
-								<Button
-									onClick={handleCreateTickets}
-									disabled={creating || selectedEquipment.size === 0 || !canCreateTickets}
-									className="gap-2"
-								>
-									{creating ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									) : (
-										<ClipboardList className="h-4 w-4" />
-									)}
-									Create ticket{selectedEquipment.size === 1 ? "" : "s"}
-								</Button>
-							</div>
-						) : null}
+						<div className="flex flex-wrap gap-2">
+							<Button
+								variant="outline"
+								onClick={handleViewPmRequests}
+							>
+								View PM service requests
+							</Button>
+							{step === "equipment" && selectedLocation ? (
+								<>
+									<Button
+										variant="outline"
+										onClick={() => {
+											setStep("locations");
+											setSelectedLocation(null);
+											setEquipment([]);
+											setSelectedEquipment(new Set());
+										}}
+									>
+										Back to locations
+									</Button>
+									<Button
+										onClick={handleCreateTickets}
+										disabled={creating || selectedEquipment.size === 0 || !canCreateTickets}
+										className="gap-2"
+									>
+										{creating ? (
+											<Loader2 className="h-4 w-4 animate-spin" />
+										) : (
+											<ClipboardList className="h-4 w-4" />
+										)}
+										Create ticket{selectedEquipment.size === 1 ? "" : "s"}
+									</Button>
+								</>
+							) : null}
+						</div>
 					</div>
 
 					{step === "locations" && (

@@ -12,6 +12,7 @@ export const listServiceRequestPaginated = async (
   priority?: string,
   approval?: string,
   requestType?: string,
+  excludePreventive?: boolean,
 ): Promise<{ rows: (DbServiceRequest & { equipment: DbEquipment | null })[]; total: number }> => {
   const sql = getDb();
   const offset = Math.max(0, (Number(page) - 1) * Number(pageSize));
@@ -35,6 +36,7 @@ export const listServiceRequestPaginated = async (
     : sql`true`;
   const approvalFilter = approval && approval !== 'all' ? sql`sr.approval_status = ${approval}` : sql`true`;
   const requestTypeFilter = requestType && requestType !== 'all' ? sql`sr.request_type = ${requestType}` : sql`true`;
+  const excludePreventiveFilter = excludePreventive ? sql`sr.request_type <> 'preventive_maintenance'` : sql`true`;
 
   const countRows = await sql`
     select count(*)::int as count
@@ -47,6 +49,7 @@ export const listServiceRequestPaginated = async (
       and ${approvalFilter}
       and ${overdueFilter}
       and ${requestTypeFilter}
+      and ${excludePreventiveFilter}
   `;
   const total = (countRows?.[0]?.count as number) ?? 0;
 
@@ -62,6 +65,7 @@ export const listServiceRequestPaginated = async (
       and ${approvalFilter}
       and ${overdueFilter}
       and ${requestTypeFilter}
+      and ${excludePreventiveFilter}
     order by sr.ticket_id desc nulls last, sr.created_at desc nulls last
     limit ${limit} offset ${offset}
   `;
@@ -323,3 +327,72 @@ export const getServiceRequestsBySparePartId = async (
   
   return rows as unknown as (DbServiceRequest & { equipment: DbEquipment | null })[];
 };
+
+export const getServiceRequestStats = async (
+  scope?: 'pending' | 'completed',
+  userId?: string,
+  isTechnician?: boolean,
+) => {
+  const sql = getDb();
+
+  const scopeFilter = scope === 'pending'
+    ? sql`(sr.approval_status = 'pending' or (sr.approval_status = 'approved' and sr.work_status = 'pending'))`
+    : scope === 'completed'
+    ? sql`(sr.approval_status <> 'pending' and sr.work_status <> 'pending')`
+    : sql`true`;
+
+  // Technicians only ever see approved requests in the UI; mirror that constraint here.
+  const roleApprovalFilter = isTechnician ? sql`sr.approval_status = 'approved'` : sql`true`;
+
+  const rows = await sql<{
+    total: number;
+    preventive_maintenance: number;
+    corrective_maintenence: number;
+    install: number;
+    assess: number;
+    other: number;
+    assigned_to_me: number;
+  }>`
+    select
+      count(*)::int as total,
+      count(*) filter (where sr.request_type = 'preventive_maintenance')::int as preventive_maintenance,
+      count(*) filter (where sr.request_type = 'corrective_maintenence')::int as corrective_maintenence,
+      count(*) filter (where sr.request_type = 'install')::int as install,
+      count(*) filter (where sr.request_type = 'assess')::int as assess,
+      count(*) filter (where sr.request_type = 'other')::int as other,
+      ${
+        userId
+          ? sql`count(*) filter (
+              where
+                (sr.assigned_technician_id = ${userId})
+                or (sr.assigned_technician_ids ? ${userId})
+            )::int`
+          : sql`0::int`
+      } as assigned_to_me
+    from service_request sr
+    where sr.deleted_at is null
+      and ${scopeFilter}
+      and ${roleApprovalFilter}
+  `;
+
+  const row = rows[0] ?? {
+    total: 0,
+    preventive_maintenance: 0,
+    corrective_maintenence: 0,
+    install: 0,
+    assess: 0,
+    other: 0,
+    assigned_to_me: 0,
+  };
+
+  return {
+    total: row.total,
+    preventiveMaintenance: row.preventive_maintenance,
+    correctiveMaintenance: row.corrective_maintenence,
+    install: row.install,
+    assess: row.assess,
+    other: row.other,
+    assignedToMe: row.assigned_to_me,
+  };
+};
+

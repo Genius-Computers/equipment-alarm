@@ -41,7 +41,7 @@ const Page = () => {
 		changeApprovalStatus,
 		changeWorkStatus,
 		refresh,
-	} = useServiceRequests();
+	} = useServiceRequests({ excludePreventive: true });
 
 	// Count requests awaiting approval (for supervisors only)
 	const pendingApprovalCount = canApprove 
@@ -91,14 +91,13 @@ const Page = () => {
 					onTypeChange={(type) => {
 						setRequestTypeFilter(type);
 					}}
+					assignedToMe={assignedToMe}
+					onAssignedToMeChange={setAssignedToMe}
 				/>
 
 				<ServiceRequestFilters
 					priority={priorityFilter}
 					onPriorityChange={setPriorityFilter}
-					showAssignedToggle={role === "technician" || role === "end_user"}
-					assignedToMe={assignedToMe}
-					onAssignedToMeChange={setAssignedToMe}
 				/>
 
 				<div className="flex justify-end gap-2">

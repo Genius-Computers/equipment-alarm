@@ -1,20 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus } from "@/lib/types";
+import { ServiceRequestApprovalStatus, ServiceRequestWorkStatus, ServiceRequestType } from "@/lib/types";
 import type { JServiceRequest } from "@/lib/types/service-request";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Wrench, Check, X, Loader2, Pencil, Eye, User, Ticket, Flag, Bell } from "lucide-react";
+import { Wrench, Check, X, Loader2, Pencil, Eye, User, Ticket, Flag, Bell, MapPin } from "lucide-react";
 import Link from "next/link";
 import ExpandableText from "@/components/ExpandableText";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 // removed unused AlertDialog imports
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
 import { formatSaudiDateTime } from "@/lib/utils";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 
@@ -156,6 +156,8 @@ export default function ServiceRequestCard({
   const userId = profile?.id || null;
   const canEditDetails = canEdit; // Only allow editing if user has edit permissions
 
+  const isPmRequest = request.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE;
+
   const isClosed =
     request.workStatus === ServiceRequestWorkStatus.COMPLETED ||
     request.workStatus === ServiceRequestWorkStatus.CANCELLED;
@@ -197,8 +199,10 @@ export default function ServiceRequestCard({
     }
   })();
 
-  // Consider details pending if any technician-side fields are empty while pending
+  // Consider details pending if any technician-side fields are empty while pending.
+  // For PM requests we use a dedicated PM form instead, so we skip this banner entirely.
   const detailsPending =
+    !isPmRequest &&
     (request.workStatus === ServiceRequestWorkStatus.PENDING ||
       request.approvalStatus === ServiceRequestApprovalStatus.PENDING) &&
     (!request.technicalAssessment?.trim?.() ||
@@ -248,12 +252,11 @@ export default function ServiceRequestCard({
           </div>
         </CardTitle>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge className="bg-primary/10 text-primary border-primary/20 capitalize">
-            {t("serviceRequest.approvalStatus")}: {request.approvalStatus}
-          </Badge>
-          <Badge className="bg-muted text-foreground/80 border border-border capitalize">
-            {t("serviceRequest.operational.status")}: {operationalLabel}
-          </Badge>
+          {!isPmRequest ? (
+            <Badge className="bg-primary/10 text-primary border-primary/20 capitalize">
+              {t("serviceRequest.approvalStatus")}: {request.approvalStatus}
+            </Badge>
+          ) : null}
           <div className="flex items-center gap-1 flex-wrap">
             <span className="text-xs text-muted-foreground">{t("equipment.label")}:</span>
             <span className="text-sm font-medium">{request.equipment?.name || request.equipmentId}</span>
@@ -280,6 +283,23 @@ export default function ServiceRequestCard({
               ))}
             </div>
           ) : null}
+          {/* Primary / Secondary locations (kept compact to preserve layout) */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+            <MapPin className="h-3 w-3" />
+            <span>
+              Primary:{" "}
+              {request.equipment?.campus ||
+                request.equipment?.locationName ||
+                request.equipment?.location ||
+                "-"}
+            </span>
+            {request.equipment?.subLocation ? (
+              <>
+                <span className="mx-1">•</span>
+                <span>Secondary: {request.equipment.subLocation}</span>
+              </>
+            ) : null}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -315,7 +335,7 @@ export default function ServiceRequestCard({
           {t("serviceRequest.scheduledAt")}: {formatSaudiDateTime(request.scheduledAt)}
         </div>
 
-        {request.problemDescription ? (
+        {!isPmRequest && request.problemDescription ? (
           <div className="text-sm space-y-1">
             <span className="text-muted-foreground">{t("serviceRequest.problemDescription")}:</span>
             <ExpandableText text={request.problemDescription} />
@@ -357,7 +377,7 @@ export default function ServiceRequestCard({
           </div>
         ) : null}
 
-        {canEdit && (
+        {canEdit && !isPmRequest && (
           <div className="grid grid-cols-1 gap-3">
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">{t("serviceRequest.approvalStatus")}</div>

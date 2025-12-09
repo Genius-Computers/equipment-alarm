@@ -56,6 +56,13 @@ export const ensureSchema = async () => {
       location_id uuid references locations(id)
     )`;
 
+  // Indexes for equipment (idempotent and safe in production)
+  await sql`
+    create index if not exists idx_equipment_location_id
+    on equipment (location_id)
+    where deleted_at is null
+  `;
+
   // Create service_request table
   await sql`
     create table if not exists service_request (
