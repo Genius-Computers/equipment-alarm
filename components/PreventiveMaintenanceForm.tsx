@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { Equipment } from "@/lib/types/equipment";
 import type { PmDetails, PmQualitativeRow, PmQuantitativeRow } from "@/lib/types/preventive-maintenance";
-import { deriveMaintenanceInfo, formatSaudiDate } from "@/lib/utils";
+import { deriveMaintenanceInfo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,10 @@ export default function PreventiveMaintenanceForm({ equipment, value, onChange, 
 			}),
 		[equipment.lastMaintenance, equipment.maintenanceInterval],
 	);
+
+	// Fallbacks in case PM details don't yet contain explicit dates
+	const fallbackLastPpmDate = equipment.lastMaintenance ? equipment.lastMaintenance.slice(0, 10) : "";
+	const fallbackDuePpmDate = nextMaintenance ? nextMaintenance.slice(0, 10) : "";
 
 	const addQualRow = () => {
 		const next: PmQualitativeRow = { index: (value.qualitative?.length || 0) + 1, componentArea: "", inspectionCriteria: "", pass: null, comments: "" };
@@ -83,11 +87,21 @@ export default function PreventiveMaintenanceForm({ equipment, value, onChange, 
 					</div>
 					<div className="flex flex-col gap-1">
 						<Label>Last PPM</Label>
-						<Input value={formatSaudiDate(equipment.lastMaintenance || "")} disabled />
+						<Input
+							type="date"
+							value={value.lastPpmDate ?? fallbackLastPpmDate}
+							onChange={(e) => onChange({ ...value, lastPpmDate: e.target.value })}
+							disabled={!editable}
+						/>
 					</div>
 					<div className="flex flex-col gap-1">
 						<Label>Due PPM</Label>
-						<Input value={formatSaudiDate(nextMaintenance)} disabled />
+						<Input
+							type="date"
+							value={value.duePpmDate ?? fallbackDuePpmDate}
+							onChange={(e) => onChange({ ...value, duePpmDate: e.target.value })}
+							disabled={!editable}
+						/>
 					</div>
 					<div className="flex flex-col gap-1 md:col-span-2">
 						<Label>Technician Name</Label>

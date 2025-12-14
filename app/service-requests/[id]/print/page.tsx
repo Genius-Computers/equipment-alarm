@@ -62,13 +62,13 @@ export default function PrintPage(props: PageProps) {
     }
   }, [isPmRequest, data?.pmDetails]);
   
-  const nextMaintenance = useMemo(() => {
+  const computedNextMaintenance = useMemo(() => {
     if (!equipment) return "";
     const info = deriveMaintenanceInfo({
       lastMaintenance: equipment.lastMaintenance || undefined,
       maintenanceInterval: equipment.maintenanceInterval || undefined,
     });
-    return formatSaudiDate(info.nextMaintenance);
+    return info.nextMaintenance;
   }, [equipment]);
 
   const requestTypeLabel = useMemo(() => {
@@ -233,11 +233,23 @@ export default function PrintPage(props: PageProps) {
                     </div>
                     <div className="border p-1">
                       <div className="font-medium">Last PPM</div>
-                      <div className="text-[12px] text-neutral-700">{equipment?.lastMaintenance ? formatSaudiDate(equipment.lastMaintenance) : "-"}</div>
+                      <div className="text-[12px] text-neutral-700">
+                        {pmDetails.lastPpmDate
+                          ? formatSaudiDate(pmDetails.lastPpmDate)
+                          : equipment?.lastMaintenance
+                            ? formatSaudiDate(equipment.lastMaintenance)
+                            : "-"}
+                      </div>
                     </div>
                     <div className="border p-1">
                       <div className="font-medium">Due PPM</div>
-                      <div className="text-[12px] text-neutral-700">{nextMaintenance || "-"}</div>
+                      <div className="text-[12px] text-neutral-700">
+                        {pmDetails.duePpmDate
+                          ? formatSaudiDate(pmDetails.duePpmDate)
+                          : computedNextMaintenance
+                            ? formatSaudiDate(computedNextMaintenance)
+                            : "-"}
+                      </div>
                     </div>
                     <div className="border p-1 col-span-4">
                       <div className="font-medium">Technician Name</div>

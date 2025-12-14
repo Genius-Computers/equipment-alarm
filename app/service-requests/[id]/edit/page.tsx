@@ -56,7 +56,14 @@ export default function EditServiceRequestPage() {
 		technicalAssessment: "",
 		recommendation: "",
 	});
-	const [pmDetails, setPmDetails] = useState<PmDetails>({ technicianName: "", qualitative: [], quantitative: [] });
+	const [pmDetails, setPmDetails] = useState<PmDetails>({
+		technicianName: "",
+		notes: "",
+		lastPpmDate: undefined,
+		duePpmDate: undefined,
+		qualitative: [],
+		quantitative: [],
+	});
 
 	type Technician = { id: string; displayName?: string | null; email?: string | null };
 	const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -115,17 +122,35 @@ export default function EditServiceRequestPage() {
 					setSelfAssignOpen(true);
 				}
 				// Initialize PM details (preserve if present). Do NOT auto-fill technician name unless already on the request.
-				setPmDetails((prev) => ({
-					technicianName:
-						r.pmDetails?.technicianName ||
-						prev.technicianName ||
-						(r.assignedTechnicianId
-							? (r.technician?.displayName || r.technician?.email || "")
-							: ""),
-					notes: r.pmDetails?.notes || "",
-					qualitative: Array.isArray(r.pmDetails?.qualitative) ? r.pmDetails!.qualitative : [],
-					quantitative: Array.isArray(r.pmDetails?.quantitative) ? r.pmDetails!.quantitative : [],
-				}));
+				setPmDetails((prev) => {
+					const existingPm = r.pmDetails as PmDetails | undefined;
+					const lastMaintenanceRaw = r.equipment?.lastMaintenance || null;
+					const nextMaintenanceRaw = r.equipment?.nextMaintenance || null;
+
+					// Use stored PM values when available; otherwise fall back to equipment dates (date-only, YYYY-MM-DD)
+					const lastPpmDate =
+						existingPm?.lastPpmDate ||
+						prev.lastPpmDate ||
+						(lastMaintenanceRaw ? lastMaintenanceRaw.slice(0, 10) : undefined);
+					const duePpmDate =
+						existingPm?.duePpmDate ||
+						prev.duePpmDate ||
+						(nextMaintenanceRaw ? nextMaintenanceRaw.slice(0, 10) : undefined);
+
+					return {
+						technicianName:
+							existingPm?.technicianName ||
+							prev.technicianName ||
+							(r.assignedTechnicianId
+								? (r.technician?.displayName || r.technician?.email || "")
+								: ""),
+						notes: existingPm?.notes || prev.notes || "",
+						lastPpmDate,
+						duePpmDate,
+						qualitative: Array.isArray(existingPm?.qualitative) ? existingPm!.qualitative : [],
+						quantitative: Array.isArray(existingPm?.quantitative) ? existingPm!.quantitative : [],
+					};
+				});
 				// Derive primary and additional technicians from the request
 				const allAssignedIds = Array.isArray(r.assignedTechnicianIds) ? r.assignedTechnicianIds : [];
 				const primaryFromList = allAssignedIds.length > 0 ? allAssignedIds[0] : undefined;

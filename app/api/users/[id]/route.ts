@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
 import { getCurrentServerUser } from '@/lib/auth';
-import { canAssignRole } from '@/lib/types/user';
+import { canAssignRole, roleRank } from '@/lib/types/user';
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -23,17 +23,6 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
 
     // RBAC: Hierarchical protections
-    const roleToRank = (r: string | null | undefined): number => {
-      switch (r) {
-        case 'admin_x': return 4;
-        case 'supervisor': return 3;
-        case 'admin': return 2;
-        case 'technician': return 1;
-        case 'end_user': return 0;
-        default: return -1;
-      }
-    };
-
     const getRoleFromUserMeta = (u: { serverMetadata?: Record<string, unknown> | null; clientReadOnlyMetadata?: Record<string, unknown> | null; }): string | undefined => {
       const r1 = u.serverMetadata?.['role'];
       if (typeof r1 === 'string') return r1;
@@ -43,8 +32,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     };
 
     const targetRole = getRoleFromUserMeta(target as unknown as { serverMetadata?: Record<string, unknown> | null; clientReadOnlyMetadata?: Record<string, unknown> | null; });
-    const requesterRank = roleToRank(role);
-    const targetRank = roleToRank(targetRole);
+    const requesterRank = roleRank(role);
+    const targetRank = roleRank(targetRole);
 
     // Prevent modifying users with equal or higher rank
     if (requesterRank <= targetRank) {
@@ -53,7 +42,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     // Prevent assigning a role higher than the requester's own
     if (nextRole != null) {
-      const nextRank = roleToRank(nextRole);
+      const nextRank = roleRank(nextRole);
       if (nextRank > requesterRank) {
         return NextResponse.json({ error: 'Forbidden: cannot assign a role higher than your own' }, { status: 403 });
       }
@@ -88,8 +77,28 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
     }
 
     const { id } = await ctx.params;
+    if (requester?.id && requester.id === id) {
+      return NextResponse.json({ error: 'Forbidden: cannot delete your own account' }, { status: 403 });
+    }
+
     const target = await stackServerApp.getUser(id);
     if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    // RBAC: prevent deleting users with equal or higher rank
+    const getRoleFromUserMeta = (u: { serverMetadata?: Record<string, unknown> | null; clientReadOnlyMetadata?: Record<string, unknown> | null; }): string | undefined => {
+      const r1 = u.serverMetadata?.['role'];
+      if (typeof r1 === 'string') return r1;
+      const r2 = u.clientReadOnlyMetadata?.['role'];
+      if (typeof r2 === 'string') return r2;
+      return undefined;
+    };
+
+    const targetRole = getRoleFromUserMeta(target as unknown as { serverMetadata?: Record<string, unknown> | null; clientReadOnlyMetadata?: Record<string, unknown> | null; });
+    const requesterRank = roleRank(role);
+    const targetRank = roleRank(targetRole);
+    if (requesterRank <= targetRank) {
+      return NextResponse.json({ error: 'Forbidden: insufficient privilege to delete this user' }, { status: 403 });
+    }
 
     // Try hard delete first if available; otherwise fall back to revoking access
     const anyTarget = target as unknown as { delete?: () => Promise<void>; update: (u: unknown) => Promise<void> };

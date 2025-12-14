@@ -22,17 +22,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { canManageUsers, canAssignSupervisorRole } from "@/lib/types/user";
+import { canManageUsers, canAssignSupervisorRole, canDeleteUser, roleRank } from "@/lib/types/user";
 
 type UserRow = { id: string; email: string | null; displayName?: string | null; role?: string; signedUpAt?: string | null };
 
 // Helper component for role selection with restrictions
-const RoleSelect = ({ value, onValueChange, canAssignSupervisor }: { 
+const RoleSelect = ({ value, onValueChange, canAssignSupervisor, disabled }: { 
   value?: string; 
   onValueChange: (value: string) => void; 
   canAssignSupervisor: boolean;
+  disabled?: boolean;
 }) => (
-  <Select value={value} onValueChange={onValueChange}>
+  <Select value={value} onValueChange={onValueChange} disabled={!!disabled}>
     <SelectTrigger className="w-full sm:w-[160px]">
       <SelectValue placeholder="Select role" />
     </SelectTrigger>
@@ -52,6 +53,7 @@ const UsersPage = () => {
   const myRole = (user?.clientReadOnlyMetadata?.role) as string | undefined;
   const canManage = canManageUsers(myRole);
   const canAssignSupervisor = canAssignSupervisorRole(myRole);
+  const myId = user?.id;
 
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -249,9 +251,12 @@ const UsersPage = () => {
                     value={undefined} 
                     onValueChange={(v) => changeRole(u.id, v)} 
                     canAssignSupervisor={canAssignSupervisor}
+                    disabled={myId === u.id ? true : false}
                   />
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
+                  {canDeleteUser(myRole, u.role) && myId !== u.id && (
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
+                  )}
                 </div>
               ))}
             </CardContent>
@@ -273,6 +278,10 @@ const UsersPage = () => {
             ))
           ) : (
             rows.filter((u) => !!u.role).map((u) => (
+              (() => {
+                const canEditThisUser = roleRank(myRole) > roleRank(u.role) && myId !== u.id;
+                const canDeleteThisUser = canDeleteUser(myRole, u.role) && myId !== u.id;
+                return (
               <Card key={u.id} className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 flex-wrap">
@@ -284,15 +293,22 @@ const UsersPage = () => {
                   <div className="text-sm text-muted-foreground sm:flex-1 min-w-0">
                     <span className="block truncate">{u.email}</span>
                   </div>
-                  <RoleSelect 
-                    value={u.role!} 
-                    onValueChange={(v) => changeRole(u.id, v)} 
-                    canAssignSupervisor={canAssignSupervisor}
-                  />
+                  <div className="w-full sm:w-auto">
+                    <RoleSelect 
+                      value={u.role!} 
+                      onValueChange={(v) => changeRole(u.id, v)} 
+                      canAssignSupervisor={canAssignSupervisor}
+                      disabled={!canEditThisUser}
+                    />
+                  </div>
                   <Separator orientation="vertical" className="h-6 hidden sm:flex" />
-                  <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
+                  {canDeleteThisUser && (
+                    <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={() => handleDeleteClick(u.id, u.displayName || u.email || u.id)}>Delete</Button>
+                  )}
                 </CardContent>
               </Card>
+                );
+              })()
             ))
           )}
         </div>

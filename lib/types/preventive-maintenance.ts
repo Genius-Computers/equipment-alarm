@@ -23,6 +23,10 @@ export interface PmDetails {
 	technicianName?: string;
 	/** Free-form notes if needed */
 	notes?: string;
+	/** Last preventive maintenance date (editable on PM edit screen) */
+	lastPpmDate?: string;
+	/** Due preventive maintenance date (editable on PM edit screen) */
+	duePpmDate?: string;
 	qualitative: PmQualitativeRow[];
 	quantitative: PmQuantitativeRow[];
 }
