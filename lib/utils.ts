@@ -155,6 +155,17 @@ export function normalizeMaintenanceInterval(interval: string): string {
   return trimmed;
 }
 
+// Equipment-name normalization used for "type"-like grouping (e.g., PM Save all)
+// Rules: trim, collapse internal whitespace, case-insensitive.
+export function normalizeEquipmentName(name: string): string {
+  // Normalize NBSP (common from copy/paste / Excel) to regular space, then collapse.
+  return (name || "")
+    .replace(/\u00A0/g, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 export function deriveMaintenanceInfo(input: { lastMaintenance?: string; maintenanceInterval?: string }): { maintenanceStatus: 'good' | 'due' | 'overdue'; nextMaintenance: string; daysUntil: number } {
   if (!input.maintenanceInterval) {
     // If no maintenance interval is set, return default "good" status

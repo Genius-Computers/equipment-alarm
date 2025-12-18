@@ -16,7 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { formatSaudiDateTime } from "@/lib/utils";
-import { useSelfProfile } from "@/hooks/useSelfProfile";
+import { useUser } from "@stackframe/stack";
 
 function OperationalStatusEditor({
   role,
@@ -123,6 +123,13 @@ interface ServiceRequestCardProps {
   request: JServiceRequest;
   canApprove: boolean;
   canEdit?: boolean; // If false, user can only view (read-only mode)
+  /** When true, emphasize equipment name as the primary header (useful for PM-only pages). */
+  emphasizeEquipmentName?: boolean;
+  /** Optional viewer context (avoid per-card profile fetches). */
+  viewerRole?: string | null;
+  viewerId?: string | null;
+  /** Optional return path to preserve navigation context (e.g., PM filtered list). */
+  returnTo?: string;
   isUpdatingApproval?: boolean;
   isUpdatingWork?: boolean;
   onApprove?: (id: string, note?: string) => void;
@@ -137,6 +144,10 @@ export default function ServiceRequestCard({
   request,
   canApprove,
   canEdit = true, // Default to true for backward compatibility
+  emphasizeEquipmentName = false,
+  viewerRole,
+  viewerId,
+  returnTo,
   isUpdatingApproval,
   isUpdatingWork,
   onApprove,
@@ -151,12 +162,22 @@ export default function ServiceRequestCard({
   const [note, setNote] = useState("");
   const [equipmentStatus, setEquipmentStatus] = useState<string>(request.equipment?.status || "");
   const [updatingEquipmentStatus, setUpdatingEquipmentStatus] = useState(false);
-  const { profile } = useSelfProfile();
-  const role = profile?.role || null;
-  const userId = profile?.id || null;
+  const user = useUser();
+  const role = viewerRole ?? ((user?.clientReadOnlyMetadata?.role as string | undefined) || null);
+  const userId = viewerId ?? (user?.id || null);
   const canEditDetails = canEdit; // Only allow editing if user has edit permissions
 
   const isPmRequest = request.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE;
+
+  const editHref = (() => {
+    const base = `/service-requests/${request.id}/edit`;
+    if (!returnTo) return base;
+    // Basic safety: only allow internal paths
+    const trimmed = String(returnTo).trim();
+    if (!trimmed.startsWith("/")) return base;
+    const qs = new URLSearchParams({ returnTo: trimmed });
+    return `${base}?${qs.toString()}`;
+  })();
 
   const isClosed =
     request.workStatus === ServiceRequestWorkStatus.COMPLETED ||
@@ -222,6 +243,18 @@ export default function ServiceRequestCard({
     <Card className={cardClassName}>
       <CardHeader className="flex-row items-center justify-between gap-2">
         <CardTitle className="flex flex-col gap-2">
+          {emphasizeEquipmentName ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-base font-semibold">
+                {request.equipment?.name || request.equipmentId}
+              </span>
+              {request.equipment?.partNumber ? (
+                <span className="text-xs font-mono text-muted-foreground">
+                  ({request.equipment.partNumber})
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           {request.ticketId && (
             <div className="flex items-center gap-2">
               <Ticket className="h-5 w-5" />
@@ -230,7 +263,11 @@ export default function ServiceRequestCard({
           )}
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
-            <span className="capitalize">{request.requestType.replaceAll("_", " ")}</span>
+            {(!emphasizeEquipmentName || !isPmRequest) ? (
+              <span className="capitalize">{request.requestType.replaceAll("_", " ")}</span>
+            ) : (
+              <span className="text-sm text-muted-foreground">PM</span>
+            )}
             <Badge variant="secondary">
               {request.priority === 'low' ? t('priority.low') :
                request.priority === 'medium' ? t('priority.medium') :
@@ -258,13 +295,17 @@ export default function ServiceRequestCard({
             </Badge>
           ) : null}
           <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-muted-foreground">{t("equipment.label")}:</span>
-            <span className="text-sm font-medium">{request.equipment?.name || request.equipmentId}</span>
-            {request.equipment?.partNumber ? (
+            {!emphasizeEquipmentName ? (
               <>
-                <span className="mx-1 text-xs text-muted-foreground">•</span>
-                <span className="text-xs text-muted-foreground">Tag:</span>
-                <span className="text-xs font-mono">{request.equipment.partNumber}</span>
+                <span className="text-xs text-muted-foreground">{t("equipment.label")}:</span>
+                <span className="text-sm font-medium">{request.equipment?.name || request.equipmentId}</span>
+                {request.equipment?.partNumber ? (
+                  <>
+                    <span className="mx-1 text-xs text-muted-foreground">•</span>
+                    <span className="text-xs text-muted-foreground">Tag:</span>
+                    <span className="text-xs font-mono">{request.equipment.partNumber}</span>
+                  </>
+                ) : null}
               </>
             ) : null}
           </div>
@@ -317,7 +358,7 @@ export default function ServiceRequestCard({
                   )}
                 </span>
                 {canAddDetails ? (
-                  <Link href={`/service-requests/${request.id}/edit`}>
+                  <Link href={editHref}>
                     <Button size="sm" className="gap-1 whitespace-nowrap">
                       {t("serviceRequest.addDetails")}
                     </Button>
@@ -461,7 +502,7 @@ export default function ServiceRequestCard({
         )}
         <div className="flex gap-2">
           {canEditDetails && !detailsPending && (
-            <Link href={`/service-requests/${request.id}/edit`}>
+            <Link href={editHref}>
               <Button size="sm" variant="outline">
                 {isClosed ? (
                   <>

@@ -6,6 +6,7 @@ import EquipmentCard from "@/components/EquipmentCard";
 import ServiceRequestCard from "@/components/ServiceRequestCard";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@stackframe/stack";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
 import { useEquipment } from "@/hooks/useEquipment";
@@ -20,6 +21,9 @@ interface EquipmentDetailProps {
 }
 
 const EquipmentDetail = ({ equipmentId, canonicalizeToTag = false }: EquipmentDetailProps) => {
+  const user = useUser();
+  const viewerRole = (user?.clientReadOnlyMetadata?.role as string | undefined) || null;
+  const viewerId = user?.id || null;
   const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
@@ -182,6 +186,8 @@ const EquipmentDetail = ({ equipmentId, canonicalizeToTag = false }: EquipmentDe
                       key={req.id}
                       request={req}
                       canApprove={true}
+                      viewerRole={viewerRole}
+                      viewerId={viewerId}
                       isUpdatingApproval={Boolean(updatingById[req.id]?.approval)}
                       isUpdatingWork={Boolean(updatingById[req.id]?.work)}
                       onApprove={handleApprove}

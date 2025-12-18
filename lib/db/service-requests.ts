@@ -2,6 +2,7 @@ import { getDb } from './connection';
 import { DbServiceRequest, DbEquipment } from '../types';
 import { toJsonbParam } from '../utils';
 import { randomUUID } from 'crypto';
+import type { PmDetails } from '../types/preventive-maintenance';
 
 export const listServiceRequestPaginated = async (
   page: number = 1,
@@ -303,6 +304,138 @@ export const updateServiceRequest = async (
     from updated u
     left join equipment e on e.id = u.equipment_id`;
   return row as unknown as (DbServiceRequest & { equipment: DbEquipment | null });
+};
+
+export const bulkUpdatePmDetailsByEquipmentNameKey = async (input: {
+  /** Raw equipment name taken from the source ticket's equipment row. */
+  equipmentNameRaw: string;
+  /** Primary location scope (preferred). */
+  locationId?: string | null;
+  /** Legacy campus string fallback, when locationId is missing. */
+  location?: string | null;
+  pmDetails: PmDetails;
+  actorId: string;
+}): Promise<number> => {
+  const sql = getDb();
+  const equipmentNameRaw = (input.equipmentNameRaw || '');
+  if (!equipmentNameRaw || equipmentNameRaw.trim().length === 0) return 0;
+
+  const locationFilter = input.locationId
+    ? sql`e.location_id = ${input.locationId}`
+    : (input.location ? sql`e.location = ${input.location}` : sql`true`);
+
+  const rows = await sql`
+    update service_request sr
+    set
+      updated_by = ${input.actorId},
+      updated_at = now(),
+      pm_details = ${toJsonbParam(input.pmDetails)}::jsonb
+    from equipment e
+    where sr.equipment_id = e.id
+      and sr.deleted_at is null
+      and e.deleted_at is null
+      and sr.request_type = 'preventive_maintenance'
+      and sr.work_status = 'pending'
+      and ${locationFilter}
+      and lower(regexp_replace(trim(replace(e.name, chr(160), ' ')), E'\\s+', ' ', 'g'))
+        = lower(regexp_replace(trim(replace(${equipmentNameRaw}, chr(160), ' ')), E'\\s+', ' ', 'g'))
+    returning sr.id
+  `;
+
+  return Array.isArray(rows) ? rows.length : 0;
+};
+
+export const countPendingPmByEquipmentNameKey = async (input: {
+  equipmentNameRaw: string;
+  locationId?: string | null;
+  location?: string | null;
+}): Promise<number> => {
+  const sql = getDb();
+  const equipmentNameRaw = (input.equipmentNameRaw || '');
+  if (!equipmentNameRaw || equipmentNameRaw.trim().length === 0) return 0;
+
+  const locationFilter = input.locationId
+    ? sql`e.location_id = ${input.locationId}`
+    : (input.location ? sql`e.location = ${input.location}` : sql`true`);
+
+  const rows = await sql`
+    select count(*)::int as count
+    from service_request sr
+    join equipment e on e.id = sr.equipment_id
+    where sr.deleted_at is null
+      and e.deleted_at is null
+      and sr.request_type = 'preventive_maintenance'
+      and sr.work_status = 'pending'
+      and ${locationFilter}
+      and lower(regexp_replace(trim(replace(e.name, chr(160), ' ')), E'\\s+', ' ', 'g'))
+        = lower(regexp_replace(trim(replace(${equipmentNameRaw}, chr(160), ' ')), E'\\s+', ' ', 'g'))
+  ` as unknown as Array<{ count: number }>;
+
+  return Number(rows?.[0]?.count ?? 0);
+};
+
+export const countPendingPmForLocation = async (locationId: string): Promise<number> => {
+  const sql = getDb();
+  if (!locationId || String(locationId).trim().length === 0) return 0;
+  const rows = await sql`
+    select count(*)::int as count
+    from service_request sr
+    join equipment e on e.id = sr.equipment_id
+    where sr.deleted_at is null
+      and e.deleted_at is null
+      and sr.request_type = 'preventive_maintenance'
+      and sr.work_status = 'pending'
+      and e.location_id = ${locationId}
+  ` as unknown as Array<{ count: number }>;
+  return Number(rows?.[0]?.count ?? 0);
+};
+
+export const bulkCompletePendingPmForLocation = async (input: {
+  locationId: string;
+  actorId: string;
+  lastMaintenance: string;
+}): Promise<{ updatedCount: number; equipmentUpdated: number }> => {
+  const sql = getDb();
+  if (!input.locationId || input.locationId.trim().length === 0) {
+    return { updatedCount: 0, equipmentUpdated: 0 };
+  }
+
+  const rows = await sql`
+    with updated as (
+      update service_request sr
+      set
+        updated_by = ${input.actorId},
+        updated_at = now(),
+        work_status = 'completed'
+      from equipment e
+      where sr.equipment_id = e.id
+        and sr.deleted_at is null
+        and e.deleted_at is null
+        and sr.request_type = 'preventive_maintenance'
+        and sr.work_status = 'pending'
+        and e.location_id = ${input.locationId}
+      returning sr.equipment_id
+    ),
+    equipment_updated as (
+      update equipment e
+      set
+        updated_by = ${input.actorId},
+        updated_at = now(),
+        last_maintenance = ${input.lastMaintenance}
+      where e.deleted_at is null
+        and e.id in (select distinct equipment_id from updated)
+      returning e.id
+    )
+    select
+      (select count(*)::int from updated) as updated_count,
+      (select count(*)::int from equipment_updated) as equipment_updated
+  ` as unknown as Array<{ updated_count: number; equipment_updated: number }>;
+
+  const row = rows?.[0];
+  return {
+    updatedCount: Number(row?.updated_count ?? 0),
+    equipmentUpdated: Number(row?.equipment_updated ?? 0),
+  };
 };
 
 export const getServiceRequestsBySparePartId = async (

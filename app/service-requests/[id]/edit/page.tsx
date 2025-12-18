@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,16 +23,39 @@ import PreventiveMaintenanceForm from "@/components/PreventiveMaintenanceForm";
 import type { PmDetails } from "@/lib/types/preventive-maintenance";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { normalizeEquipmentName } from "@/lib/utils";
 
 export default function EditServiceRequestPage() {
 	const params = useParams();
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { t } = useLanguage();
 	const { updateDetails } = useServiceRequests({ autoRefresh: false });
 	const { profile } = useSelfProfile();
 	const isApprover = isApproverRole(profile?.role);
 
 	const id = String(params?.id || "");
+	const returnToParam = searchParams.get("returnTo");
+	const returnTo = (() => {
+		const v = (returnToParam || "").trim();
+		// Only allow internal navigation (avoid open redirects)
+		if (!v.startsWith("/")) return null;
+		if (v.startsWith("//")) return null;
+		return v;
+	})();
+	const goBack = () => {
+		router.push(returnTo || "/service-requests");
+	};
 
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -83,6 +106,8 @@ export default function EditServiceRequestPage() {
 	const [sparePartChanged, setSparePartChanged] = useState(false);
 	const [updatingSparePart, setUpdatingSparePart] = useState(false);
 	const [selfAssignOpen, setSelfAssignOpen] = useState(false);
+	const [saveAllOpen, setSaveAllOpen] = useState(false);
+	const [saveAllCount, setSaveAllCount] = useState<number | null>(null);
 	const [additionalTechnicianIds, setAdditionalTechnicianIds] = useState<string[]>([]);
 
 	const isValid = useMemo(() => {
@@ -181,6 +206,28 @@ export default function EditServiceRequestPage() {
 	}, [id, t, profile?.role]);
 
 	useEffect(() => {
+		// Fetch count of pending PM tickets matching the equipment "type" key (for Save all button label).
+		const run = async () => {
+			try {
+				if (!request?.id) return;
+				if (request.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE) return;
+				if (!canEditDetails) return;
+				const key = normalizeEquipmentName(request?.equipment?.name || "");
+				if (!key) return;
+				const res = await fetch(`/api/service-request/${request.id}/pm-details/bulk`, { cache: "no-store" });
+				if (!res.ok) return;
+				const j = await res.json().catch(() => ({}));
+				const count = Number(j?.data?.count ?? NaN);
+				if (Number.isFinite(count)) setSaveAllCount(count);
+			} catch {
+				// ignore
+			}
+		};
+		setSaveAllCount(null);
+		void run();
+	}, [request?.id, request?.requestType, request?.equipment?.name, canEditDetails]);
+
+	useEffect(() => {
 		const loadTechnicians = async () => {
 			try {
 				setTechLoading(true);
@@ -227,7 +274,7 @@ export default function EditServiceRequestPage() {
 		return [primary, ...extras];
 	};
 
-	const handleSave = async () => {
+	const handleSaveIndividual = async () => {
 		if (!request) return;
 		try {
 			setSaving(true);
@@ -256,12 +303,46 @@ export default function EditServiceRequestPage() {
 				};
 			await updateDetails(request.id, body);
 			toast(t("toast.success"), { description: t("toast.serviceRequestUpdated") });
-			router.push("/service-requests");
+			goBack();
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : "Action failed";
 			toast(t("toast.error"), { description: message });
 		} finally {
 			setSaving(false);
+		}
+	};
+
+	const handleSaveAll = async () => {
+		if (!request) return;
+		try {
+			setSaving(true);
+			if (!canEditDetails) return;
+			if (request.requestType !== ServiceRequestType.PREVENTIVE_MAINTENANCE) return;
+
+			const res = await fetch(`/api/service-request/${request.id}/pm-details/bulk`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ pmDetails }),
+			});
+
+			if (!res.ok) {
+				const j = await res.json().catch(() => ({}));
+				throw new Error(j?.error || "Failed to save for all");
+			}
+
+			const j = await res.json();
+			const updatedCount = Number(j?.data?.updatedCount ?? 0);
+			const normalizedNameKey = String(j?.data?.normalizedNameKey ?? "");
+			toast(t("toast.success"), {
+				description: `Saved PM details for ${updatedCount} pending PM ticket(s) (type: ${normalizedNameKey || "—"})`,
+			});
+			goBack();
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : "Action failed";
+			toast(t("toast.error"), { description: message });
+		} finally {
+			setSaving(false);
+			setSaveAllOpen(false);
 		}
 	};
 
@@ -273,7 +354,7 @@ export default function EditServiceRequestPage() {
 			<main className="container mx-auto px-6 py-6 space-y-4">
 				<div className="flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						<Button variant="outline" size="sm" onClick={() => router.push("/service-requests")}>
+						<Button variant="outline" size="sm" onClick={goBack}>
 							<ArrowLeft className="h-4 w-4" />
 							{t("common.back")}
 						</Button>
@@ -767,23 +848,74 @@ export default function EditServiceRequestPage() {
 				<div className="flex items-center justify-end gap-2 pt-6 border-t">
 					<Button
 						variant="outline"
-						onClick={() => router.push("/service-requests")}
+						onClick={goBack}
 						disabled={saving || isBlockingLoading}
 					>
 						{t("form.cancel")}
 					</Button>
-					{canEditDetails && (
+					{canEditDetails && request?.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ? (
+						<>
+							<Button
+								variant="outline"
+								onClick={handleSaveIndividual}
+								disabled={!isValid || saving || isBlockingLoading}
+								className="gap-2"
+							>
+								{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+								Save individual
+							</Button>
+							<Button
+								onClick={() => setSaveAllOpen(true)}
+								disabled={
+									!isValid ||
+									saving ||
+									isBlockingLoading ||
+									!request?.equipment?.name ||
+									normalizeEquipmentName(request?.equipment?.name || "").length === 0
+								}
+								className="gap-2"
+							>
+								{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+								{saveAllCount != null ? `Save all (${saveAllCount})` : "Save all"}
+							</Button>
+						</>
+					) : canEditDetails ? (
 						<Button
-							onClick={handleSave}
+							onClick={handleSaveIndividual}
 							disabled={!isValid || saving || isBlockingLoading}
 							className="gap-2"
 						>
 							{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
 							{t("form.save")}
 						</Button>
-					)}
+					) : null}
 				</div>
 			</main>
+			{request?.requestType === ServiceRequestType.PREVENTIVE_MAINTENANCE ? (
+				<AlertDialog open={saveAllOpen} onOpenChange={setSaveAllOpen}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Save PM details for all matching equipment?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This will apply the current PM details to <strong>all pending</strong> PM tickets where the equipment name matches this type key
+								{saveAllCount != null ? (
+									<> (<strong>{saveAllCount}</strong> ticket(s))</>
+								) : null}
+								:
+								<span className="mt-2 font-mono text-xs rounded border bg-muted/40 px-2 py-1 inline-block">
+									{normalizeEquipmentName(request?.equipment?.name || "") || "—"}
+								</span>
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+							<AlertDialogAction onClick={handleSaveAll} disabled={saving}>
+								{saving ? "Saving..." : "Save all"}
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			) : null}
 			<Dialog open={selfAssignOpen} onOpenChange={setSelfAssignOpen}>
 				<DialogContent>
 					<DialogHeader>

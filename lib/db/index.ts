@@ -27,6 +27,10 @@ export {
   insertServiceRequest,
   bulkInsertPmServiceRequests,
   updateServiceRequest,
+  bulkUpdatePmDetailsByEquipmentNameKey,
+  countPendingPmByEquipmentNameKey,
+  countPendingPmForLocation,
+  bulkCompletePendingPmForLocation,
   getServiceRequestsBySparePartId,
   getServiceRequestStats,
 } from './service-requests';

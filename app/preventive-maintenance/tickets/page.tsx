@@ -15,6 +15,16 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Loader2, Wrench, User } from "lucide-react";
 import { useSelfProfile } from "@/hooks/useSelfProfile";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function PreventiveMaintenanceTicketsPage() {
 	const { t } = useLanguage();
@@ -28,12 +38,33 @@ export default function PreventiveMaintenanceTicketsPage() {
 
 	const [loading, setLoading] = useState(true);
 	const [requests, setRequests] = useState<JServiceRequest[]>([]);
-	const [scope, setScope] = useState<"pending" | "completed">("pending");
-	const [assignedToMe, setAssignedToMe] = useState(false);
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(500);
+	const [scope, setScope] = useState<"pending" | "completed">(() => {
+		const v = searchParams.get("scope");
+		return v === "completed" ? "completed" : "pending";
+	});
+	const [assignedToMe, setAssignedToMe] = useState(() => searchParams.get("assignedToMe") === "true");
+	const [page, setPage] = useState(() => {
+		const v = Number(searchParams.get("page") || "1");
+		return Number.isFinite(v) && v > 0 ? v : 1;
+	});
+	const [pageSize, setPageSize] = useState(() => {
+		const v = Number(searchParams.get("pageSize") || "500");
+		return Number.isFinite(v) && v > 0 ? v : 500;
+	});
 	const [total, setTotal] = useState(0);
 	const [pmTotal, setPmTotal] = useState(0);
+	const [completeOpen, setCompleteOpen] = useState(false);
+	const [completeCount, setCompleteCount] = useState<number | null>(null);
+	const [completing, setCompleting] = useState(false);
+
+	const returnTo = (() => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("scope", scope);
+		params.set("assignedToMe", assignedToMe ? "true" : "false");
+		params.set("page", String(page));
+		params.set("pageSize", String(pageSize));
+		return `/preventive-maintenance/tickets?${params.toString()}`;
+	})();
 
 	const load = async () => {
 		try {
@@ -79,6 +110,29 @@ export default function PreventiveMaintenanceTicketsPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [scope, assignedToMe, locationId, page, pageSize]);
 
+	useEffect(() => {
+		// Server-authoritative count of pending PMs for this location (used for bulk completion).
+		const run = async () => {
+			try {
+				if (!locationId) return;
+				if (!(role === "admin" || role === "admin_x" || role === "supervisor")) return;
+				if (scope !== "pending") return;
+				const res = await fetch(
+					`/api/service-request/pm/bulk-complete?locationId=${encodeURIComponent(locationId)}`,
+					{ cache: "no-store" },
+				);
+				if (!res.ok) return;
+				const j = await res.json().catch(() => ({}));
+				const c = Number(j?.data?.count ?? NaN);
+				if (Number.isFinite(c)) setCompleteCount(c);
+			} catch {
+				// ignore
+			}
+		};
+		setCompleteCount(null);
+		void run();
+	}, [locationId, role, scope]);
+
 	return (
 		<div className="min-h-screen bg-background">
 			<Header />
@@ -94,14 +148,22 @@ export default function PreventiveMaintenanceTicketsPage() {
 								</p>
 						</div>
 					</div>
-					{role === "admin" || role === "admin_x" || role === "supervisor" ? (
-						<Button
-							variant="outline"
-							onClick={() => router.push("/preventive-maintenance")}
-						>
-							Back to Locations
-						</Button>
-					) : null}
+					<div className="flex items-center gap-2">
+						{locationId && scope === "pending" && (role === "admin" || role === "admin_x" || role === "supervisor") ? (
+							<Button
+								variant="default"
+								onClick={() => setCompleteOpen(true)}
+								disabled={loading || completing || (completeCount != null && completeCount <= 0)}
+							>
+								{completeCount != null ? `Complete PMs (${completeCount})` : "Complete PMs"}
+							</Button>
+						) : null}
+						{role === "admin" || role === "admin_x" || role === "supervisor" ? (
+							<Button variant="outline" onClick={() => router.push("/preventive-maintenance")}>
+								Back to Locations
+							</Button>
+						) : null}
+					</div>
 				</div>
 
 				{/* Scope / filters / stats */}
@@ -224,6 +286,10 @@ export default function PreventiveMaintenanceTicketsPage() {
 										key={r.id}
 										request={r}
 										canApprove={role === "admin" || role === "admin_x" || role === "supervisor"}
+										emphasizeEquipmentName
+										viewerRole={role}
+										viewerId={profile?.id || null}
+										returnTo={returnTo}
 									/>
 								))}
 							</div>
@@ -246,6 +312,55 @@ export default function PreventiveMaintenanceTicketsPage() {
 					</CardContent>
 				</Card>
 			</main>
+			{locationId && (role === "admin" || role === "admin_x" || role === "supervisor") ? (
+				<AlertDialog open={completeOpen} onOpenChange={setCompleteOpen}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Complete preventive maintenance for this location?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This will mark <strong>all pending</strong> PM tickets in this primary location as <strong>completed</strong>
+								{completeCount != null ? <> (<strong>{completeCount}</strong> ticket(s))</> : null}.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel disabled={completing}>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								disabled={completing || !locationId}
+								onClick={async () => {
+									try {
+										if (!locationId) return;
+										setCompleting(true);
+										const res = await fetch("/api/service-request/pm/bulk-complete", {
+											method: "PATCH",
+											headers: { "Content-Type": "application/json" },
+											body: JSON.stringify({ locationId }),
+										});
+										const j = await res.json().catch(() => ({}));
+										if (!res.ok) {
+											throw new Error(j?.error || "Failed to complete PMs");
+										}
+										const updatedCount = Number(j?.data?.updatedCount ?? 0);
+										toast.success("Completed PMs", {
+											description: `Completed ${updatedCount} PM ticket(s) for this location.`,
+										});
+										setCompleteOpen(false);
+										void load();
+										// refresh count
+										setCompleteCount(null);
+									} catch (e: unknown) {
+										const msg = e instanceof Error ? e.message : "Failed to complete PMs";
+										toast.error(msg);
+									} finally {
+										setCompleting(false);
+									}
+								}}
+							>
+								{completing ? "Completing..." : "Complete"}
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			) : null}
 		</div>
 	);
 }

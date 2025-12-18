@@ -124,6 +124,8 @@ const Page = () => {
 							request={r}
 							canApprove={canApprove}
 							canEdit={canEdit}
+							viewerRole={role || null}
+							viewerId={user?.id || null}
 							isUpdatingApproval={!!updatingById[r.id]?.approval}
 							isUpdatingWork={!!updatingById[r.id]?.work}
 							onApprove={(id, note) => changeApprovalStatus(id, ServiceRequestApprovalStatus.APPROVED, note)}
