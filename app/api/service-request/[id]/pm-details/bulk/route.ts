@@ -49,7 +49,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Only assigned technicians or supervisors can edit service request details' }, { status: 403 });
     }
 
-    const equipment = (current as unknown as { equipment?: { name?: unknown; locationId?: unknown; location?: unknown } }).equipment;
+    const equipment = (current as unknown as { equipment?: { name?: unknown } }).equipment;
     const equipmentName = equipment?.name;
     if (typeof equipmentName !== 'string' || equipmentName.trim().length === 0) {
       return NextResponse.json({ error: 'Equipment name is required' }, { status: 400 });
@@ -60,13 +60,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Equipment name is invalid' }, { status: 400 });
     }
 
-    const locationId = typeof equipment?.locationId === 'string' && equipment.locationId.trim().length > 0 ? equipment.locationId : null;
-    const location = typeof equipment?.location === 'string' && equipment.location.trim().length > 0 ? equipment.location : null;
-
     const count = await countPendingPmByEquipmentNameKey({
       equipmentNameRaw: equipmentName,
-      locationId,
-      location,
     });
     return NextResponse.json({ data: { count, normalizedNameKey } });
   } catch (error: unknown) {
@@ -124,7 +119,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Only assigned technicians or supervisors can edit service request details' }, { status: 403 });
     }
 
-    const equipment = (current as unknown as { equipment?: { name?: unknown; locationId?: unknown; location?: unknown } }).equipment;
+    const equipment = (current as unknown as { equipment?: { name?: unknown } }).equipment;
     const equipmentName = equipment?.name;
     if (typeof equipmentName !== 'string' || equipmentName.trim().length === 0) {
       return NextResponse.json({ error: 'Equipment name is required to Save all' }, { status: 400 });
@@ -135,13 +130,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Equipment name is invalid' }, { status: 400 });
     }
 
-    const locationId = typeof equipment?.locationId === 'string' && equipment.locationId.trim().length > 0 ? equipment.locationId : null;
-    const location = typeof equipment?.location === 'string' && equipment.location.trim().length > 0 ? equipment.location : null;
-
     const updatedCount = await bulkUpdatePmDetailsByEquipmentNameKey({
       equipmentNameRaw: equipmentName,
-      locationId,
-      location,
       pmDetails,
       actorId: user.id,
     });

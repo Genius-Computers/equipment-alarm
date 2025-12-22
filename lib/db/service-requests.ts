@@ -309,20 +309,12 @@ export const updateServiceRequest = async (
 export const bulkUpdatePmDetailsByEquipmentNameKey = async (input: {
   /** Raw equipment name taken from the source ticket's equipment row. */
   equipmentNameRaw: string;
-  /** Primary location scope (preferred). */
-  locationId?: string | null;
-  /** Legacy campus string fallback, when locationId is missing. */
-  location?: string | null;
   pmDetails: PmDetails;
   actorId: string;
 }): Promise<number> => {
   const sql = getDb();
   const equipmentNameRaw = (input.equipmentNameRaw || '');
   if (!equipmentNameRaw || equipmentNameRaw.trim().length === 0) return 0;
-
-  const locationFilter = input.locationId
-    ? sql`e.location_id = ${input.locationId}`
-    : (input.location ? sql`e.location = ${input.location}` : sql`true`);
 
   const rows = await sql`
     update service_request sr
@@ -336,7 +328,6 @@ export const bulkUpdatePmDetailsByEquipmentNameKey = async (input: {
       and e.deleted_at is null
       and sr.request_type = 'preventive_maintenance'
       and sr.work_status = 'pending'
-      and ${locationFilter}
       and lower(regexp_replace(trim(replace(e.name, chr(160), ' ')), E'\\s+', ' ', 'g'))
         = lower(regexp_replace(trim(replace(${equipmentNameRaw}, chr(160), ' ')), E'\\s+', ' ', 'g'))
     returning sr.id
@@ -347,16 +338,10 @@ export const bulkUpdatePmDetailsByEquipmentNameKey = async (input: {
 
 export const countPendingPmByEquipmentNameKey = async (input: {
   equipmentNameRaw: string;
-  locationId?: string | null;
-  location?: string | null;
 }): Promise<number> => {
   const sql = getDb();
   const equipmentNameRaw = (input.equipmentNameRaw || '');
   if (!equipmentNameRaw || equipmentNameRaw.trim().length === 0) return 0;
-
-  const locationFilter = input.locationId
-    ? sql`e.location_id = ${input.locationId}`
-    : (input.location ? sql`e.location = ${input.location}` : sql`true`);
 
   const rows = await sql`
     select count(*)::int as count
@@ -366,7 +351,6 @@ export const countPendingPmByEquipmentNameKey = async (input: {
       and e.deleted_at is null
       and sr.request_type = 'preventive_maintenance'
       and sr.work_status = 'pending'
-      and ${locationFilter}
       and lower(regexp_replace(trim(replace(e.name, chr(160), ' ')), E'\\s+', ' ', 'g'))
         = lower(regexp_replace(trim(replace(${equipmentNameRaw}, chr(160), ' ')), E'\\s+', ' ', 'g'))
   ` as unknown as Array<{ count: number }>;
