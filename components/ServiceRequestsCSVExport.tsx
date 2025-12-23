@@ -28,6 +28,9 @@ const USER_FRIENDLY_NAMES = {
   ticketNo: "Ticket No",
   tagNumber: "Tag Number",
   equipmentName: "Equipment Name",
+  model: "Model",
+  manufacturer: "Manufacturer",
+  serialNumber: "Serial Number",
   requestType: "Request Type",
   priority: "Priority",
   schedule: "Schedule",
@@ -59,11 +62,27 @@ const buildTechnicianLabel = (item: JServiceRequest): string => {
   return names.join(", ");
 };
 
+/**
+ * Excel often auto-detects "numeric-looking" strings (e.g., serial numbers) as numbers.
+ * That causes right alignment and can also drop leading zeros / show scientific notation.
+ * Prefixing with an apostrophe forces Excel to treat the value as text while keeping
+ * other CSV readers mostly unaffected.
+ */
+const excelText = (value: unknown): string => {
+  const s = value === undefined || value === null ? "" : String(value);
+  if (!s) return "";
+  // Only coerce values that look purely numeric to avoid surprising output for mixed strings.
+  return /^\d+$/.test(s) ? `'${s}` : s;
+};
+
 const generateCSV = (data: JServiceRequest[]) => {
   const headers = [
     USER_FRIENDLY_NAMES.ticketNo,
     USER_FRIENDLY_NAMES.tagNumber,
     USER_FRIENDLY_NAMES.equipmentName,
+    USER_FRIENDLY_NAMES.model,
+    USER_FRIENDLY_NAMES.manufacturer,
+    USER_FRIENDLY_NAMES.serialNumber,
     USER_FRIENDLY_NAMES.requestType,
     USER_FRIENDLY_NAMES.priority,
     USER_FRIENDLY_NAMES.schedule,
@@ -77,6 +96,9 @@ const generateCSV = (data: JServiceRequest[]) => {
     [USER_FRIENDLY_NAMES.ticketNo]: sr.ticketId ?? "",
     [USER_FRIENDLY_NAMES.tagNumber]: sr.equipment?.partNumber ?? "",
     [USER_FRIENDLY_NAMES.equipmentName]: sr.equipment?.name ?? "",
+    [USER_FRIENDLY_NAMES.model]: excelText(sr.equipment?.model ?? ""),
+    [USER_FRIENDLY_NAMES.manufacturer]: sr.equipment?.manufacturer ?? "",
+    [USER_FRIENDLY_NAMES.serialNumber]: excelText(sr.equipment?.serialNumber ?? ""),
     [USER_FRIENDLY_NAMES.requestType]: sr.requestType ?? "",
     [USER_FRIENDLY_NAMES.priority]: sr.priority ?? "",
     [USER_FRIENDLY_NAMES.schedule]: sr.scheduledAt ?? "",

@@ -13,6 +13,10 @@ interface ServiceRequestsCSVImportProps {
 const FIELD_MAPPINGS: Record<string, string> = {
   "Ticket No": "ticketNo",
   "Tag Number": "tagNumber",
+  "Equipment Name": "equipmentName",
+  "Model": "model",
+  "Manufacturer": "manufacturer",
+  "Serial Number": "serialNumber",
   "Request Type": "requestType",
   "Priority": "priority",
   "Schedule": "schedule",
@@ -26,6 +30,10 @@ const REQUIRED_FIELDS = ["ticketNo", "tagNumber", "requestType", "schedule"];
 const USER_FRIENDLY_NAMES: Record<string, string> = {
   ticketNo: "Ticket No",
   tagNumber: "Tag Number",
+  equipmentName: "Equipment Name",
+  model: "Model",
+  manufacturer: "Manufacturer",
+  serialNumber: "Serial Number",
   requestType: "Request Type",
   priority: "Priority",
   schedule: "Schedule",
@@ -44,6 +52,10 @@ const ServiceRequestsCSVImport = ({ onImported }: ServiceRequestsCSVImportProps)
     const headers = [
       USER_FRIENDLY_NAMES.ticketNo,
       USER_FRIENDLY_NAMES.tagNumber,
+      USER_FRIENDLY_NAMES.equipmentName,
+      USER_FRIENDLY_NAMES.model,
+      USER_FRIENDLY_NAMES.manufacturer,
+      USER_FRIENDLY_NAMES.serialNumber,
       USER_FRIENDLY_NAMES.requestType,
       USER_FRIENDLY_NAMES.priority,
       USER_FRIENDLY_NAMES.schedule,
@@ -56,6 +68,10 @@ const ServiceRequestsCSVImport = ({ onImported }: ServiceRequestsCSVImportProps)
       {
         [USER_FRIENDLY_NAMES.ticketNo]: "",
         [USER_FRIENDLY_NAMES.tagNumber]: "25-0001",
+        [USER_FRIENDLY_NAMES.equipmentName]: "",
+        [USER_FRIENDLY_NAMES.model]: "",
+        [USER_FRIENDLY_NAMES.manufacturer]: "",
+        [USER_FRIENDLY_NAMES.serialNumber]: "",
         [USER_FRIENDLY_NAMES.requestType]: "",
         [USER_FRIENDLY_NAMES.priority]: "medium",
         [USER_FRIENDLY_NAMES.schedule]: "2026-01-01T00:00",
