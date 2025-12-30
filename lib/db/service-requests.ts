@@ -113,9 +113,35 @@ export const listServiceRequestsForExport = async (
   const requestTypeFilter = requestType && requestType !== 'all' ? sql`sr.request_type = ${requestType}` : sql`true`;
 
   const rows = await sql`
-    select sr.*, to_jsonb(e) as equipment
+    select 
+      sr.*, 
+      to_jsonb(
+        jsonb_build_object(
+          'id', e.id,
+          'name', e.name,
+          'part_number', e.part_number,
+          'model', e.model,
+          'manufacturer', e.manufacturer,
+          'serial_number', e.serial_number,
+          'location', e.location,
+          'sub_location', e.sub_location,
+          'location_id', e.location_id,
+          'location_name', l.name,
+          'campus', l.campus,
+          'status', e.status,
+          'last_maintenance', e.last_maintenance,
+          'maintenance_interval', e.maintenance_interval,
+          'created_at', e.created_at,
+          'updated_at', e.updated_at,
+          'deleted_at', e.deleted_at,
+          'created_by', e.created_by,
+          'updated_by', e.updated_by,
+          'deleted_by', e.deleted_by
+        )
+      ) as equipment
     from service_request sr
     left join equipment e on e.id = sr.equipment_id and e.deleted_at is null
+    left join locations l on e.location_id = l.id and l.deleted_at is null
     where sr.deleted_at is null
       and ${scopeFilter}
       and ${techFilter}

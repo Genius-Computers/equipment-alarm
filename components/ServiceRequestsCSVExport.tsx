@@ -31,6 +31,8 @@ const USER_FRIENDLY_NAMES = {
   model: "Model",
   manufacturer: "Manufacturer",
   serialNumber: "Serial Number",
+  location: "Location",
+  sublocation: "Sublocation",
   requestType: "Request Type",
   priority: "Priority",
   schedule: "Schedule",
@@ -83,6 +85,8 @@ const generateCSV = (data: JServiceRequest[]) => {
     USER_FRIENDLY_NAMES.model,
     USER_FRIENDLY_NAMES.manufacturer,
     USER_FRIENDLY_NAMES.serialNumber,
+    USER_FRIENDLY_NAMES.location,
+    USER_FRIENDLY_NAMES.sublocation,
     USER_FRIENDLY_NAMES.requestType,
     USER_FRIENDLY_NAMES.priority,
     USER_FRIENDLY_NAMES.schedule,
@@ -92,21 +96,30 @@ const generateCSV = (data: JServiceRequest[]) => {
     USER_FRIENDLY_NAMES.approvalStatus,
   ];
 
-  const rows = data.map((sr) => ({
-    [USER_FRIENDLY_NAMES.ticketNo]: sr.ticketId ?? "",
-    [USER_FRIENDLY_NAMES.tagNumber]: sr.equipment?.partNumber ?? "",
-    [USER_FRIENDLY_NAMES.equipmentName]: sr.equipment?.name ?? "",
-    [USER_FRIENDLY_NAMES.model]: excelText(sr.equipment?.model ?? ""),
-    [USER_FRIENDLY_NAMES.manufacturer]: sr.equipment?.manufacturer ?? "",
-    [USER_FRIENDLY_NAMES.serialNumber]: excelText(sr.equipment?.serialNumber ?? ""),
-    [USER_FRIENDLY_NAMES.requestType]: sr.requestType ?? "",
-    [USER_FRIENDLY_NAMES.priority]: sr.priority ?? "",
-    [USER_FRIENDLY_NAMES.schedule]: sr.scheduledAt ?? "",
-    [USER_FRIENDLY_NAMES.technician]: buildTechnicianLabel(sr),
-    [USER_FRIENDLY_NAMES.status]: sr.workStatus ?? "",
-    [USER_FRIENDLY_NAMES.operationalStatus]: sr.equipment?.status ?? "",
-    [USER_FRIENDLY_NAMES.approvalStatus]: sr.approvalStatus ?? "",
-  }));
+  const rows = data.map((sr) => {
+    // Get location: prefer locationName from locations table, fallback to legacy location field
+    const location = sr.equipment?.locationName ?? sr.equipment?.location ?? "";
+    // Get sublocation: from equipment subLocation field
+    const sublocation = sr.equipment?.subLocation ?? "";
+    
+    return {
+      [USER_FRIENDLY_NAMES.ticketNo]: sr.ticketId ?? "",
+      [USER_FRIENDLY_NAMES.tagNumber]: sr.equipment?.partNumber ?? "",
+      [USER_FRIENDLY_NAMES.equipmentName]: sr.equipment?.name ?? "",
+      [USER_FRIENDLY_NAMES.model]: excelText(sr.equipment?.model ?? ""),
+      [USER_FRIENDLY_NAMES.manufacturer]: sr.equipment?.manufacturer ?? "",
+      [USER_FRIENDLY_NAMES.serialNumber]: excelText(sr.equipment?.serialNumber ?? ""),
+      [USER_FRIENDLY_NAMES.location]: location,
+      [USER_FRIENDLY_NAMES.sublocation]: sublocation,
+      [USER_FRIENDLY_NAMES.requestType]: sr.requestType ?? "",
+      [USER_FRIENDLY_NAMES.priority]: sr.priority ?? "",
+      [USER_FRIENDLY_NAMES.schedule]: sr.scheduledAt ?? "",
+      [USER_FRIENDLY_NAMES.technician]: buildTechnicianLabel(sr),
+      [USER_FRIENDLY_NAMES.status]: sr.workStatus ?? "",
+      [USER_FRIENDLY_NAMES.operationalStatus]: sr.equipment?.status ?? "",
+      [USER_FRIENDLY_NAMES.approvalStatus]: sr.approvalStatus ?? "",
+    };
+  });
 
   const csvContent = stringifyCSV(headers, rows);
   const BOM = "\uFEFF";
