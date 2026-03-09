@@ -277,7 +277,7 @@ const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportP
               onClick={async () => {
                 try {
                   // TEMPORARILY DISABLED: confirm import API call
-                  toast.info("CSV import is temporarily disabled.");
+                  toast.info("");
                   // const payload = pendingPayloadRef.current;
                   // if (!payload) return;
                   // const res = await fetch("/api/equipment/bulk", {
