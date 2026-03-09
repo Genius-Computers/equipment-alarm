@@ -87,44 +87,46 @@ const EquipmentCSVExport = ({ items, filters }: EquipmentCSVExportProps) => {
   const handleExportAll = async () => {
     setExporting(true);
     try {
-      // Build query parameters for filtering
-      const params = new URLSearchParams();
-      if (filters?.location) params.append('location', filters.location);
-      if (filters?.subLocation) params.append('subLocation', filters.subLocation);
-      if (filters?.status) params.append('status', filters.status);
+      // TEMPORARILY DISABLED: API call for export all/filtered
+      toast.info("Export All / Export Filtered is temporarily disabled.");
+      // // Build query parameters for filtering
+      // const params = new URLSearchParams();
+      // if (filters?.location) params.append('location', filters.location);
+      // if (filters?.subLocation) params.append('subLocation', filters.subLocation);
+      // if (filters?.status) params.append('status', filters.status);
 
-      const url = `/api/equipment/export${params.toString() ? `?${params.toString()}` : ''}`;
-      console.log('Exporting from URL:', url);
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Export API error:', response.status, errorText);
-        throw new Error(`Failed to fetch equipment data: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log('Export API result:', result);
-      
-      if (result.success) {
-        console.log(`Exporting ${result.data.length} items from API (vs ${items.length} from current page)`);
-        generateCSV(result.data);
-        
-        // Show success message with filter info
-        let message = `Exported ${result.count} equipment items`;
-        if (filters?.location || filters?.subLocation || filters?.status) {
-          const filterParts = [];
-          if (filters.location) filterParts.push(`Location: ${filters.location}`);
-          if (filters.subLocation) filterParts.push(`Sub-location: ${filters.subLocation}`);
-          if (filters.status) filterParts.push(`Status: ${filters.status}`);
-          message += ` (Filtered by: ${filterParts.join(', ')})`;
-        }
-        
-        toast.success(message);
-      } else {
-        throw new Error(result.error || 'Export failed');
-      }
+      // const url = `/api/equipment/export${params.toString() ? `?${params.toString()}` : ''}`;
+      // console.log('Exporting from URL:', url);
+      //
+      // const response = await fetch(url);
+      //
+      // if (!response.ok) {
+      //   const errorText = await response.text();
+      //   console.error('Export API error:', response.status, errorText);
+      //   throw new Error(`Failed to fetch equipment data: ${response.status}`);
+      // }
+      //
+      // const result = await response.json();
+      // console.log('Export API result:', result);
+      //
+      // if (result.success) {
+      //   console.log(`Exporting ${result.data.length} items from API (vs ${items.length} from current page)`);
+      //   generateCSV(result.data);
+      //
+      //   // Show success message with filter info
+      //   let message = `Exported ${result.count} equipment items`;
+      //   if (filters?.location || filters?.subLocation || filters?.status) {
+      //     const filterParts = [];
+      //     if (filters.location) filterParts.push(`Location: ${filters.location}`);
+      //     if (filters.subLocation) filterParts.push(`Sub-location: ${filters.subLocation}`);
+      //     if (filters.status) filterParts.push(`Status: ${filters.status}`);
+      //     message += ` (Filtered by: ${filterParts.join(', ')})`;
+      //   }
+      //
+      //   toast.success(message);
+      // } else {
+      //   throw new Error(result.error || 'Export failed');
+      // }
     } catch (error) {
       console.error('Export error:', error);
       toast.error(`Failed to export equipment data: ${error instanceof Error ? error.message : 'Unknown error'}`);

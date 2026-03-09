@@ -165,48 +165,51 @@ const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportP
         maintenanceInterval: normalizeMaintenanceInterval(r.maintenanceInterval ?? ""),
       }));
 
-      // First, request a dry-run preview to show update vs insert counts
-      const previewRes = await fetch("/api/equipment/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: payload, dryRun: true }),
-      });
-      if (!previewRes.ok) {
-        const data = await previewRes.json().catch(() => ({}));
-        const errorMsg = data?.error || "Failed to preview CSV import";
-        if (data?.missingLocations && Array.isArray(data.missingLocations)) {
-          toast(t("toast.error"), { description: errorMsg, duration: 10000 });
-        } else {
-          toast(t("toast.error"), { description: errorMsg });
-        }
-        return;
-      }
-      const preview = await previewRes.json();
-      if (preview?.preview) {
-        setPreviewCounts(preview.preview);
-        pendingPayloadRef.current = payload;
-        setConfirmOpen(true);
-        return; // wait for user confirmation
-      }
-      
-      // Fallback if preview is unavailable, proceed as before
-      const res = await fetch("/api/equipment/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: payload }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const errorMsg = data?.error || "Failed to import CSV";
-        if (data?.missingLocations && Array.isArray(data.missingLocations)) {
-          toast(t("toast.error"), { description: errorMsg, duration: 10000 });
-        } else {
-          toast(t("toast.error"), { description: errorMsg });
-        }
-        return;
-      }
-      toast(t("toast.success"), { description: t("csv.imported") });
-      onImported?.();
+      // TEMPORARILY DISABLED: API calls for CSV import (preview + import)
+      toast.info("CSV import is temporarily disabled.");
+      return;
+      // // First, request a dry-run preview to show update vs insert counts
+      // const previewRes = await fetch("/api/equipment/bulk", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ items: payload, dryRun: true }),
+      // });
+      // if (!previewRes.ok) {
+      //   const data = await previewRes.json().catch(() => ({}));
+      //   const errorMsg = data?.error || "Failed to preview CSV import";
+      //   if (data?.missingLocations && Array.isArray(data.missingLocations)) {
+      //     toast(t("toast.error"), { description: errorMsg, duration: 10000 });
+      //   } else {
+      //     toast(t("toast.error"), { description: errorMsg });
+      //   }
+      //   return;
+      // }
+      // const preview = await previewRes.json();
+      // if (preview?.preview) {
+      //   setPreviewCounts(preview.preview);
+      //   pendingPayloadRef.current = payload;
+      //   setConfirmOpen(true);
+      //   return; // wait for user confirmation
+      // }
+      //
+      // // Fallback if preview is unavailable, proceed as before
+      // const res = await fetch("/api/equipment/bulk", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ items: payload }),
+      // });
+      // if (!res.ok) {
+      //   const data = await res.json().catch(() => ({}));
+      //   const errorMsg = data?.error || "Failed to import CSV";
+      //   if (data?.missingLocations && Array.isArray(data.missingLocations)) {
+      //     toast(t("toast.error"), { description: errorMsg, duration: 10000 });
+      //   } else {
+      //     toast(t("toast.error"), { description: errorMsg });
+      //   }
+      //   return;
+      // }
+      // toast(t("toast.success"), { description: t("csv.imported") });
+      // onImported?.();
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to import CSV";
       toast(t("toast.error"), { description: message });
@@ -268,25 +271,27 @@ const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportP
             <AlertDialogAction
               onClick={async () => {
                 try {
-                  const payload = pendingPayloadRef.current;
-                  if (!payload) return;
-                  const res = await fetch("/api/equipment/bulk", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ items: payload }),
-                  });
-                  if (!res.ok) {
-                    const data = await res.json().catch(() => ({}));
-                    const errorMsg = data?.error || "Failed to import CSV";
-                    if (data?.missingLocations && Array.isArray(data.missingLocations)) {
-                      toast(t("toast.error"), { description: errorMsg, duration: 10000 });
-                    } else {
-                      toast(t("toast.error"), { description: errorMsg });
-                    }
-                    return;
-                  }
-                  toast(t("toast.success"), { description: t("csv.imported") });
-                  onImported?.();
+                  // TEMPORARILY DISABLED: confirm import API call
+                  toast.info("CSV import is temporarily disabled.");
+                  // const payload = pendingPayloadRef.current;
+                  // if (!payload) return;
+                  // const res = await fetch("/api/equipment/bulk", {
+                  //   method: "POST",
+                  //   headers: { "Content-Type": "application/json" },
+                  //   body: JSON.stringify({ items: payload }),
+                  // });
+                  // if (!res.ok) {
+                  //   const data = await res.json().catch(() => ({}));
+                  //   const errorMsg = data?.error || "Failed to import CSV";
+                  //   if (data?.missingLocations && Array.isArray(data.missingLocations)) {
+                  //     toast(t("toast.error"), { description: errorMsg, duration: 10000 });
+                  //   } else {
+                  //     toast(t("toast.error"), { description: errorMsg });
+                  //   }
+                  //   return;
+                  // }
+                  // toast(t("toast.success"), { description: t("csv.imported") });
+                  // onImported?.();
                 } finally {
                   setPreviewCounts(null);
                   pendingPayloadRef.current = null;
