@@ -81,7 +81,9 @@ const EquipmentCSVExport = ({ items, filters }: EquipmentCSVExportProps) => {
   };
 
   const handleExportCurrentPage = () => {
-    generateCSV(items);
+    // TEMPORARILY DISABLED: no export (was client-side only, no API)
+    toast.info("");
+    // generateCSV(items);
   };
 
   const handleExportAll = async () => {

@@ -63,7 +63,12 @@ const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportP
   };
   const pendingPayloadRef = useRef<ImportRow[] | null>(null);
 
-  const handleClick = () => inputRef.current?.click();
+  // TEMPORARILY DISABLED: CSV import - show message instead of opening file picker
+  const handleClick = () => {
+    toast.info("");
+    return;
+    // inputRef.current?.click();
+  };
 
   const handleDownloadTemplate = () => {
     const headers = [
