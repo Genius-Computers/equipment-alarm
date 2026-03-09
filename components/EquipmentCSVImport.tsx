@@ -171,7 +171,7 @@ const EquipmentCSVImport = ({ onImported, showNote = true }: EquipmentCSVImportP
       }));
 
       // TEMPORARILY DISABLED: API calls for CSV import (preview + import)
-      toast.info("CSV import is temporarily disabled.");
+      toast.info("");
       return;
       // // First, request a dry-run preview to show update vs insert counts
       // const previewRes = await fetch("/api/equipment/bulk", {
